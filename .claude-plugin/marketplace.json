@@ -1,0 +1,25 @@
+{
+  "name": "amflow",
+  "owner": {
+    "name": "Rafael Bortoli"
+  },
+  "plugins": [
+    {
+      "name": "amflow-worker",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/futureridetoday/AmFlow.git",
+        "path": "plugins/worker"
+      },
+      "description": "Instala e executa os recursos que você adquiriu no Hub AmFlow"
+    },
+    {
+      "name": "amflow-builder",
+      "source": {
+        "source": "npm",
+        "package": "amflow"
+      },
+      "description": "Cria e publica recursos no Hub AmFlow"
+    }
+  ]
+}

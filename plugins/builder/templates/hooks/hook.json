@@ -1,0 +1,28 @@
+{
+  "name": "hook-name",
+  "type": "hook",
+  "project": "",
+  "description": "",
+  "tags": [],
+  "author": "",
+  "created": "",
+  "status": "stable",
+  "version": "1.0.0",
+  "updated": "",
+  "scope": "project",
+  "auto_load": false,
+  "dependencies": [],
+  "d1": "",
+  "d2": "",
+  "d4": "",
+  "hub_id": "",
+  "source": "",
+  "event": "",
+  "matcher": {
+    "tool": "*",
+    "command_pattern": null
+  },
+  "script": "hook.sh",
+  "risk_level": "low",
+  "review_required": "owner"
+}

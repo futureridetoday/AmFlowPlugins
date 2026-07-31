@@ -1,0 +1,9 @@
+{
+  "name": "amflow-worker",
+  "displayName": "AmFlow Worker",
+  "description": "Instala e executa os recursos que você adquiriu no Hub AmFlow",
+  "version": "1.0.0",
+  "author": {
+    "name": "Rafael Bortoli"
+  }
+}

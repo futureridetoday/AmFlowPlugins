@@ -1,0 +1,24 @@
+{
+  "name": "amflow",
+  "version": "1.0.4",
+  "description": "Plugin AmFlow Builder — cria e publica recursos no Hub AmFlow",
+  "license": "MIT",
+  "files": [
+    ".claude-plugin",
+    ".mcp.json",
+    "agents",
+    "commands",
+    "skills"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "amflow",
+    "plugin"
+  ],
+  "author": "amflow",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/futureridetoday/AmFlow.git"
+  }
+}

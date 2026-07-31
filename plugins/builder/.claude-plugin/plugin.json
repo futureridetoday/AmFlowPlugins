@@ -1,0 +1,10 @@
+{
+  "name": "amflow-builder",
+  "displayName": "AmFlow Builder",
+  "description": "Cria e publica recursos no Hub AmFlow",
+  "defaultEnabled": false,
+  "version": "1.0.4",
+  "author": {
+    "name": "Rafael Bortoli"
+  }
+}
