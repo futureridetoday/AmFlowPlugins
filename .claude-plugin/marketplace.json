@@ -1,24 +1,18 @@
 {
   "name": "amflow",
+  "description": "Catálogo oficial do AmFlow: instale recursos do Hub com o Worker, ou crie e publique os seus com o Builder",
   "owner": {
     "name": "Rafael Bortoli"
   },
   "plugins": [
     {
       "name": "amflow-worker",
-      "source": {
-        "source": "git-subdir",
-        "url": "https://github.com/futureridetoday/AmFlow.git",
-        "path": "plugins/worker"
-      },
+      "source": "./plugins/worker",
       "description": "Instala e executa os recursos que você adquiriu no Hub AmFlow"
     },
     {
       "name": "amflow-builder",
-      "source": {
-        "source": "npm",
-        "package": "amflow"
-      },
+      "source": "./plugins/builder",
       "description": "Cria e publica recursos no Hub AmFlow"
     }
   ]
