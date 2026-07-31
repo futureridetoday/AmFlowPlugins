@@ -63,7 +63,6 @@ price: 0                   # centavos — usado na publicação; 0 = gratuito (d
 # ── referências de criação ────────────────────────────────────────────────────
 # [1] Agent Skills open standard (specification)  https://agentskills.io/specification
 # [2] Claude Code — Extend Claude with skills     https://code.claude.com/docs/en/skills
-# [3] Guia de Categorização de Agent Skills       docs/mvp/40_reference/agent-skills-category.html
 ---
 
 # [Nome da Skill]
