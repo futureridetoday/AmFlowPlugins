@@ -39,3 +39,21 @@ Feature, correção ou plano novo segue o mesmo modelo do repositório de desenv
 `docs/plan/_inbox/`, passa por revisão, aprovação humana, derivação em unidades e implementação uma
 unidade por vez. Invocar a skill `dev-units`; norma completa em
 [`docs/plan/system/modelo-dev-units.md`](../docs/plan/system/modelo-dev-units.md).
+
+### Antes de editar a skill `dev-units` daqui — pare
+
+Ela é **cópia**. A mesma skill existe no repositório de desenvolvimento do AmFlow, e as duas foram
+idênticas no dia em que esta chegou. Não há nada que avise quando deixarem de ser: nenhum teste, nenhum
+guard, nenhum CI compara as duas.
+
+Editar só um dos lados é como o projeto já falhou antes — foi o argumento que aposentou o canal npm:
+manter dois artefatos que deveriam andar juntos produz deriva, e a deriva só aparece quando alguém
+depende da metade errada.
+
+**Se você chegou aqui para editar a skill, a edição não é o próximo passo — a decisão é.** Escolher
+entre fonte única (submódulo git, ou instalar a skill publicada pelo próprio AmFlow) e assumir as duas
+cópias com um mecanismo que force a paridade. Só depois disso, editar.
+
+A skill copiada vem **sem a suíte de testes** de propósito: os testes dela são de integração contra o
+conteúdo do AmFlow — copiam arquivos de lá, lintam unidades que só existem lá — e nunca passariam
+aqui. Este repositório **consome** a skill; quem a desenvolve é o AmFlow.
