@@ -1,0 +1,38 @@
+name: Plugins
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  plugins:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Enquanto plugins/builder/package.json existir. A unidade 0003-10 do plano
+      # decide se ele sobrevive à descontinuação do npm; saindo ele, sai este step.
+      - name: Versão do Builder bate entre plugin.json e package.json
+        run: |
+          PLUGIN_VERSION=$(node -p "require('./plugins/builder/.claude-plugin/plugin.json').version")
+          PACKAGE_VERSION=$(node -p "require('./plugins/builder/package.json').version")
+          [ "$PLUGIN_VERSION" = "$PACKAGE_VERSION" ] || { echo "plugin.json ($PLUGIN_VERSION) != package.json ($PACKAGE_VERSION)" >&2; exit 1; }
+
+      - name: Validar plugins
+        run: |
+          if command -v claude >/dev/null 2>&1; then
+            # O catálogo primeiro: é o arquivo que serve os dois plugins, e foi
+            # ele que manteve a instalação quebrada até a unidade 0003-06.
+            claude plugin validate .claude-plugin/marketplace.json
+            claude plugin validate plugins/worker
+            claude plugin validate plugins/builder
+          else
+            echo "claude CLI ausente no runner — check leve de JSON + frontmatter"
+            for f in plugins/worker/.claude-plugin/plugin.json plugins/builder/.claude-plugin/plugin.json .claude-plugin/marketplace.json; do
+              node -e "JSON.parse(require('fs').readFileSync('$f'))"
+            done
+            for f in plugins/worker/commands/*.md plugins/worker/skills/*/SKILL.md plugins/builder/commands/*.md plugins/builder/skills/*/SKILL.md plugins/builder/agents/*.md; do
+              head -1 "$f" | grep -q '^---$' || { echo "sem frontmatter: $f" >&2; exit 1; }
+            done
+          fi
