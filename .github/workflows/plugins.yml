@@ -11,14 +11,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # Enquanto plugins/builder/package.json existir. A unidade 0003-10 do plano
-      # decide se ele sobrevive à descontinuação do npm; saindo ele, sai este step.
-      - name: Versão do Builder bate entre plugin.json e package.json
-        run: |
-          PLUGIN_VERSION=$(node -p "require('./plugins/builder/.claude-plugin/plugin.json').version")
-          PACKAGE_VERSION=$(node -p "require('./plugins/builder/package.json').version")
-          [ "$PLUGIN_VERSION" = "$PACKAGE_VERSION" ] || { echo "plugin.json ($PLUGIN_VERSION) != package.json ($PACKAGE_VERSION)" >&2; exit 1; }
-
       - name: Validar plugins
         run: |
           if command -v claude >/dev/null 2>&1; then
