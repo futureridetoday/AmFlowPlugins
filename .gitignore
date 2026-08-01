@@ -1,0 +1,3 @@
+# Cache do Python — os scripts da skill dev-units geram isto ao rodar.
+__pycache__/
+*.pyc
