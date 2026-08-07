@@ -1,9 +1,9 @@
 {
   "mcpServers": {
-    "amflow": {
+    "amflow-builder": {
       "type": "http",
-      "url": "https://dev.amflow.work/mcp",
-      "note": "Conector oficial do Hub AmFlow. Usa OAuth — no install do plugin (ou na 1ª conexão) você autoriza o acesso à sua conta AmFlow."
+      "url": "https://dev.amflow.work/mcp-builder",
+      "note": "Conector oficial do Hub AmFlow para criação de recursos — publicar e acompanhar o que você envia ao marketplace. Usa OAuth — no install do plugin (ou na 1ª conexão) você autoriza o acesso à sua conta AmFlow."
     }
   }
 }
