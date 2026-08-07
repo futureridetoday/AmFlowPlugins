@@ -29,7 +29,7 @@ argument-hint: <type>/<name>
 
 # /amflow-worker:install
 
-Instala um recurso adquirido no Hub em um projeto específico — diferente do [`get`](get.md), que instala em escopo global (`~/.claude/`). Usa a tool `install` do servidor MCP `amflow` (declarado em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo. Autenticação via OAuth do `/mcp` (M3), cuidada pelo próprio Claude Code na primeira chamada.
+Instala um recurso adquirido no Hub em um projeto específico — diferente do [`get`](get.md), que instala em escopo global (`~/.claude/`). Usa a tool `install` do servidor MCP `amflow-worker` (declarado em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo. Autenticação via OAuth do `/mcp` (M3), cuidada pelo próprio Claude Code na primeira chamada.
 
 Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type` ∈ `skill | agent | command | hook`. Se ausente ou fora do formato, pergunte ao usuário qual recurso instalar.
 
@@ -56,7 +56,7 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
 
    Encontrado → leia `source:` do arquivo pra extrair a versão instalada e use `AskUserQuestion`: **"Manter versão atual"** (encerra) ou **"Verificar atualização"** (prossegue). Não encontrado → prossiga direto.
 
-3. Chame a tool `install` do servidor MCP `amflow`:
+3. Chame a tool `install` do servidor MCP `amflow-worker`:
 
    ```
    install({ type: "<type>", name: "<name>", scope: "project" })

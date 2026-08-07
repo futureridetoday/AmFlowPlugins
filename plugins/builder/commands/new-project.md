@@ -30,7 +30,7 @@ Inicializa a estrutura `.claude/` e cria os arquivos base de um novo projeto AmF
 
 ## Fase 0 — Autenticação (obrigatória)
 
-Antes de qualquer outra ação (inclusive o survey e qualquer criação de arquivo), chame a tool `me` do servidor MCP `amflow`.
+Antes de qualquer outra ação (inclusive o survey e qualquer criação de arquivo), chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → guarde o `user_id` retornado (`<USER_ID>`) para o carimbo de atribuição (`author_id`) na Fase 5. Com sessão já ativa, o `me` responde direto e o comando segue sem novo login.
 - Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não prossiga para o survey nem crie qualquer arquivo. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.

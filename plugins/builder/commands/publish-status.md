@@ -29,7 +29,7 @@ argument-hint: [--resource <nome>]
 
 # /amflow-builder:publish-status
 
-Consulta o Hub e exibe o status atual de submissão dos recursos publicados no projeto. Sincroniza o campo `status` no arquivo local quando detecta mudança. Usa a tool `submission_status` do servidor MCP `amflow`.
+Consulta o Hub e exibe o status atual de submissão dos recursos publicados no projeto. Sincroniza o campo `status` no arquivo local quando detecta mudança. Usa a tool `submission_status` do servidor MCP `amflow-builder`.
 
 Argumento opcional: `--resource <nome>` — filtra para um único recurso.
 
@@ -37,7 +37,7 @@ Argumento opcional: `--resource <nome>` — filtra para um único recurso.
 
 ### Fase 0 — Autenticação (obrigatória)
 
-Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow`.
+Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → sessão válida; prossiga. Com sessão já ativa, o `me` responde direto sem novo login.
 - Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não consulte o Hub. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.

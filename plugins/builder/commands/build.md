@@ -30,7 +30,7 @@ Cria um novo recurso AmFlow via survey guiado e template. Tipos suportados: `ski
 
 ## Fase 0 — Autenticação (obrigatória)
 
-Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow`.
+Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → guarde o `user_id` retornado para carimbar `author_id` no recurso gerado (Fase 3). Com sessão já ativa, o `me` responde direto e o comando segue sem novo login.
 - Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não crie nenhum arquivo. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.

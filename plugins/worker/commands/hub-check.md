@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-worker:hub-check
 
-Verifica atualizações para os recursos instalados em `~/.claude/`. Não instala nada — apenas informa. Recursos sem licença ativa são exibidos com aviso, mas não removidos. Usa a tool `check_updates` do servidor MCP `amflow`.
+Verifica atualizações para os recursos instalados em `~/.claude/`. Não instala nada — apenas informa. Recursos sem licença ativa são exibidos com aviso, mas não removidos. Usa a tool `check_updates` do servidor MCP `amflow-worker`.
 
 ## Processo
 

@@ -29,11 +29,11 @@ argument-hint: "[--validate-only]"
 
 # /amflow-builder:publish
 
-Normaliza e publica um recurso do projeto no Hub. Tipos suportados: `skill`, `agent`, `hook`, `command`. Com `--validate-only`, executa apenas as Fases 1 e 2 e encerra sem publicar. Usa a tool `publish` do servidor MCP `amflow` (declarada em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo.
+Normaliza e publica um recurso do projeto no Hub. Tipos suportados: `skill`, `agent`, `hook`, `command`. Com `--validate-only`, executa apenas as Fases 1 e 2 e encerra sem publicar. Usa a tool `publish` do servidor MCP `amflow-builder` (declarada em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo.
 
 ## Fase 0 — Autenticação (obrigatória)
 
-Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow`.
+Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → sessão válida; prossiga. Com sessão já ativa, o `me` responde direto sem novo login.
 - Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não execute o scan nem chame a tool `publish`. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.

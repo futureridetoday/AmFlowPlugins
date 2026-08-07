@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-worker:sync
 
-Sincroniza todos os recursos com licença ativa — públicos adquiridos e exclusivos atribuídos. Instala em escopo global (`~/.claude/`), disponível em todos os projetos. Recursos instalados por outras fontes (git, cópia manual) não são tocados. Usa as tools `list_active_licenses` e `install` do servidor MCP `amflow`.
+Sincroniza todos os recursos com licença ativa — públicos adquiridos e exclusivos atribuídos. Instala em escopo global (`~/.claude/`), disponível em todos os projetos. Recursos instalados por outras fontes (git, cópia manual) não são tocados. Usa as tools `list_active_licenses` e `install` do servidor MCP `amflow-worker`.
 
 ## Processo
 

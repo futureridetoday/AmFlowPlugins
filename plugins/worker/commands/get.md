@@ -29,13 +29,13 @@ argument-hint: <type>/<name>
 
 # /amflow-worker:get
 
-Instala um recurso específico por nome. Exemplo: `/amflow-worker:get skill/deep-research`. Instala em escopo global (`~/.claude/`), disponível em todos os projetos — distinto do [`install`](install.md), que instala em projeto. Usa a tool `install` do servidor MCP `amflow` com `scope: "global"` (declarado em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo.
+Instala um recurso específico por nome. Exemplo: `/amflow-worker:get skill/deep-research`. Instala em escopo global (`~/.claude/`), disponível em todos os projetos — distinto do [`install`](install.md), que instala em projeto. Usa a tool `install` do servidor MCP `amflow-worker` com `scope: "global"` (declarado em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo.
 
 Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type` ∈ `skill | agent | command | hook`. Se ausente ou fora do formato, pergunte ao usuário qual recurso instalar.
 
 ## Processo
 
-1. Chame a tool `install` do servidor MCP `amflow`:
+1. Chame a tool `install` do servidor MCP `amflow-worker`:
 
    ```
    install({ type: "<type>", name: "<name>", scope: "global" })

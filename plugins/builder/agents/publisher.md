@@ -52,7 +52,7 @@ You are a publication orchestrator specializing in AmFlow resources. Your role i
 2. Invocar o agent `reviewer` e bloquear em caso de reprovação
 3. Detectar o cenário de publicação (novo recurso ou atualização) via tools MCP
 4. Confirmar o ato de publicar com o Creator (resumo curto — recurso, versão, cenário)
-5. Executar a publicação via a tool `publish` do servidor MCP `amflow`
+5. Executar a publicação via a tool `publish` do servidor MCP `amflow-builder`
 6. Atualizar o frontmatter local com os dados retornados pelo Hub
 7. Exibir sumário final
 
@@ -76,7 +76,7 @@ Quando invocado:
 
 ### 0. Autenticação (obrigatória)
 
-Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow`.
+Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → sessão válida; prossiga. Com sessão já ativa, o `me` responde direto sem novo login.
 - Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não invoque o reviewer nem chame nenhuma tool de publicação. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reinvocar.

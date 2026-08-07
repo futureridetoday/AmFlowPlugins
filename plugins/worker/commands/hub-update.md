@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-worker:hub-update
 
-Aplica atualizações nos recursos instalados em `~/.claude/`, após confirmação do usuário. Atua apenas sobre `update_available` — recursos `unlicensed` são exibidos com aviso, mas nunca atualizados nem removidos. Usa as tools `check_updates` e `update` do servidor MCP `amflow`.
+Aplica atualizações nos recursos instalados em `~/.claude/`, após confirmação do usuário. Atua apenas sobre `update_available` — recursos `unlicensed` são exibidos com aviso, mas nunca atualizados nem removidos. Usa as tools `check_updates` e `update` do servidor MCP `amflow-worker`.
 
 ## Processo
 
