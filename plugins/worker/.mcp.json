@@ -2,7 +2,7 @@
   "mcpServers": {
     "amflow-worker": {
       "type": "http",
-      "url": "https://dev.amflow.work/mcp",
+      "url": "https://amflow.work/mcp",
       "note": "Conector oficial do Hub AmFlow para consumo de recursos — instalar, atualizar e verificar licenças do que você adquiriu. Usa OAuth — no install do plugin (ou na 1ª conexão) você autoriza o acesso à sua conta AmFlow."
     }
   }
