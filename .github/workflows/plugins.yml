@@ -28,3 +28,6 @@ jobs:
               head -1 "$f" | grep -q '^---$' || { echo "sem frontmatter: $f" >&2; exit 1; }
             done
           fi
+
+      - name: Verificar superfície dos plugins
+        run: python3 scripts/check-surface.py
