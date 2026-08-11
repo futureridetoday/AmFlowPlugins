@@ -62,7 +62,7 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
    install({ type: "<type>", name: "<name>", scope: "project" })
    ```
 
-   - Erro de licença ("Recurso não encontrado."/"Licença ativa necessária...") → encerre exibindo a mensagem retornada pela tool, complementando com **"Adquira em: `https://dev.amflow.work/resources/<type>/<name>`"** quando for falta de licença.
+   - Erro de licença ("Recurso não encontrado."/"Licença ativa necessária...") → encerre exibindo a mensagem retornada pela tool.
    - Erro de dependência bloqueada ("Dependências bloqueadas — ...") → encerre exibindo a mensagem — já lista quais dependências e por quê (sem licença ou não encontradas no Hub).
    - Sucesso → prossiga com `{name, type, version, files, dependencies}`.
 

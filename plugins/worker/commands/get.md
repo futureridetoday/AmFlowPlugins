@@ -41,7 +41,7 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
    install({ type: "<type>", name: "<name>", scope: "global" })
    ```
 
-   - Erro de licença → encerre exibindo a mensagem retornada pela tool, complementando com **"Adquira em: `https://dev.amflow.work/resources/<type>/<name>`"** quando for falta de licença.
+   - Erro de licença → encerre exibindo a mensagem retornada pela tool.
    - Erro de dependência bloqueada → encerre exibindo a mensagem retornada.
    - Sucesso → prossiga com `{name, type, version, files, dependencies}`.
 
