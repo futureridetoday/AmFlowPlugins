@@ -3,8 +3,8 @@
 name: build
 type: command
 project: AmFlow
-description: Cria um novo recurso (skill, agent, hook, command, plugin ou workflow) via survey guiado e template
-tags: [build, resource, scaffold, creator, template]
+description: Cria um novo recurso (skill, agent, hook, command, plugin, workflow ou module) via survey guiado e template
+tags: [build, resource, scaffold, creator, template, module]
 
 # history
 author: Bortoli
@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-builder:build
 
-Cria um novo recurso AmFlow via survey guiado e template. Tipos suportados: `skill`, `agent`, `hook`, `command`, `plugin`, `workflow`.
+Cria um novo recurso AmFlow via survey guiado e template. Tipos suportados: `skill`, `agent`, `hook`, `command`, `plugin`, `workflow`, `module`.
 
 ## Fase 0 — Autenticação (obrigatória)
 
@@ -54,6 +54,9 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | `command` | fluxo de execução invocado por /comando |
    | `plugin` | pacote de skills, agents, hooks e commands |
    | `workflow` | processo automatizado com múltiplos agents e condições de transição |
+   | `module` | capacidade reusável que skills instalam — o usuário nunca a invoca |
+
+   Fronteira entre `skill` e `module`: **skill é o que o usuário invoca; módulo é o que a skill usa e o usuário nunca vê.** Na dúvida, pergunte quem dispara — se a resposta for "a skill", é módulo.
 
 ## Fase 2 — Survey por tipo
 
@@ -127,6 +130,15 @@ Steps: d1 → d2 → intencao → intencao_revisao → [intencao_refinada] → n
 - d1 e d2: idênticos a Skill.
 - intencao: preamble *"Descreva o problema que este plugin resolve — quais recursos ele agrupa e qual valor entrega como conjunto."*
 
+### Module
+
+Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 — módulo não é recurso de vertical nem produz output próprio; quem entrega ao usuário é a skill que o hospeda.
+
+1. **d3 — Descoberta da capacidade:** "Que capacidade este módulo entrega à skill que o adotar?", "Que parte é código determinístico e que parte exige julgamento do agente?", "Ele precisa de configuração diferente por skill?", "Ele persiste algum estado?". Encerrar quando a fronteira código/julgamento estiver clara.
+2. **intencao:** preamble *"Descreva a capacidade como quem vai lê-la é o agente de outra skill, que não conhece este módulo."*
+3. **intencao_revisao**, **tags** — mesmo fluxo de Skill.
+4. **nome:** antes de aceitar, varrer `<raiz-de-recursos>/skills/` e `<raiz-de-recursos>/modules/`. O espaço de nomes é compartilhado — um nome é skill **ou** módulo, nunca ambos. Colisão → rejeitar e pedir outro.
+
 ### Workflow
 
 1. **nome:** texto livre em kebab-case. Define `.claude/agents/<nome>-workflow.md` e `.claude/agents/<nome>-workflow.mmd`.
@@ -144,6 +156,7 @@ Steps: d1 → d2 → intencao → intencao_revisao → [intencao_refinada] → n
 | `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
 | `plugin` | `.claude/plugins/<nome>.json` | `${CLAUDE_PLUGIN_ROOT}/templates/plugins/plugin.json` |
 | `workflow` | `.claude/agents/<nome>-workflow.md` + `.claude/agents/<nome>-workflow.mmd` | `${CLAUDE_PLUGIN_ROOT}/templates/workflows/workflow-agent.md` |
+| `module` | `.claude/modules/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/modules/default/` (copiar diretório inteiro) |
 
 Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse → `post-tool-use.sh` | Stop → `stop.sh` | SubagentStop → `subagent-stop.sh` | SessionStart → `session-start.sh`.
 
@@ -159,15 +172,17 @@ Recurso já existe → encerrar: **"Recurso já existe: <caminho> — edite-o di
 | `description` | `intencao` |
 | `tags` | selecionados |
 | `status` | `draft` |
-| `d1` / `d2` | coletados (ausentes em hook e workflow) |
-| `d4` | coletado ou `action` para hook (ausente em plugin e workflow) |
+| `d1` / `d2` | coletados (ausentes em hook, workflow e module) |
+| `d4` | coletado ou `action` para hook (ausente em plugin, workflow e module) |
 | `created` | `date +%Y-%m-%d` |
 | `project` | `name` lido do `.claude/CLAUDE.md` |
 | `source` | `local` |
 | `author` | `git config user.name` (omitir se vazio) |
 | `author_id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
 
-Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`, `hook-name`, `plugin-name`) pelo `nome`.
+Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`, `hook-name`, `plugin-name`, `module-name`) pelo `nome`.
+
+**Module:** a tabela de frontmatter acima **não se aplica** — módulo não tem frontmatter. Sua identidade vive no `module.json`, com dois campos apenas: `name` (igual ao do diretório) e `version` (inicial `1.0.0`). O `MODULE.md` é prosa, sem bloco YAML. Remover `config.example.json` do módulo gerado quando o survey indicou que ele não é configurável.
 
 **Workflow:** preencher `## Definição` com nodes e edges extraídos de `visao_geral`. Gerar `<nome>-workflow.mmd` como `flowchart TD` — nós `type: human` com prefixo `👤`, back-edges com sufixo `↻` na label da aresta.
 

@@ -1,0 +1,4 @@
+{
+  "_comentario": "Remova este arquivo se o módulo não é configurável. Ele é a forma esperada de config/<nome>.json na skill que adotar o módulo — a instalação copia este exemplo para lá uma única vez, e nunca o sobrescreve depois. Documente cada chave em MODULE.md, seção Configuração.",
+  "exemplo_de_chave": "valor padrão"
+}

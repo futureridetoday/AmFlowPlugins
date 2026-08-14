@@ -10,6 +10,11 @@ license: ""                # ex: MIT | Apache-2.0 | Proprietary
 compatibility: ""          # dependências de runtime: agente, pacotes de sistema, rede (máx 500 chars)
 when_to_use: ""            # contexto adicional de ativação — complementa description
 
+# módulos instalados — uma chave por módulo, escrita pelo /amflow-builder:install-module.
+# Não editar à mão: é daqui que a propagação descobre quais skills consomem cada módulo.
+# metadata:
+#   amflow.module.task-flow: "1.2.0"
+
 # controle de invocação
 disable-model-invocation: false   # true = só usuário pode invocar via /skill-name
 user-invocable: true              # false = oculta do menu /; só Claude invoca
@@ -123,6 +128,17 @@ price: 0                   # centavos — usado na publicação; 0 = gratuito (d
      - stdout para dados, stderr para logs — Claude lê stdout; misturar logs polui o contexto
      - Idempotente: "criar se não existir" em vez de "criar e falhar em duplicata"
 -->
+
+<!-- Módulos instalados. A região abaixo é escrita pelo /amflow-builder:install-module —
+     não editar à mão: o conteúdo entre os marcadores é substituído a cada instalação e a
+     cada propagação de versão. Fica vazia enquanto a skill não usa módulo nenhum, e nesse
+     caso não renderiza nada.
+
+     Cada linha aponta direto para o MODULE.md daquele módulo, pelo caminho completo. Nunca
+     substituir as linhas por "veja modules/" — o agente precisa do ponteiro, não do convite
+     a navegar. -->
+<!-- modules:start -->
+<!-- modules:end -->
 
 ## Instruções
 
