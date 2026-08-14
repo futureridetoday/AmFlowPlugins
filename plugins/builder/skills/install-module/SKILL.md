@@ -46,7 +46,11 @@ Instala um módulo numa skill, e propaga uma nova versão do módulo para todas 
 
 ### Raiz de recursos
 
-É o diretório que contém `skills/`. Partindo da skill alvo, sobe-se dois níveis: `<raiz>/skills/<skill>/` → `<raiz>`.
+É o diretório que contém `skills/`. Partindo da skill alvo, sobe-se **dois níveis**: em
+`<raiz>/skills/<skill>/`, o pai da skill é `skills/` e o avô é a raiz.
+
+Duas checagens, e as duas precisam passar: **o diretório-pai da skill chama-se `skills/`**, e
+`<raiz>/modules/` existe. Falhando qualquer uma, o caminho está errado — pare e informe.
 
 | Topologia | Raiz de recursos |
 |---|---|
@@ -54,7 +58,7 @@ Instala um módulo numa skill, e propaga uma nova versão do módulo para todas 
 | Plugin | `plugins/<plugin>/` |
 | Repositório de skills | a raiz do repositório |
 
-Não há configuração a ler nem variável de ambiente envolvida. Se o diretório em que a skill vive não tem uma irmã `skills/` acima, o caminho está errado — pare e informe.
+Não há configuração a ler nem variável de ambiente envolvida.
 
 ### Origem e cópia
 
@@ -93,8 +97,13 @@ A chave é `amflow.module.<nome>` e o valor é a versão, string entre aspas. É
 
 1. Resolver a raiz de recursos a partir da skill alvo, e localizar a origem em `<raiz-de-recursos>/modules/<nome>/`. Origem inexistente → encerrar: `Módulo não encontrado: <caminho> — crie-o com /amflow-builder:build, tipo module`.
 2. Ler `module.json` da origem → `name`, `version` e `description`. `name` diferente do nome do diretório → encerrar e informar a divergência. `version` ou `description` ausente → encerrar: os três são obrigatórios, e os três são lidos para agir.
-3. Copiar a árvore da origem para `<skill>/modules/<nome>/`, `tests/` incluído. Se o diretório de destino já existe, apagá-lo antes — a cópia é gerada, e mesclar produziria um estado que não corresponde a versão nenhuma.
-   **Excluir artefato gerado:** `__pycache__/`, `*.pyc`, `*.pyo`, `.DS_Store`. Não são conteúdo do módulo, diferem entre máquinas, e copiá-los faria duas instalações da mesma versão produzirem árvores diferentes.
+   **Normalizar a `description`:** se ela não terminar em `.`, `!` ou `?`, acrescentar um ponto. Ela é emendada à frase `Como usar:` no passo 5, e sem pontuação as duas colam numa frase só.
+3. Copiar a árvore da origem para `<skill>/modules/<nome>/`, `tests/` incluído. Se o diretório de destino já existe, apagá-lo antes — a cópia é gerada, e mesclar produziria um estado que não corresponde a versão nenhuma. Criar os diretórios intermediários que faltarem.
+   **Excluir da cópia:**
+   - `__pycache__/`, `*.pyc`, `*.pyo`, `.DS_Store` — artefato gerado. Difere entre máquinas, e copiá-lo faria duas instalações da mesma versão produzirem árvores diferentes.
+   - `config.example.json` — ele **vira** `<skill>/config/<nome>.json` no passo 4, que é da skill e editável. Mantê-lo também dentro de `modules/<nome>/`, que é descartável, poria o mesmo conteúdo em dois caminhos com donos opostos — e é justamente a confusão de propriedade que os *Invariantes* existem para impedir.
+
+   `module.json` **fica** na cópia, apesar de repetir a versão que vai para o `metadata`. Os dois não podem divergir, porque a cópia inteira é substituída a cada propagação; e tê-lo ali permite saber que versão está instalada sem abrir o `SKILL.md`.
 4. Se a origem tem `config.example.json` **e** `<skill>/config/<nome>.json` **não** existe, copiar o exemplo para lá — **criando o diretório `config/` se ele não existir**. Se o arquivo já existe, não tocar.
 5. Escrever a região `modules` do `SKILL.md`. A região inteira é substituída, e o que fica dentro dela é:
 
@@ -108,13 +117,13 @@ A chave é `amflow.module.<nome>` e o valor é a versão, string entre aspas. É
 
    - **O cabeçalho `## Módulos instalados` fica dentro da região**, e é reescrito junto. Fora dela, ele sobreviveria a uma remoção de módulo e deixaria um título órfão.
    - **A frase é a `description` do `module.json`, copiada literalmente** — nunca redigida pelo agente. Redação livre faz duas instalações do mesmo módulo produzirem linhas diferentes, e faz cada propagação reescrever a linha sem que nada tenha mudado.
-   - Uma linha por módulo, **ordenadas alfabeticamente pelo nome**. Preservar as linhas dos outros módulos.
+   - Uma linha por módulo, **ordenadas alfabeticamente pelo nome**. A região é substituída por inteiro, então **ler as linhas que já estão lá antes de escrever** e reemiti-las junto com a nova — trocando apenas a do módulo que está sendo instalado. Linha preexistente fora do formato → preservar como está e relatar ao final; nunca descartar linha que não se soube ler.
    - **Se a região não existe no `SKILL.md`** — o caso de toda primeira instalação —, criá-la **no fim do arquivo**, precedida de uma linha em branco. Nunca no meio: a posição precisa ser previsível para que a região seja localizável sem varrer o documento, e o fim é a única posição que não depende da estrutura da skill.
 6. Escrever `amflow.module.<nome>: "<versão>"` em `metadata`, no frontmatter:
    - Bloco `metadata:` já ativo → acrescentar ou atualizar a chave dentro dele.
    - Só o exemplo comentado do template (`# metadata:` / `#   amflow.module....`) → **substituí-lo no lugar** pelo bloco real. Nunca deixar os dois: um bloco ativo com o exemplo comentado logo abaixo confunde quem for editar depois, e convida a mexer no lugar errado.
    - Nem um nem outro — o caso de qualquer skill que não venha do template atual → criar o bloco **na última linha do frontmatter**, antes do `---` de fechamento, separado do que vem acima por uma linha em branco. Como o fim da região, é a única posição que não depende de a skill ter alguma seção específica.
-7. Relatar: arquivos escritos, versão instalada, e se `config/<nome>.json` foi criado ou preservado.
+7. Relatar: arquivos escritos, versão instalada, e o estado do `config/<nome>.json` — **criado** (a partir do exemplo), **preservado** (já existia), ou **não se aplica** (a origem não tem `config.example.json`). São os mesmos três estados do bloco *Output*.
 
 > **O passo 4 é a única assimetria entre instalar e propagar, e ela vive aqui.** Sem a guarda "não tocar se já existe", propagar apagaria a configuração que o Creator preencheu — e propagar é literalmente repetir esta sequência. Não escreva a exceção do lado do propagar; ela não existe lá.
 
