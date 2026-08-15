@@ -97,14 +97,21 @@ A chave é `amflow.module.<nome>` e o valor é a versão, string entre aspas. É
 
 1. Resolver a raiz de recursos a partir da skill alvo, e localizar a origem em `<raiz-de-recursos>/modules/<nome>/`. Origem inexistente → encerrar: `Módulo não encontrado: <caminho> — crie-o com /amflow-builder:build, tipo module`.
 2. Ler `module.json` da origem → `name`, `version` e `description`. `name` diferente do nome do diretório → encerrar e informar a divergência. `version` ou `description` ausente → encerrar: os três são obrigatórios, e os três são lidos para agir.
-   **Normalizar a `description`:** se ela não terminar em `.`, `!` ou `?`, acrescentar um ponto. Ela é emendada à frase `Como usar:` no passo 5, e sem pontuação as duas colam numa frase só.
+   **`description` sem pontuação final** (`.`, `!` ou `?`) → encerrar: `description do módulo <nome> não termina em pontuação — corrija o module.json na origem`. Ela é emendada à frase `Como usar:` no passo 5, e sem pontuação as duas colam numa frase só. **Recusar em vez de normalizar** é deliberado: normalizar em memória faria a linha do `SKILL.md` deixar de ser cópia literal do `module.json` instalado ao lado, e as duas regras não podem valer ao mesmo tempo.
 3. Copiar a árvore da origem para `<skill>/modules/<nome>/`, `tests/` incluído. Se o diretório de destino já existe, apagá-lo antes — a cópia é gerada, e mesclar produziria um estado que não corresponde a versão nenhuma. Criar os diretórios intermediários que faltarem.
    **Excluir da cópia:**
    - `__pycache__/`, `*.pyc`, `*.pyo`, `.DS_Store` — artefato gerado. Difere entre máquinas, e copiá-lo faria duas instalações da mesma versão produzirem árvores diferentes.
    - `config.example.json` — ele **vira** `<skill>/config/<nome>.json` no passo 4, que é da skill e editável. Mantê-lo também dentro de `modules/<nome>/`, que é descartável, poria o mesmo conteúdo em dois caminhos com donos opostos — e é justamente a confusão de propriedade que os *Invariantes* existem para impedir.
 
    `module.json` **fica** na cópia, apesar de repetir a versão que vai para o `metadata`. Os dois não podem divergir, porque a cópia inteira é substituída a cada propagação; e tê-lo ali permite saber que versão está instalada sem abrir o `SKILL.md`.
+
+3b. **Verificar a cópia antes de seguir.** Comparar conteúdo, arquivo a arquivo, entre a origem e o destino, desconsiderando as exclusões do passo 3. Divergência → refazer a cópia e comparar de novo; persistindo, encerrar sem tocar no `SKILL.md`.
+
+   > **Este passo existe por um quase-acidente medido.** Numa execução real, `rsync -a` **pulou o `module.json`** porque origem e destino tinham o mesmo tamanho e a mesma mtime — a heurística padrão da ferramenta. A propagação teria terminado com o `SKILL.md` anunciando a versão nova e o `module.json` instalado ainda na antiga, em silêncio. O `module.json` é o arquivo mais exposto a isso: entre duas versões, muitas vezes a única mudança é um dígito, e o tamanho não muda. Comparar por conteúdo, nunca por tamanho e data — `rsync` precisa de `--checksum`, e qualquer cópia precisa da conferência.
+
 4. Se a origem tem `config.example.json` **e** `<skill>/config/<nome>.json` **não** existe, copiar o exemplo para lá — **criando o diretório `config/` se ele não existir**. Se o arquivo já existe, não tocar.
+
+4b. **Se o config já existia, comparar as chaves** do `config.example.json` da origem com as do config da skill, **sem alterar nada**. Chave presente no exemplo e ausente no config → relatar como `configuração possivelmente incompleta`; chave no config e ausente no exemplo → relatar como `configuração com chave que o módulo não declara mais`. Não é erro e não bloqueia: config divergente do exemplo costuma ser exatamente o que a skill quis. Mas uma versão nova que passe a exigir uma chave deixaria o consumidor quebrado com a propagação reportando "config preservada" como se estivesse tudo bem — e é a única forma de o `Creator` saber sem abrir os dois arquivos.
 5. Escrever a região `modules` do `SKILL.md`. A região inteira é substituída, e o que fica dentro dela é:
 
    ```markdown
@@ -129,10 +136,14 @@ A chave é `amflow.module.<nome>` e o valor é a versão, string entre aspas. É
 
 ### Propagar `<módulo>`
 
-1. Confirmar que a origem tem a versão nova — ler `version` do `module.json`. Se o Creator ainda não subiu a versão, perguntar antes de seguir: propagar sem mudar a versão deixa os consumidores declarando uma versão que já não descreve o conteúdo.
-2. Achar os consumidores: procurar `amflow.module.<nome>` em todo `SKILL.md` sob `<raiz-de-recursos>/skills/`.
-3. Para cada consumidor, executar a sequência de **Instalar** inteira, sem exceção e sem pular passo.
-4. Relatar por skill: versão anterior → versão nova, e se a configuração foi preservada.
+1. Achar os consumidores: procurar `amflow.module.<nome>` em todo `SKILL.md` sob `<raiz-de-recursos>/skills/`. A versão que cada um declara na chave é a versão instalada nele.
+2. Comparar a `version` do `module.json` da origem com a de cada consumidor. **Todos já na versão da origem** → não há o que propagar; dizer isso e encerrar. Origem com versão **anterior** à de algum consumidor → parar e informar: é sinal de que a origem foi revertida ou de que alguém editou o `metadata` à mão.
+
+   > A ordem importa e já esteve errada aqui: este passo era o primeiro e mandava "confirmar que a origem tem a versão nova" lendo só o `module.json` da origem. Lendo só a origem não há o que confirmar — *nova* é relativo ao que os consumidores declaram, e eles só existem depois da busca.
+
+3. **Procurar árvore órfã:** diretório `<skill>/modules/<nome>/` em skill que **não** tem a chave `amflow.module.<nome>`. Não é consumidora pela definição do passo 1, então a propagação não a alcança e ela fica congelada para sempre. Relatar cada uma ao Creator; não corrigir por conta própria — instalar ali é decisão dele, não consequência de uma propagação.
+4. Para cada consumidor, executar a sequência de **Instalar** inteira, sem exceção e sem pular passo.
+5. Relatar por skill: versão anterior → versão nova, o estado do config nos mesmos três valores do passo 7 de *Instalar*, e qualquer divergência de chave que o passo 4b tenha encontrado.
 
 Nenhum consumidor encontrado → dizer isso explicitamente, e não tratar como erro. Módulo sem consumidor é estado válido.
 
@@ -143,6 +154,8 @@ Nenhum consumidor encontrado → dizer isso explicitamente, e não tratar como e
 - **Fora do diretório do módulo, escrever só em dois lugares:** a região `modules` do `SKILL.md` e a chave em `metadata`. Nenhuma outra linha da skill é tocada.
 - **Ponteiro direto, um salto.** Cada linha da região aponta para o `MODULE.md` daquele módulo pelo caminho completo. Nunca substituir as linhas por "veja `modules/`" — o agente que ler a skill precisa do caminho, não do convite a navegar.
 - **Instalar e propagar compartilham a sequência.** Regra nova entra nos dois, ou não entra.
+- **Não tocar `version` nem `updated` da skill.** Instalar módulo não versiona a skill: quem decide que a skill mudou de versão é quem a mantém, e uma instalação que mexesse nesses campos tiraria essa decisão dele. Vale mesmo parecendo que "a skill mudou" — mudou o que o módulo trouxe, não o que a skill é.
+- **Não rodar a suíte do módulo depois de copiar.** A cópia é verificada contra a origem no passo 3b, e é isso que a instalação promete. A suíte pode ter runner próprio, dependência externa e tempo de execução que a instalação não controla — rodá-la faria a instalação falhar por motivo que não é dela.
 
 ## Output
 
@@ -155,14 +168,20 @@ Instalado: <nome>@<versão> em <skill>
   <skill>/SKILL.md                 região modules e metadata atualizados
 ```
 
-Ao propagar, uma linha por consumidor, mais o total:
+Ao propagar, uma linha por consumidor, mais o total. O estado do config usa os mesmos três valores de *Instalar*, e a divergência de chave do passo 4b aparece quando houver:
 
 ```
 Propagado: <nome> 1.2.0 → 1.3.0
   skills/audience-segmentation     ok · config preservada
-  skills/report-builder            ok · config preservada
-2 consumidores atualizados
+  skills/report-builder            ok · config preservada · 1 chave nova no exemplo: retention_days
+  skills/onboarding                ok · config criado
+3 consumidores atualizados
+
+Árvore órfã — tem modules/<nome>/ sem a chave em metadata, e a propagação não a alcança:
+  skills/legacy-report
 ```
+
+Caminhos são relativos à raiz de recursos, nos dois blocos.
 
 ## Restrições
 
