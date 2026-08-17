@@ -114,7 +114,7 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 | Tipo | Destino | Template fonte |
 |---|---|---|
 | `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/default/` (cópia de diretório) |
-| `agent` | `.claude/agents/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` |
+| `agent` | `.claude/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
 | `hook` | `.claude/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<evento>.sh` → `hook.sh` (chmod 755) |
 | `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
 | `plugin` | `.claude/plugins/<nome>.json` | `${CLAUDE_PLUGIN_ROOT}/templates/plugins/plugin.json` |
@@ -125,6 +125,12 @@ Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse
 
 Se template não encontrado → gerar arquivo com frontmatter completo e seções padrão do tipo inline.
 Se recurso já existe no destino → encerrar: `Recurso já existe: <caminho> — edite-o diretamente ou use /amflow-builder:publish para publicá-lo`
+
+**Documento de descrição.** Skill, agent e módulo nascem com um `[tipo]-description.md` na raiz da
+própria pasta — `skill-description.md`, `agent-description.md`, `module-description.md`. Em skill e
+módulo ele vem na cópia de diretório; em agent é copiado à parte, junto com o `<nome>.md`. É o
+documento que explica o recurso a quem não o conhece, e é **obrigatório para publicar no Hub**: recurso
+sem ele não passa no gate. Não preencher agora é aceitável; criar sem ele, não.
 
 **Frontmatter:**
 
@@ -153,6 +159,8 @@ Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`,
 
 Listar arquivos criados e sugerir próximos passos:
 - Editar o recurso (preencher o conteúdo específico)
+- Preencher o `[tipo]-description.md` — em skill, agent e módulo. Sem ele preenchido a publicação é
+  recusada, e é o texto que a página do Hub exibe a quem considera comprar
 - `/amflow-builder:publish` quando o recurso estiver pronto
 
 ## Restrições
