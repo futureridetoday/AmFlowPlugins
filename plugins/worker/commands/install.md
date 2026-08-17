@@ -50,7 +50,7 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
    | Tipo | Caminho |
    |---|---|
    | `skill` | `<projeto>/.claude/skills/<name>/` |
-   | `agent` | `<projeto>/.claude/agents/<name>.md` |
+   | `agent` | `<projeto>/.claude/agents/<name>/` — ou `<projeto>/.claude/agents/<name>.md`, em instalação anterior ao layout de diretório |
    | `hook` | `<projeto>/.claude/hooks/<name>/` |
    | `command` | `<projeto>/.claude/commands/<name>.md` |
 

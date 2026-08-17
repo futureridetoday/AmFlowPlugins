@@ -33,11 +33,13 @@ Verifica atualizações para os recursos instalados em `~/.claude/`. Não instal
 1. Colete os recursos instalados, lendo o frontmatter YAML de cada arquivo de recurso em `~/.claude/`:
 
    - Skills: `~/.claude/skills/*/SKILL.md`
-   - Agents: `~/.claude/agents/*.md`
+   - Agents: `~/.claude/agents/*/*.md` e `~/.claude/agents/*.md` — o primeiro é o layout de diretório,
+     o segundo cobre agent instalado antes dele
    - Commands: `~/.claude/commands/*.md`
    - Hooks: `~/.claude/hooks/*/*.md`
 
-   De cada frontmatter, extraia `name`, `type` e `version`. Ignore arquivos sem esses três campos. Recursos de outras fontes que não existam no Hub são omitidos da resposta automaticamente — incluí-los é inofensivo.
+   De cada frontmatter, extraia `name`, `type` e `version`. Ignore arquivos sem esses três campos —
+   é o que descarta sozinho o `[tipo]-description.md`, que é markdown puro e não tem frontmatter. Recursos de outras fontes que não existam no Hub são omitidos da resposta automaticamente — incluí-los é inofensivo.
 
    Se nenhum recurso for encontrado → informe **"Nenhum recurso AmFlow instalado."** e vá ao passo 4.
 
