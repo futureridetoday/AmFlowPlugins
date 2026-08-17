@@ -130,6 +130,8 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     - `local > prod` → respeitar versão local (bump manual do Creator)
     - `local < prod` → encerre: **"Versão local (<local>) é anterior à versão em prod (<prod>). Atualize o frontmatter antes de publicar."**
 
+    Houve bump em `skill` ou `agent` → atualizar a linha `Versão X.Y.Z` do `[tipo]-description.md` **na cópia a publicar**, para a versão submetida. O Hub compara as duas e recusa o bundle quando divergem.
+
 15. Exibir preview do conteúdo limpo. Cenário B: exibir também o resumo das seções incluídas.
 
 16. **Confirmação humana (M10) — obrigatória, antes de chamar a tool.** Perguntar **"Confirmar"** / **"Cancelar"**. A tool `publish` muta dados reais no Hub no instante em que é chamada — a confirmação precisa acontecer ANTES da chamada, não depois. Cancelar encerra sem publicar.
@@ -151,11 +153,13 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     })
     ```
 
-    Arquivos por tipo:
-    - `skill` → `SKILL.md`
-    - `agent` → `agent.md` (+ `<nome>-workflow.mmd` se existir, para workflow agents)
+    Arquivos por tipo — cada `path` espelha o layout do recurso em disco, sob `.claude/`:
+    - `skill` → `SKILL.md` + `skill-description.md`
+    - `agent` → `<nome>.md` + `agent-description.md` (+ `<nome>-workflow.mmd` se existir, para workflow agents)
     - `hook` → `hook.json` + `hook.sh`
     - `command` → `command.md`
+
+    O `[tipo]-description.md` é **obrigatório** para `skill` e `agent`: o Hub recusa o bundle sem ele, e recusa também quando a versão declarada nele diverge da versão submetida. `hook` e `command` ainda não entram na norma.
 
 18. Tratar resposta:
     - Sucesso → `{ hub_id, submission_id, status: "pending_review" }`. Exibir `submission_id`.
@@ -172,7 +176,9 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     | `source` | `hub/<tipo>/<nome>@<versão>` |
     | `status` | `published` |
 
-    Arquivo por tipo: `skill` → `SKILL.md` | `agent` → `agent.md` | `hook` → `hook.json` | `command` → `command.md`
+    Arquivo por tipo: `skill` → `SKILL.md` | `agent` → `<nome>.md` | `hook` → `hook.json` | `command` → `command.md`
+
+    Em `skill` e `agent`, atualizar também a linha `Versão X.Y.Z` do `[tipo]-description.md` local para a versão submetida — o arquivo não tem frontmatter, e é essa linha que o gate compara na próxima publicação.
 
 20. Exibir sumário: `submission_id` e mensagem de recurso aguardando revisão do Manager.
 
