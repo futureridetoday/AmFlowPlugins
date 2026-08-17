@@ -24,7 +24,12 @@ jobs:
             for f in plugins/worker/.claude-plugin/plugin.json plugins/builder/.claude-plugin/plugin.json .claude-plugin/marketplace.json; do
               node -e "JSON.parse(require('fs').readFileSync('$f'))"
             done
-            for f in plugins/worker/commands/*.md plugins/worker/skills/*/SKILL.md plugins/builder/commands/*.md plugins/builder/skills/*/SKILL.md plugins/builder/agents/*.md; do
+            # Agent é diretório (`agents/<nome>/<nome>.md`), e ao lado dele vive o
+            # `agent-description.md` — markdown puro por norma, sem frontmatter a
+            # conferir. O glob antigo (`agents/*.md`) não casava nada no layout novo,
+            # e glob vazio aqui derruba o passo inteiro.
+            for f in plugins/worker/commands/*.md plugins/worker/skills/*/SKILL.md plugins/builder/commands/*.md plugins/builder/skills/*/SKILL.md plugins/builder/agents/*/*.md; do
+              case "$f" in *-description.md) continue ;; esac
               head -1 "$f" | grep -q '^---$' || { echo "sem frontmatter: $f" >&2; exit 1; }
             done
           fi
