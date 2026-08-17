@@ -76,9 +76,13 @@ Quando invocado:
 
 2. Localizar o arquivo principal do recurso:
    - `skill` → `.claude/skills/<name>/SKILL.md`
-   - `agent` → `.claude/agents/<name>.md`
+   - `agent` → `.claude/agents/<name>/<name>.md`, com fallback para `.claude/agents/<name>.md` em agent
+     criado antes do layout de diretório
    - `hook` → `.claude/hooks/<name>/hook.json`
    - `command` → `.claude/commands/<name>.md`
+
+   O arquivo principal é o manifesto do recurso. O `[tipo]-description.md` ao lado é documentação para
+   o leitor humano e **não** é o arquivo a revisar aqui.
 
    Arquivo não encontrado → encerrar: **"Recurso não encontrado: `<path>`. Verifique o nome e o tipo."**
 
