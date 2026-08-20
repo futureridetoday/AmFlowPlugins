@@ -39,15 +39,19 @@ distinguir uma da outra.
 
 ## Como usar
 
-Basta perguntar, em linguagem natural, citando o recurso:
+Pelo comando, que é o caminho confiável:
 
-> Como usar a skill `primal-branding`?
+> `/amflow-builder:describe como usar a skill primal-branding`
 
-> O agent `reviewer` decide sozinho ou pede confirmação?
+> `/amflow-builder:describe o agent reviewer decide sozinho ou pede confirmação?`
 
-> Quais são os limites do módulo `task-flow`?
+> `/amflow-builder:describe quais são os limites do módulo task-flow`
 
 Não é preciso dizer o tipo — sem ele, a skill procura nos três e pergunta qual é, se houver ambiguidade.
+Sem argumento, ela lista os recursos do projeto e pergunta sobre qual você quer saber.
+
+Perguntar em linguagem natural, sem o comando, **costuma não acionar esta skill** — o Claude tende a
+responder lendo o arquivo de instrução do recurso, que responde outra coisa. Ver *Limites*.
 
 ## Exemplos de uso
 
@@ -92,3 +96,7 @@ o arquivo e escolher de onde tirar a resposta.
   respondida a partir do próprio arquivo, com o aviso de que não vem de documento de descrição.
 - **Não inventa o que falta.** Seção ausente ou vazia é reportada como tal.
 - **Não edita nada.** Criar ou corrigir um documento é ação separada, e só acontece se o Creator pedir.
+- **Não é acionada de forma confiável por pergunta solta.** Medido em 2026-08-20, em duas rodadas: com
+  a pergunta *"como usar a skill X?"* sem o comando, o Claude respondeu a partir do `SKILL.md` do
+  recurso, não daqui. A causa provável é que ele já tem o arquivo à mão e responder direto parece
+  bastar. **Use o comando** quando quiser a resposta do documento.
