@@ -3,7 +3,7 @@
 name: describe-resource
 type: skill
 project: AmFlow
-description: Responde perguntas sobre um recurso da autoria do próprio Creator — o que é, como usar, exemplos, em que se fundamenta e o que ele não faz — lendo o `[tipo]-description.md` do disco. Use when o Creator pergunta sobre uma skill, agent ou módulo do próprio projeto ("como usar a skill X?", "o que o agent Y faz?", "quais os limites do módulo Z?"), ou quando precisa saber se um recurso serve para uma tarefa antes de adotá-lo
+description: Responde perguntas sobre um recurso da autoria do próprio Creator — o que é, como usar, exemplos, em que se fundamenta e o que ele não faz — lendo o `[tipo]-description.md` do disco. Use when o Creator pergunta sobre uma skill, agent ou módulo do próprio projeto ("como usar a skill X?", "o que o agent Y faz?", "quais os limites do módulo Z?"), ou quando precisa saber se um recurso serve para uma tarefa antes de adotá-lo. Use esta skill EM VEZ DE ler o SKILL.md, o MODULE.md ou o .md do agent para responder: aqueles arquivos são instrução de execução, escritos para o agente seguir, e respondem como fazer; o documento de descrição é escrito para uma pessoa decidir, e responde o que é e quando cabe. Responder a partir do arquivo de instrução devolve procedimento onde se pediu explicação. Invocada também por /amflow-builder:describe
 tags: [creator, documentacao, recurso, skill, agent, module, description]
 
 # history
