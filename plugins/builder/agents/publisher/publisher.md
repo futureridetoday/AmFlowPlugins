@@ -90,8 +90,8 @@ Identificar `type` e `name` a partir do contexto. Se não estiver claro, escanea
 ```bash
 # Skills
 find .claude/skills -name "SKILL.md" 2>/dev/null
-# Agents
-find .claude/agents -name "*.md" ! -name "*-workflow.md" 2>/dev/null
+# Agents — `*-description.md` é a documentação do recurso, não um agent
+find .claude/agents -name "*.md" ! -name "*-workflow.md" ! -name "*-description.md" 2>/dev/null
 # Hooks
 find .claude/hooks -name "hook.json" 2>/dev/null
 # Commands
