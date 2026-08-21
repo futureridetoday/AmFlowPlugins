@@ -151,7 +151,7 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 | Tipo | Destino | Template |
 |---|---|---|
 | `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/default/` (copiar diretório inteiro) |
-| `agent` | `.claude/agents/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` |
+| `agent` | `.claude/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
 | `hook` | `.claude/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<script>.sh` → `hook.sh` (chmod 755) |
 | `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
 | `plugin` | `.claude/plugins/<nome>.json` | `${CLAUDE_PLUGIN_ROOT}/templates/plugins/plugin.json` |
@@ -159,6 +159,12 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 | `module` | `.claude/modules/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/modules/default/` (copiar diretório inteiro) |
 
 Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse → `post-tool-use.sh` | Stop → `stop.sh` | SubagentStop → `subagent-stop.sh` | SessionStart → `session-start.sh`.
+
+**Documento de descrição.** Skill, agent e módulo nascem com um `[tipo]-description.md` na raiz da
+própria pasta. Em skill e módulo ele vem na cópia de diretório; em agent é copiado à parte. É obrigatório
+para publicar no Hub. O bloco de comentários do template é orientação de preenchimento e existe para
+ser lido e removido — deixá-lo não reprova no gate, que ignora comentário HTML, mas o documento fica
+mais difícil de ler para a próxima pessoa.
 
 Template não encontrado → gerar arquivo com frontmatter completo e seções padrão do tipo.
 Recurso já existe → encerrar: **"Recurso já existe: <caminho> — edite-o diretamente ou use /amflow-builder:publish para publicá-lo."**
