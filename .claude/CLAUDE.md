@@ -3,8 +3,8 @@
 ## Visão geral
 
 Catálogo público dos plugins do AmFlow para o Claude Code — a fonte que `/plugin marketplace add`
-lê. O desenvolvimento do produto AmFlow acontece em outro repositório, privado. Aqui vive só o
-necessário para instalar e para trabalhar nos dois plugins: `amflow-worker` e `amflow-builder`.
+lê. Aqui vive só o necessário para publicar, instalar e atualizar o marketplace e os dois plugins:
+`amflow-worker` e `amflow-builder`.
 
 ## Mapa do repositório
 
@@ -13,9 +13,8 @@ necessário para instalar e para trabalhar nos dois plugins: `amflow-worker` e `
 | `.claude-plugin/marketplace.json` | Catálogo — declara as duas entradas de plugin |
 | `plugins/worker/` | Plugin `amflow-worker` |
 | `plugins/builder/` | Plugin `amflow-builder` |
-| `.claude/` | Workspace deste repositório — instruções e a skill `dev-units` |
-| `docs/plan/` | Planos e unidades de desenvolvimento deste repositório |
-| `scripts/test-python.sh` | Runner dos testes Python daqui |
+| `.github/workflows/plugins.yml` | Guard de publicação — valida manifestos e frontmatter |
+| `scripts/check-surface.py` | Guard de publicação — separação de superfícies MCP |
 
 ## Formato do `marketplace.json`
 
@@ -33,27 +32,17 @@ deste repositório, nunca uma URL externa.
 - Este repositório é público. Nenhum arquivo aqui cita infraestrutura, documentação interna ou
   identificadores do repositório de desenvolvimento do AmFlow.
 
-## Trabalho novo
+## Este repositório não é onde se desenvolve
 
-Feature, correção ou plano novo segue o mesmo modelo do repositório de desenvolvimento: nasce em
-`docs/plan/_inbox/`, passa por revisão, aprovação humana, derivação em unidades e implementação uma
-unidade por vez. Invocar a skill `dev-units`; norma completa em
-[`docs/plan/system/modelo-dev-units.md`](../docs/plan/system/modelo-dev-units.md).
+É o pacote, não a oficina. Plano, correção, melhoria e evolução dos plugins acontecem no repositório
+de desenvolvimento do AmFlow, privado, e chegam aqui já decididos — como conteúdo de `plugins/` ou
+como entrada no catálogo.
 
-### Antes de editar a skill `dev-units` daqui — pare
+Isso vale inclusive para uma correção que parece pequena. Editar direto aqui produz uma versão que
+não existe do outro lado, e nada neste repositório avisa quando os dois divergem: não há teste, não
+há guard de paridade, não há CI que compare. Foi o argumento que aposentou o canal npm — manter dois
+artefatos que deveriam andar juntos produz deriva, e a deriva só aparece quando alguém depende da
+metade errada.
 
-Ela é **cópia**. A mesma skill existe no repositório de desenvolvimento do AmFlow, e as duas foram
-idênticas no dia em que esta chegou. Não há nada que avise quando deixarem de ser: nenhum teste, nenhum
-guard, nenhum CI compara as duas.
-
-Editar só um dos lados é como o projeto já falhou antes — foi o argumento que aposentou o canal npm:
-manter dois artefatos que deveriam andar juntos produz deriva, e a deriva só aparece quando alguém
-depende da metade errada.
-
-**Se você chegou aqui para editar a skill, a edição não é o próximo passo — a decisão é.** Escolher
-entre fonte única (submódulo git, ou instalar a skill publicada pelo próprio AmFlow) e assumir as duas
-cópias com um mecanismo que force a paridade. Só depois disso, editar.
-
-A skill copiada vem **sem a suíte de testes** de propósito: os testes dela são de integração contra o
-conteúdo do AmFlow — copiam arquivos de lá, lintam unidades que só existem lá — e nunca passariam
-aqui. Este repositório **consome** a skill; quem a desenvolve é o AmFlow.
+Os dois guards que rodam aqui — `plugins.yml` e `check-surface.py` — validam o que está prestes a ser
+publicado. Não substituem a revisão que acontece do outro lado.
