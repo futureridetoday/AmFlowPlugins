@@ -25,7 +25,17 @@ dependencies: []
 
 # Guia de Preenchimento do SKILL.md por Tipo
 
-O Agent Skills open standard não define categorias fixas. O que existe são **4 arquétipos por escopo de distribuição** — cada um com necessidades distintas de frontmatter e seções. Um skill real pode combinar traços de mais de um tipo; use o arquétipo dominante como referência.
+O Agent Skills open standard não define categorias fixas. O que existe são **4 arquétipos de
+conteúdo** — cada um com necessidades distintas de frontmatter e seções. Um skill real pode combinar
+traços de mais de um tipo; use o arquétipo dominante como referência.
+
+Arquétipo é um eixo. **Onde a skill circula é outro, ortogonal** — o A/B da norma de frontmatter
+(`scripts/frontmatter/skill-frontmatter.md` §1 e §4, no repositório AmFlow). Template A (portável) só
+os seis campos da spec — roda em Claude Code, Cowork, routines, cloud session e claude.ai. Template B
+soma as treze extensões do Claude Code que carregam comportamento real — perde Cowork, routines e
+claude.ai, ganha em troca `effort`, `when_to_use`, `arguments` e o resto da lista. Cada arquétipo
+abaixo indica para qual template tende — tendência, não regra: uma skill de Processo que declara
+`arguments` nasce B mesmo sendo Processo.
 
 ---
 
@@ -40,9 +50,40 @@ O Agent Skills open standard não define categorias fixas. O que existe são **4
 
 ---
 
+## O que toda skill declara, seja qual for o arquétipo
+
+As tabelas de cada arquétipo, mais abaixo, cobrem só o que varia por tipo. Isto aqui é piso, não teto
+— frontmatter e `metadata` seguem a norma do AmFlow por inteiro
+(`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow).
+
+| Campo | Por quê |
+|---|---|
+| `name` | igual ao nome do diretório |
+| `description` | o quê + quando — é o que decide o match, com ou sem gatilho extra |
+| `license` | obrigatório no AmFlow, mesmo pra skill que nunca vai ao Hub |
+| `metadata` | bloco próprio do AmFlow — dado do AmFlow nunca vai no topo |
+
+Dentro de `metadata`, sete chaves são obrigatórias desde a criação: `amflow-version`,
+`amflow-status`, `amflow-author`, `amflow-author-id`, `amflow-updated`, `amflow-tags`,
+`amflow-dependencies`. `amflow-hub-id` só existe depois da 1ª publicação; `amflow-source` só na cópia
+instalada — nenhuma das duas no repositório do Creator. `/amflow-builder:build` preenche o que dá pra
+preencher sozinho na Fase 0/3 (autor, uuid, data); `description`, tags e o que o arquétipo pedir de
+comportamento real é survey, não copy-paste do template.
+
+**Nunca declarar campo no valor default.** `disable-model-invocation: false`, `user-invocable: true`,
+`shell: bash`, `context: ""`, `model: ""` — presente e no default é ruído, e ruído nas treze extensões
+custa a portabilidade: elas só existem no Claude Code, e reprovam o arquivo inteiro em Cowork, routines
+e claude.ai. Se a tabela do arquétipo não pedir o campo, ele fica comentado no template —
+descomentar é ato deliberado, não preenchimento de formulário.
+
+---
+
 ## Processo
 
 *Ensina como executar um tipo de tarefa. O método generaliza, os detalhes variam.*
+
+**Tende a Template A.** Processo publicado no Hub perde Cowork se nascer B sem necessidade — só usa
+`effort`/`when_to_use` quando o comportamento realmente exigir.
 
 ### Frontmatter
 
@@ -75,14 +116,16 @@ O Agent Skills open standard não define categorias fixas. O que existe são **4
 
 *Carrega conhecimento específico de um projeto ou organização — esquema de banco, convenções de nomenclatura, decisões arquiteturais.*
 
+**Tende a Template B.** Contexto de projeto raramente sai do repositório onde nasceu — fora dele a
+informação não serve pra nada, então usar `when_to_use` livremente não custa portabilidade nenhuma que
+já não estivesse perdida.
+
 ### Frontmatter
 
 | Campo | Orientação |
 |---|---|
-| `description` | Mencionar o projeto ou domínio específico. Ex: "Carrega o esquema do banco AmFlow e as convenções de nomenclatura do projeto." |
-| `scope` | `project` — raramente publicável no marketplace público |
-| `auto_load` | Considerar `true` — o contexto é geralmente sempre relevante |
-| `when_to_use` | Omitir ou manter mínimo — `auto_load: true` dispensa gatilho explícito |
+| `description` | Mencionar o projeto ou domínio específico. Ex: "Carrega o esquema do banco AmFlow e as convenções de nomenclatura do projeto." A ativação é só por aqui — não existe campo que a dispense. |
+| `when_to_use` | Frequentemente dispensável: a `description` de um contexto de projeto costuma já ser específica o bastante pro match sozinho. Declarar só se o gatilho real não couber nela. |
 
 ### Seções
 
@@ -92,7 +135,7 @@ O Agent Skills open standard não define categorias fixas. O que existe são **4
 | `## O que faz` | Médio | Descrever qual contexto o skill fornece |
 | `## Instruções` | Baixo | Mínimo — foco em prover contexto, não em procedimentos |
 | `## Referências` | Alto | Apontar para `references/` com schemas, decisões arquiteturais, docs internos |
-| `## Quando usar` | Baixo | Omitir se `auto_load: true` |
+| `## Quando usar` | Baixo | Cobre só o que a `description` não capturar — não existe mais campo que dispense a seção inteira |
 
 ### Padrões dominantes
 
@@ -103,6 +146,10 @@ O Agent Skills open standard não define categorias fixas. O que existe são **4
 ## Ferramenta
 
 *Encapsula o uso correto de uma ferramenta específica — API, biblioteca, CLI.*
+
+**Tende a Template A.** `compatibility` e `allowed-tools` valem nos dois templates — só sai de A se
+precisar de comportamento exclusivo do Claude Code, o que a maioria dos wrappers de ferramenta não
+precisa.
 
 ### Frontmatter
 
@@ -134,12 +181,15 @@ O Agent Skills open standard não define categorias fixas. O que existe são **4
 
 *Expertise vertical — combina processo + ferramentas + gotchas de um domínio específico (engenharia de dados, revisão jurídica, análise financeira).*
 
+**Tende a Template A.** Domínio publicado no Hub perde Cowork se nascer B sem necessidade — mesma
+lógica de Processo.
+
 ### Frontmatter
 
 | Campo | Orientação |
 |---|---|
 | `description` | Mencionar o domínio vertical e a tarefa. Ex: "Conduz análise de risco financeiro seguindo IFRS 9 — inclui checklist de provisões e validação de exposição." |
-| `d1` / `d2` | Preencher com a vertical e função correspondentes |
+| `d1` / `d2` | **Suspenso.** Não são da spec, não são extensão do Claude Code, não estão definidos na norma — pendente do backlog B-05. Não preencher no frontmatter |
 | `effort` | `high` ou `max` — domínios envolvem raciocínio especializado |
 
 ### Seções
