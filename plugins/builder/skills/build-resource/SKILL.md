@@ -113,7 +113,7 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 
 | Tipo | Destino | Template fonte |
 |---|---|---|
-| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/default/` (cópia de diretório) |
+| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill-code/` (cópia de diretório, exceto `GUIDE.md`) |
 | `agent` | `.claude/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
 | `hook` | `.claude/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<evento>.sh` → `hook.sh` (chmod 755) |
 | `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
@@ -122,6 +122,8 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 | `module` | `.claude/modules/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/modules/default/` (cópia de diretório) |
 
 Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse → `post-tool-use.sh` | Stop → `stop.sh` | SubagentStop → `subagent-stop.sh` | SessionStart → `session-start.sh`.
+
+Cópia do template de skill exclui `GUIDE.md`: ele orienta quem cria a skill, não é arquivo interno dela. Copiá-lo poria dentro da skill gerada um arquivo com frontmatter fora do padrão de catálogo (`scripts/frontmatter/skill-frontmatter.md` §1, no repositório AmFlow).
 
 Se template não encontrado → gerar arquivo com frontmatter completo e seções padrão do tipo inline.
 Se recurso já existe no destino → encerrar: `Recurso já existe: <caminho> — edite-o diretamente ou use /amflow-builder:publish para publicá-lo`
@@ -132,7 +134,7 @@ módulo ele vem na cópia de diretório; em agent é copiado à parte, junto com
 documento que explica o recurso a quem não o conhece, e é **obrigatório para publicar no Hub**: recurso
 sem ele não passa no gate. Não preencher agora é aceitável; criar sem ele, não.
 
-**Frontmatter:**
+**Frontmatter — não se aplica a `skill`, que tem bloco próprio logo abaixo (`module` também, em Module extra):**
 
 | Campo | Valor |
 |---|---|
@@ -150,6 +152,25 @@ sem ele não passa no gate. Não preencher agora é aceitável; criar sem ele, n
 | `author_id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
 
 Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`, `hook-name`, `plugin-name`, `module-name`) pelo `nome`.
+
+**Skill:** a tabela acima não se aplica — segue o Template B da norma de frontmatter
+(`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow). `d1`, `d2` e `d4` continuam
+coletados no survey (Fase 2, inalterado) para orientar `nome`, `tags` e `intencao`, mas não viram
+campo do frontmatter — pendentes do backlog `B-05` (`docs/plan/_inbox/_backlog.md`, no repositório
+AmFlow). `type`, `created`, `project` e `source` não se aplicam: derivam da pasta, do git e do
+repositório.
+`amflow-version`, `amflow-status` e `amflow-dependencies` já nascem preenchidos no template — a Fase 3
+não os toca.
+
+| Campo | Valor |
+|---|---|
+| `name` | `nome` |
+| `description` | `intencao` |
+| `license` | `Proprietary` |
+| `metadata.amflow-author` | `git config user.name` (omitir a chave se vazio) |
+| `metadata.amflow-author-id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
+| `metadata.amflow-updated` | `date +%Y-%m-%d` |
+| `metadata.amflow-tags` | selecionados, separados por espaço — nunca lista |
 
 **Module extra:** a tabela de frontmatter acima **não se aplica** — módulo não tem frontmatter. Sua identidade vive no `module.json`, com três campos: `name` (igual ao do diretório), `version` (inicial `1.0.0`) e `description` (a `intencao` coletada no survey, em uma frase terminada em ponto — a instalação a copia literalmente para a região `modules` da skill, então ela precisa ler bem fora de contexto). O `MODULE.md` é prosa, sem bloco YAML. Remover `config.example.json` do módulo gerado quando o survey indicou que ele não é configurável.
 

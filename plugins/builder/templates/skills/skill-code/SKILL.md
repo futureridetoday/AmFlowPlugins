@@ -1,73 +1,61 @@
 ---
 # → Guia de preenchimento por tipo: GUIDE.md
+# → Norma completa (as treze regras que o verificador aplica): scripts/frontmatter/skill-frontmatter.md no repositório AmFlow
 
-# ── claude code — campos nativos ──────────────────────────────────────────────
+# ── especificação Agent Skills — sempre presentes ─────────────────────────────
 name: skill-name           # igual ao nome do diretório · max 64 chars · somente lowercase, números e hífens · sem hífen inicial, final ou consecutivo
 description: ""            # imperativo: "Use when..." | o que faz + quando usar (máx 1.024 chars)
+license: ""                # ex: MIT | Apache-2.0 | Proprietary — obrigatório no AmFlow
 
-# ── claude code — opcionais ────────────────────────────────────────────────────
-license: ""                # ex: MIT | Apache-2.0 | Proprietary
-compatibility: ""          # dependências de runtime: agente, pacotes de sistema, rede (máx 500 chars)
-when_to_use: ""            # contexto adicional de ativação — complementa description
+# ── especificação Agent Skills — condicionais ──────────────────────────────────
+# Nunca declarar sem necessidade real — campo presente e não usado é ruído que custa portabilidade.
+# compatibility: ""          # só quando houver requisito real de ambiente (máx 500 chars) — a maioria das skills não precisa
+# allowed-tools: ""          # só quando a skill precisar de ferramenta pré-aprovada — ex "Bash(git *) Read"
 
-# módulos instalados — uma chave por módulo, escrita pelo /amflow-builder:install-module.
-# Não editar à mão: é daqui que a propagação descobre quais skills consomem cada módulo.
-# metadata:
-#   amflow.module.task-flow: "1.2.0"
+# ── claude code — só quando o campo carrega comportamento ─────────────────────
+# Nunca declarar valor default: descomentar é ato deliberado, não preenchimento de formulário.
 
-# controle de invocação
-disable-model-invocation: false   # true = só usuário pode invocar via /skill-name
-user-invocable: true              # false = oculta do menu /; só Claude invoca
+# when_to_use: ""            # só quando o gatilho não couber no description — soma no mesmo teto de 1.536 chars e custa a portabilidade (não existe em Cowork/routines/claude.ai)
 
-# ferramentas
-allowed-tools: ""          # pré-aprovadas sem prompt: ex "Bash(git *) Read"
-disallowed-tools: ""       # removidas do pool enquanto a skill está ativa
+# disable-model-invocation: true   # só quando true — default é false, não declarar
+# user-invocable: false            # só quando false — default é true, não declarar
+# paths: []                        # glob patterns que restringem ativação por arquivo — só quando a ativação for restrita
 
-# argumentos
-argument-hint: ""          # hint no autocomplete: ex "[issue-number]"
-arguments: []              # nomes posicionais: ex [issue] → $issue no corpo
+# context: fork                # só quando fork — executa em subagente isolado
+# agent: ""                    # tipo de subagente — só quando context: fork
+# effort: ""                   # low | medium | high | xhigh | max — só quando a skill exigir nível diferente do da sessão
+# model: ""                    # só quando a skill exigir um modelo específico (inherit é o padrão, não declarar)
+# shell: powershell            # só quando powershell — bash é o default, não declarar
 
-# execução
-model: ""                  # sobrescreve o modelo (inherit = mantém o ativo)
-effort: ""                 # low | medium | high | xhigh | max
-context: ""                # fork = executa em subagente isolado
-agent: ""                  # tipo de subagente quando context: fork
-paths: []                  # glob patterns que restringem ativação por arquivo
-shell: ""                  # bash (padrão) | powershell
+# arguments: []                # nomes posicionais: ex [issue] → $issue no corpo — só quando houver argumentos
+# argument-hint: ""            # hint no autocomplete: ex "[issue-number]" — só quando houver arguments
+# disallowed-tools: ""         # removidas do pool enquanto a skill está ativa — só quando a skill nunca puder chamar certa ferramenta
 
-# hooks de ciclo de vida (só ativos durante esta skill)
-# hooks:
+# hooks:                       # só quando a skill registrar hook de ciclo de vida
 #   PreToolUse:
 #     - matcher: "Bash"
 #       hooks:
 #         - type: command
 #           command: "./scripts/validate.sh"
 
-# ── amflow — rastreabilidade ───────────────────────────────────────────────────
-type: skill
-project: ""
-author: ""
-author_id: ""              # uuid do usuário autenticado (tool me) — atribuição (L0), preenchido pelo Builder na Fase 0; não é âncora de confiança
-created: ""                # YYYY-MM-DD
-status: stable             # draft | review | stable | deprecated
-version: 1.0.0
-updated: ""
-scope: project             # global | project
-auto_load: false
-tags: []
-dependencies: []
-d1: ""                     # vertical: dev | product | design | data | marketing | sales | support | ops | finance | hr | legal | security | logistics
-d2: ""                     # função dentro da vertical (ex: Dev Frontend · Data Analyst · Copywriter)
-d4: ""                     # output: report | code | content | file | action | feedback
-
-# ── amflow — hub (preenchido automaticamente pelo amflow-publish) ──────────────
-hub_id: ""
-source: ""                 # hub/<tipo>/<nome>@<versão> | local
-price: 0                   # centavos — usado na publicação; 0 = gratuito (definido pelo Creator, não preenchido automaticamente)
+# ── dado próprio do AmFlow — nunca no topo, sempre em metadata ────────────────
+# As nove chaves e a obrigatoriedade de cada uma por contexto (fonte / bundle / cópia
+# instalada) estão em scripts/frontmatter/skill-frontmatter.md §3, no repositório AmFlow.
+metadata:
+  amflow-version: "1.0.0"
+  amflow-status: draft
+  amflow-author: ""          # git config user.name — preenchido pelo Builder na Fase 0
+  amflow-author-id: ""       # uuid do usuário autenticado (tool me) — preenchido pelo Builder na Fase 0
+  amflow-updated: ""         # YYYY-MM-DD
+  amflow-tags: ""            # separadas por espaço, kebab-case — nunca lista
+  amflow-dependencies: ""    # type/name@version separadas por espaço — vazio quando não há dependência
+  # amflow-hub-id: ""        # uuid atribuído pelo Hub — só existe após a 1ª publicação, escrito pelo amflow-publish
+  # amflow.module.<nome>: "" # registro de módulo instalado — escrito pelo /amflow-builder:install-module, não editar à mão
 
 # ── referências de criação ────────────────────────────────────────────────────
 # [1] Agent Skills open standard (specification)  https://agentskills.io/specification
 # [2] Claude Code — Extend Claude with skills     https://code.claude.com/docs/en/skills
+# [3] Norma de frontmatter do AmFlow              scripts/frontmatter/skill-frontmatter.md (repositório AmFlow)
 ---
 
 # [Nome da Skill]
