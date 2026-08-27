@@ -27,7 +27,7 @@ project: AmFlow
 author: Bortoli
 created: 2026-06-19
 status: stable
-version: 2.0.0
+version: 2.1.0
 updated: 2026-07-11
 scope: global
 auto_load: false
@@ -114,11 +114,34 @@ Aguardar resultado:
 
 ### 3. Ler recurso e detectar cenário
 
-Ler o arquivo do recurso com Read. Extrair do frontmatter: `name`, `type`, `version`, `hub_id`, `source`, `visibility`, `assigned_to`, `price`, `description`, `tags`.
+Ler o arquivo do recurso com Read. Extrair do frontmatter: `name`, a versão, o identificador do Hub,
+`visibility`, `assigned_to`, `description` e as tags. `type` vem da pasta em que o recurso foi
+encontrado, não do frontmatter. **`price` não é lido do arquivo** — ver etapa 6.
 
-**Cenário A** — novo recurso: `source` é `local`, vazio ou ausente; **ou** `source: hub/...` com `hub_id` vazio.
+**Onde cada dado mora, por tipo.** `skill` segue norma própria —
+`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow: o dado do AmFlow vive no bloco
+`metadata`, com prefixo `amflow-`. Os outros três seguem a tabela do `.claude/CLAUDE.md`, com os
+campos no topo.
 
-**Cenário B** — atualização: `source: hub/...` **e** `hub_id` presente e não vazio.
+| Dado | `skill` | `agent`, `hook`, `command` |
+|---|---|---|
+| versão | `metadata.amflow-version` | `version` |
+| estado | `metadata.amflow-status` | `status` |
+| tags | `metadata.amflow-tags` — string separada por espaço | `tags` — lista YAML |
+| identificador no Hub | `metadata.amflow-hub-id` | `hub_id` |
+| origem | — não existe na fonte | `source` |
+
+**O que separa os cenários é o identificador do Hub.**
+
+**Cenário A** — novo recurso: identificador ausente ou vazio.
+
+**Cenário B** — atualização: identificador presente e não vazio.
+
+Em `agent`, `hook` e `command`, `source` continua valendo como sinal de apoio: `local`, vazio ou
+ausente cai em A mesmo com `hub_id` preenchido. **Em `skill` a origem não serve de discriminador** —
+a norma reserva `amflow-source` à cópia instalada, e a fonte no repositório do Creator nunca a tem.
+Exigi-la classificaria toda atualização de skill como recurso novo, pulando a checagem de submissão
+pendente e o gate de versão da etapa 4.
 
 ### 4. Cenário B — verificações adicionais
 
@@ -138,7 +161,8 @@ Sem `current_version` → exibir: **"<name> ainda não tem versão aprovada em p
 ### 5. Preparar conteúdo
 
 Preparar conteúdo limpo para o Hub (nunca modificar o arquivo local nesta etapa):
-- Remover do frontmatter da cópia: campos `project`, `source`, `hub_id`
+- `skill` → remover de `metadata` da cópia: `amflow-hub-id`. Não há `project` nem `source` a remover — a norma de skill não os tem
+- `agent`, `hook`, `command` → remover do frontmatter da cópia: `project`, `source`, `hub_id`
 - Remover do corpo da cópia: paths absolutos (`~/`, `/Users/<user>/`, `/home/<user>/`) e ocorrências literais do nome do projeto (campo `name` do `CLAUDE.md`)
 
 Arquivos a incluir no payload por tipo:
@@ -149,11 +173,30 @@ Arquivos a incluir no payload por tipo:
 
 ### 6. Confirmar o ato de publicar (M10 — obrigatório, não pule)
 
+**Resolver o `price` antes de exibir**, em centavos, nesta ordem:
+
+| Situação | Valor |
+|---|---|
+| O Creator declarou preço na invocação | esse valor |
+| Não declarou, Cenário B | o `price` que `get_resource` devolveu em 4b |
+| Não declarou, Cenário A | `0` — gratuito |
+
+Cenário B sem `current_version` (o aviso de 4b) cai na linha do Cenário A.
+
+**O preço não vem do frontmatter, e nunca vinha do arquivo de verdade** — a tool sempre o leu do
+payload. Numa republicação, assumir `0` transformaria um recurso pago em gratuito, sem erro e sem
+aviso; por isso o default do Cenário B é o preço em produção, não zero.
+
 Exibir resumo curto e usar `AskUserQuestion`: **"Confirmar publicação"** ou **"Cancelar"**.
 
 ```
 Publicar <type>/<name> v<version> (<Cenário A: novo recurso | Cenário B: atualização>)?
+Preço: <gratuito | R$ X,YZ (<centavos> centavos)>
 ```
+
+**O preço aparece aqui de propósito.** Esta é a única parada do fluxo autônomo, e é o que substitui
+o `revisao_price` que o `/amflow-builder:publish` faz interativamente. Preço decidido sem ninguém ver
+não foi decidido.
 
 Cancelar → encerrar sem chamar a tool. Esta é a ÚNICA confirmação do fluxo — as partes editoriais (categoria/tags/descrição/diff) continuam automáticas, usando os valores do frontmatter existente.
 
@@ -169,7 +212,7 @@ publish({
   version: "<version>",
   visibility: "<public|exclusive>",
   assigned_to: "<uuid>",    // presente apenas quando visibility: exclusive
-  price: <centavos>,        // ausente no frontmatter = 0
+  price: <centavos>,        // resolvido na etapa 6 — nunca lido do frontmatter
   files: [{ path: "<arquivo>", content: "<conteúdo limpo>" }],
   confirm: true             // só true depois do passo 6 — nunca antes
 })
@@ -185,12 +228,23 @@ Tratar resposta:
 
 Após sucesso, atualizar o arquivo local com a ferramenta Edit (apenas os campos alterados):
 
-| Campo | Novo valor |
-|---|---|
-| `hub_id` | uuid retornado — apenas na primeira submissão; nas seguintes, manter sem alteração |
-| `version` | versão submetida (após bump, se aplicável) |
-| `source` | `hub/<type>/<name>@<version>` |
-| `status` | `published` |
+| Dado | Novo valor | Onde grava em `skill` | Onde grava nos outros três |
+|---|---|---|---|
+| identificador no Hub | uuid retornado — apenas na primeira submissão; nas seguintes, manter sem alteração | `metadata.amflow-hub-id` | `hub_id` |
+| versão | versão submetida (após bump, se aplicável) | `metadata.amflow-version` | `version` |
+| estado | `pending_review` em `skill`; `published` nos outros três | `metadata.amflow-status` | `status` |
+| origem | `hub/<type>/<name>@<version>` | **não grava** | `source` |
+
+**Gravar no lugar certo é o que mantém o recurso dentro da norma.** Em `skill` os quatro dados vivem
+em `metadata`; escrevê-los no topo cria campo órfão e faz o verificador
+(`scripts/frontmatter/check.py`, no AmFlow) reprovar o arquivo que este agent acabou de tocar.
+
+**`pending_review`, não `published`, em `skill`.** Submeter não publica: a submissão entra na fila do
+Manager, e é o `/amflow-builder:publish-status` que move para `published` quando o Hub aprova. Os
+outros três tipos mantêm `published` — o domínio de `status` deles não tem `pending_review`.
+
+**`source` não é gravado em `skill`.** A norma reserva `amflow-source` à cópia instalada; na fonte a
+chave não existe. Nos outros três tipos, `source` continua recebendo `hub/<type>/<name>@<version>`.
 
 Arquivo a atualizar: `skill` → `SKILL.md` | `agent` → `agent.md` | `hook` → `hook.json` | `command` → `command.md`
 
