@@ -1,27 +1,15 @@
 ---
-# about
 name: install-module
-type: skill
-project: AmFlow
 description: Instala um módulo numa skill e propaga atualizações de módulo para todas as skills que o consomem — copia a árvore do módulo, escreve a região `modules` do SKILL.md e registra a versão em `metadata`. Use when o Creator quer adicionar um módulo a uma skill, atualizar um módulo já instalado, ou propagar uma nova versão de módulo para seus consumidores; invocada por /amflow-builder:install-module ou pelo Claude ao detectar intenção de instalar ou propagar módulo
-tags: [module, install, update, propagate, skill, creator]
-
-# history
-author: Bortoli
-created: 2026-08-14
-status: draft
-version: 1.0.0
-updated: ""
-
-# system
-scope: global
-auto_load: false
-dependencies: []
-
-# hub
-hub_id: ""
-source: ""
-price: 0
+license: Proprietary
+metadata:
+  amflow-version: "1.0.0"
+  amflow-status: draft
+  amflow-author: Bortoli
+  amflow-author-id: 985920db-502d-4cb3-9ca1-c145719a9307
+  amflow-updated: "2026-08-27"
+  amflow-tags: module install update propagate skill creator
+  amflow-dependencies: ""
 ---
 
 # Install Module

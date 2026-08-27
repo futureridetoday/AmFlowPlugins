@@ -1,27 +1,15 @@
 ---
-# about
 name: hard-memory
-type: skill
-project: AmFlow
 description: Protocolo de memória persistente por arquivo para agents — leitura no início da sessão, escrita após cada tarefa e compactação por threshold de linhas
-tags: [hard-memory, memory, persistence, agent, infrastructure]
-
-# history
-author: Bortoli
-created: 2026-06-12
-status: stable
-version: 1.0.0
-updated: ""
-
-# system
-scope: global
-auto_load: false
-dependencies: []
-
-# hub
-hub_id: ""
-source: ""
-price: 0
+license: Proprietary
+metadata:
+  amflow-version: "1.0.0"
+  amflow-status: review
+  amflow-author: Bortoli
+  amflow-author-id: 985920db-502d-4cb3-9ca1-c145719a9307
+  amflow-updated: "2026-08-27"
+  amflow-tags: hard-memory memory persistence agent infrastructure
+  amflow-dependencies: ""
 ---
 
 # Hard Memory

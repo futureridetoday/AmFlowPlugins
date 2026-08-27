@@ -1,27 +1,15 @@
 ---
-# about
 name: setup-claude
-type: skill
-project: AmFlow
 description: Configura ou atualiza o CLAUDE.md do projeto atual via perguntas guiadas — identidade, stack e campos de contexto para o Claude
-tags: [setup, claude-md, config, creator]
-
-# history
-author: Bortoli
-created: 2026-06-14
-status: stable
-version: 1.0.0
-updated: ""
-
-# system
-scope: global
-auto_load: false
-dependencies: []
-
-# hub
-hub_id: ""
-source: ""
-price: 0
+license: Proprietary
+metadata:
+  amflow-version: "1.0.0"
+  amflow-status: review
+  amflow-author: Bortoli
+  amflow-author-id: 985920db-502d-4cb3-9ca1-c145719a9307
+  amflow-updated: "2026-08-27"
+  amflow-tags: setup claude-md config creator
+  amflow-dependencies: ""
 ---
 
 # Setup Claude
