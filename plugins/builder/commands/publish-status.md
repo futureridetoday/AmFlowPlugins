@@ -10,8 +10,8 @@ tags: [publish, status, submission, creator, mcp]
 author: Bortoli
 created: 2026-06-14
 status: stable
-version: 2.0.0
-updated: 2026-07-11
+version: 2.1.0
+updated: 2026-08-27
 
 # system
 scope: global
@@ -48,15 +48,33 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 1. Verificar `.claude/CLAUDE.md` no diretório atual — encerrar com erro se ausente.
 
-2. Escanear o projeto em busca de recursos com `source: hub/...` no frontmatter:
+2. Escanear o projeto em busca de recursos **com identificador do Hub preenchido**:
    - `skill` → `SKILL.md` em `.claude/skills/*/`
    - `agent` → `.claude/agents/*.md` (excluir `*-workflow.md`)
    - `hook` → `.claude/hooks/*/hook.json`
    - `command` → `.claude/commands/*.md`
 
-   Extrair de cada arquivo: `name`, `type`, `version`, `hub_id`, `status`.
+   **Onde cada dado mora, por tipo.** `skill` segue norma própria —
+   `scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow: o dado do AmFlow vive no bloco
+   `metadata`, com prefixo `amflow-`. Os outros três seguem a tabela do `.claude/CLAUDE.md`, com os
+   campos no topo.
 
-   Se `--resource <nome>` informado → filtrar apenas esse recurso. Se não tiver `source: hub/...` → encerrar: **"<nome> ainda não foi publicado. Use /amflow-builder:publish para publicar."**
+   | Dado | `skill` | `agent`, `hook`, `command` |
+   |---|---|---|
+   | versão | `metadata.amflow-version` | `version` |
+   | estado | `metadata.amflow-status` | `status` |
+   | identificador no Hub | `metadata.amflow-hub-id` | `hub_id` |
+
+   `name` está no topo nos quatro tipos; `type` vem da pasta em que o arquivo foi encontrado, não do
+   frontmatter.
+
+   **O critério de descoberta é o identificador do Hub, não a origem.** A norma reserva
+   `amflow-source` à cópia instalada — a fonte no repositório do Creator nunca a tem, e procurar por
+   `source: hub/...` não encontraria skill nenhuma. Nos outros três tipos, `source` continua presente
+   e serve de sinal de apoio, mas quem decide é o identificador.
+
+   Se `--resource <nome>` informado → filtrar apenas esse recurso. Sem identificador do Hub →
+   encerrar: **"<nome> ainda não foi publicado. Use /amflow-builder:publish para publicar."**
 
    Se nenhum recurso encontrado → encerrar: **"Nenhum recurso publicado encontrado no projeto. Use /amflow-builder:publish para publicar um recurso."**
 
@@ -82,9 +100,22 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 ### Fase 4 — Sincronizar status local
 
-6. Para cada recurso em que o status Hub difere do arquivo local, atualizar com a ferramenta Edit:
+6. Para cada recurso em que o status Hub difere do arquivo local, atualizar com a ferramenta Edit.
+   **O mapeamento difere por tipo, porque os domínios de estado são diferentes.**
 
-   | Status Hub | Status local |
+   `skill` — o domínio da norma tem os quatro estados do Hub, e o mapeamento é direto:
+
+   | Status Hub | `metadata.amflow-status` |
+   |---|---|
+   | `approved` | `published` |
+   | `pending_review` | `pending_review` |
+   | `changes_requested` | `changes_requested` |
+   | `rejected` | `rejected` |
+
+   `agent`, `hook` e `command` — domínio do `.claude/CLAUDE.md`, sem `pending_review` nem
+   `changes_requested`, então a recusa e o pedido de ajuste colapsam em `draft`:
+
+   | Status Hub | `status` |
    |---|---|
    | `approved` | `stable` |
    | `rejected` | `draft` |
@@ -92,17 +123,27 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | `pending_review` | `published` (sem alteração) |
 
    Arquivo a atualizar por tipo:
-   - `skill` → `SKILL.md` (campo `status` no frontmatter)
-   - `agent` → `agent.md` (campo `status` no frontmatter)
+   - `skill` → `SKILL.md` (`amflow-status`, dentro de `metadata`)
+   - `agent` → `<nome>.md` (campo `status` no frontmatter)
    - `hook` → `hook.json` (campo `status` na raiz)
    - `command` → `command.md` (campo `status` no frontmatter)
+
+   **Este comando é o único que move uma skill para `published`.** O `/amflow-builder:publish` grava
+   `pending_review` ao submeter; sem esta sincronização, o estado de toda skill publicada trava ali.
+   É por isso que o mapeamento de `skill` preserva os quatro estados em vez de colapsá-los: a norma
+   atribui `changes_requested`, `rejected`, `published` e `suspended` a este comando, e colapsar em
+   `draft` apagaria a razão da recusa do próprio arquivo.
 
 7. Exibir o sync realizado:
 
    ```
    Status local sincronizado:
-     <nome>  published → draft  (changes_requested)
+     minha-skill    pending_review → changes_requested  (changes_requested)
+     meu-command    published      → draft              (changes_requested)
    ```
+
+   O mesmo status do Hub produz estados locais diferentes: a skill guarda a razão, o command a
+   colapsa em `draft`. É consequência dos dois domínios, não inconsistência.
 
 ### Fase 5 — Próximos passos
 
