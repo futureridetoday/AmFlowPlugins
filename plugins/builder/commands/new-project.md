@@ -32,7 +32,7 @@ Inicializa a estrutura `.claude/` e cria os arquivos base de um novo projeto AmF
 
 Antes de qualquer outra ação (inclusive o survey e qualquer criação de arquivo), chame a tool `me` do servidor MCP `amflow-builder`.
 
-- Sucesso → guarde o `user_id` retornado (`<USER_ID>`) para o carimbo de atribuição (`author_id`) na Fase 5. Com sessão já ativa, o `me` responde direto e o comando segue sem novo login.
+- Sucesso → o comando segue. Com sessão já ativa, o `me` responde direto e o comando segue sem novo login. Nenhum arquivo gerado carrega o `user_id`: a Fase 0 é o gate de autenticação do plugin, não fonte de carimbo.
 - Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não prossiga para o survey nem crie qualquer arquivo. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.
 
 Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo.
@@ -82,7 +82,7 @@ Existe → encerrar: **"Projeto já configurado em <pasta> — execute /amflow-b
 DATA=$(date +%Y-%m-%d)
 AUTHOR=$(git -C "<pasta>" config user.name 2>/dev/null || git config --global user.name 2>/dev/null)
 ```
-`AUTHOR` vazio → omitir o campo `author` em todos os arquivos gerados.
+`DATA` e `AUTHOR` não têm destino nos arquivos gerados desde que o `CLAUDE.md` deixou de ter frontmatter. `AUTHOR` vazio não bloqueia a execução.
 
 ### 5.1 — Criar estrutura
 
@@ -92,43 +92,14 @@ mkdir -p "<pasta>/.claude/agents"
 mkdir -p "<pasta>/.claude/hooks"
 mkdir -p "<pasta>/.claude/commands"
 mkdir -p "<pasta>/.claude/plugins"
+mkdir -p "<pasta>/.claude/rules"
 ```
 
 ### 5.2 — Gerar `.claude/CLAUDE.md`
 
-Gerar com a ferramenta Write. O arquivo é composto por: frontmatter → seções fixas → seções por tipo → fragmentos padrão.
+Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → seções por tipo → fragmentos padrão.
 
-#### Frontmatter
-
-```
----
-# about
-name: <nome>
-type: instruction
-project: "<nome>"
-description: "<descricao>"
-
-# identity
-project_type: "<tipo>"
-
-# history
-author: "<AUTHOR>"
-author_id: "<USER_ID>"
-created: "<DATA>"
-status: stable
-version: 1.0.0
-updated: ""
-
-# system
-scope: project
-source: local
-auto_load: true
-checksum: ""
-dependencies: []
----
-```
-
-Omitir a linha `author:` se `AUTHOR` estiver vazio. A linha `author_id:` é sempre preenchida com o `<USER_ID>` obtido na Fase 0 — nunca omitida (a Fase 0 garante sessão autenticada antes de chegar aqui).
+**Sem frontmatter.** O `CLAUDE.md` não é manifesto de recurso: o Claude Code o entrega como mensagem de usuário e não interpreta bloco YAML no topo — frontmatter ali é texto que consome contexto em toda sessão sem ser lido por nada. O arquivo começa direto no `#` do título.
 
 #### Seções fixas (todos os tipos)
 
@@ -403,58 +374,113 @@ Verificar antes de afirmar. Nenhuma informação sobre o estado do sistema, arqu
 - Preferir `find .` ao invés de `find /` para evitar varredura completa do sistema
 ```
 
-**Fragmento 6 — Padrão de Frontmatter:**
-```markdown
+### 5.3 — Gerar `.claude/rules/frontmatter.md`
+
+Gerar com a ferramenta Write, literalmente como abaixo. A norma de frontmatter não vive no `CLAUDE.md`: é procedimento de um domínio específico, e como regra escopada por `paths` só entra em contexto quando o Claude toca um recurso — em vez de custar contexto em toda sessão.
+
+O bloco `paths` no topo **é** frontmatter, e aqui é lido: `.claude/rules/` é um dos dois lugares onde o Claude Code interpreta YAML no topo do arquivo.
+
+````markdown
+---
+paths:
+  - ".claude/**/*.md"
 ---
 
-## Padrão de Frontmatter
+# Frontmatter de recurso
 
-Todo arquivo de recurso (skill, agent, hook, plugin, command, instruction, doc, fragment, readme) deve ter frontmatter YAML completo no topo do arquivo.
+Recurso do AmFlow é markdown com manifesto no topo. **Skill segue norma própria** — a spec Agent
+Skills, na seção seguinte. Agent, command e hook seguem a tabela desta.
 
-### Campos obrigatórios
+## Agent, command e hook
 
-    # about
-    name: resource-name
-    type: skill
-    project: ""
-    description: ""
-    tags: []
+```yaml
+# about
+name: resource-name
+type: agent                   # agent | command | hook
+project: ""
+description: ""
+tags: []
 
-    # history
-    author: ""
-    author_id: ""                 # uuid do usuário autenticado (tool me) — atribuição (L0), preenchido pelo Builder na Fase 0
-    created: ""                   # YYYY-MM-DD
-    status: draft                 # draft | in_progress | in_review | blocked | done | published | stable | cancelled
-    version: 1.0.0
-    updated: ""
+# history
+author: ""
+author_id: ""                 # uuid do usuário autenticado — o Builder preenche na Fase 0
+created: ""                   # YYYY-MM-DD
+status: draft
+version: 1.0.0
+updated: ""                   # YYYY-MM-DD
 
-    # system
-    scope: project                # global | project
-    auto_load: false
-    dependencies: []
-
-### Valores aceitos
-
-**`type`**: `skill` | `agent` | `hook` | `plugin` | `command` | `instruction` | `doc` | `fragment` | `readme`
-
-**`scope`**: `global` (em `~/.claude/`) | `project` (em `.claude/`)
-
-### Seção hub (recursos publicáveis)
-
-Presente apenas em recursos publicados ou a publicar no Hub. Preenchida automaticamente por `/amflow-builder:publish` e `/amflow-builder:publish-status`.
-
-    # hub
-    hub_id: ""
-    source: ""
-    price: 0
-
-### Regras
-
-- `auto_load: true` deve ser exceção — usar apenas para recursos invariavelmente necessários em toda sessão
-- Recursos com `status: deprecated` não devem ser instalados em novos projetos
+# system
+scope: project                # global | project
+auto_load: false
+dependencies: []
 ```
 
-### 5.3 — Criar `settings.json`
+Recurso publicável ganha a seção `hub`, preenchida por `/amflow-builder:publish` e
+`/amflow-builder:publish-status` — nunca à mão:
+
+```yaml
+# hub
+hub_id: ""                    # uuid atribuído pelo Hub na primeira submissão
+source: ""                    # hub/<tipo>/<nome>@<versão> | local
+price: 0                      # centavos — 0 é gratuito; definido pelo Creator
+```
+
+`auto_load: true` é exceção — só para recurso necessário em toda sessão.
+
+## Skill
+
+O `SKILL.md` segue a [especificação Agent Skills](https://agentskills.io/specification). A tabela
+acima **não vale para skill**, e frontmatter de skill escrito a partir dela é rejeitado no submit.
+
+**Três regras estruturais:**
+
+1. **Só o `SKILL.md` tem frontmatter.** Arquivo em `scripts/`, `references/`, `assets/` ou
+   `templates/` não tem. A norma alcança o arquivo, não a pasta.
+2. **O topo aceita só os campos da spec.** `name` e `description` são obrigatórios; `license` é
+   obrigatório no AmFlow; `compatibility` e `allowed-tools` entram só com requisito real. Campo em
+   valor default não se escreve — omite-se.
+3. **Dado do AmFlow vive em `metadata`, nunca no topo**, com prefixo `amflow-` em kebab-case e
+   **valor sempre string** — a spec define `metadata` como mapa de string para string, e valor que
+   não seja string é descartado.
+
+```yaml
+---
+name: nome-da-skill           # igual ao nome do diretório
+description: o que faz e quando usar
+license: ""
+metadata:
+  amflow-version: "1.0.0"
+  amflow-status: draft
+  amflow-author: ""
+  amflow-author-id: ""
+  amflow-updated: "YYYY-MM-DD"
+  amflow-tags: tag-um tag-dois
+  amflow-dependencies: skill/nome@1.0.0
+---
+```
+
+Lista é separada por espaço; dependência é `type/name@version`. `amflow-hub-id` aparece após a
+primeira publicação; `amflow-source` existe só na cópia instalada.
+
+**`amflow-status` — oito valores:** `draft`, `review` (Creator escreve), `pending_review`
+(o `publish` escreve), `changes_requested`, `rejected`, `published`, `suspended`
+(o `publish-status` escreve), `deprecated` (Creator). Skill nova nasce em `draft`.
+
+**Dois destinos, duas formas.** Skill que precise rodar fora do Claude Code — Cowork, routines,
+claude.ai — usa só os campos da spec: o upload valida contra eles e rejeita o arquivo inteiro se
+houver extensão do Claude Code. Skill que fique no Claude Code pode usar as extensões que carreguem
+comportamento.
+
+Não escrever frontmatter de skill à mão: usar `/amflow-builder:build`.
+
+## O que não é frontmatter
+
+- **`CLAUDE.md`** — o Claude Code não interpreta YAML no topo dele.
+- **Módulo** — o manifesto é o `module.json` ao lado do `MODULE.md`.
+- **Arquivo interno de skill** — ver regra 1 acima.
+````
+
+### 5.4 — Criar `settings.json`
 
 Verificar se `~/.claude-plugin/defaults/settings.json` existe:
 - Existe → copiar para `<pasta>/.claude/settings.json`
@@ -471,12 +497,14 @@ Exibir ao usuário:
 
 Criados:
   .claude/CLAUDE.md
+  .claude/rules/frontmatter.md
   .claude/settings.json
   .claude/skills/
   .claude/agents/
   .claude/hooks/
   .claude/commands/
   .claude/plugins/
+  .claude/rules/
 
 Próximos passos:
   /amflow-builder:build   — criar recursos para o projeto
@@ -487,5 +515,5 @@ Próximos passos:
 
 - Verificar existência da pasta antes de criar qualquer coisa.
 - Nunca criar `.claude/CLAUDE.md` se já existir.
-- Nunca sobrescrever `.claude/settings.json` se já existir.
-- `AUTHOR` vazio → omitir campo `author`, não bloquear execução.
+- Nunca sobrescrever `.claude/settings.json` nem `.claude/rules/frontmatter.md` se já existirem.
+- O `CLAUDE.md` gerado não tem frontmatter.
