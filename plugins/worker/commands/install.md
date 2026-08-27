@@ -54,7 +54,10 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
    | `hook` | `<projeto>/.claude/hooks/<name>/` |
    | `command` | `<projeto>/.claude/commands/<name>.md` |
 
-   Encontrado → leia `source:` do arquivo pra extrair a versão instalada e use `AskUserQuestion`: **"Manter versão atual"** (encerra) ou **"Verificar atualização"** (prossegue). Não encontrado → prossiga direto.
+   Encontrado → extraia a versão instalada: para `skill`, `metadata.amflow-source` do `SKILL.md`
+   (`scripts/frontmatter/skill-frontmatter.md` §3, no repositório AmFlow); para os demais tipos,
+   `source:` do arquivo. Use `AskUserQuestion`: **"Manter versão atual"** (encerra) ou **"Verificar
+   atualização"** (prossegue). Não encontrado → prossiga direto.
 
 3. Chame a tool `install` do servidor MCP `amflow-worker`:
 
@@ -70,13 +73,23 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
 
 5. Para cada entrada em `files`, escreva o conteúdo com a ferramenta Write em `<projeto>/<path>` (o path já vem prefixado com `.claude/`). O hook de path-safety do Worker valida cada path automaticamente antes da escrita — rejeição aqui não deveria acontecer (o servidor já valida), mas se ocorrer, é a barreira determinística funcionando, não um bug do command. Sobrescreva se já existir.
 
-6. Para todo arquivo escrito cujo nome termine em `hook.sh`, ajuste a permissão de execução (a ferramenta Write não seta o bit):
+6. **`skill`: recomponha `amflow-source` e `amflow-status` — o bundle nunca os carrega.** O Hub remove
+   os dois da fonte na publicação (`scripts/frontmatter/skill-frontmatter.md` §3, no repositório
+   AmFlow); quem instala é quem sabe de onde o recurso veio. Com a ferramenta Edit, no bloco `metadata`
+   do `SKILL.md` recém-escrito, defina `amflow-source: hub/<type>/<name>@<version>` e
+   `amflow-status: published` — sobrescrevendo o que vier no bundle. `<type>`, `<name>` e `<version>`
+   são os do passo 3; não leia de volta o que acabou de escrever.
+
+   `agent`, `hook` e `command` têm a mesma lacuna do lado de `source`/`status` — fora do escopo desta
+   norma (B-06, `docs/plan/_inbox/_backlog.md`, no repositório AmFlow), não corrigida aqui.
+
+7. Para todo arquivo escrito cujo nome termine em `hook.sh`, ajuste a permissão de execução (a ferramenta Write não seta o bit):
 
    ```bash
    chmod 755 "<projeto>/<path-do-hook.sh>"
    ```
 
-7. Confirme: **"Recurso '`<name>`' instalado em `<projeto>`."** — inclua as dependências instaladas junto, se houver.
+8. Confirme: **"Recurso '`<name>`' instalado em `<projeto>`."** — inclua as dependências instaladas junto, se houver.
 
 ## Tratamento de erros
 
