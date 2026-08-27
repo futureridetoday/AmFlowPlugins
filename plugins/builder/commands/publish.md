@@ -56,12 +56,21 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
    Encerrar se nenhum recurso publicável encontrado: **"Nenhum recurso publicável encontrado. Crie um com /amflow-builder:build."**
 
-3. O Creator escolhe o recurso. Derivar `type` e `name` da seleção. Ler o arquivo do recurso com Read para obter o frontmatter completo.
+3. O Creator escolhe o recurso. Derivar `type` e `name` da seleção — não do frontmatter, ele já não é
+   exigido lá (passo 4). Ler o arquivo do recurso com Read para obter o frontmatter completo.
+
+   **Onde cada campo vive, por tipo.** Para `skill`, seis campos saíram do topo e foram para
+   `metadata` (norma em `docs/plan/_inbox/skill-frontmatter-standard.md`, no repositório AmFlow):
+   `version` → `amflow-version`, `status` → `amflow-status`, `author` → `amflow-author`, `tags` →
+   `amflow-tags` (separadas por espaço, nunca lista), `dependencies` → `amflow-dependencies`,
+   `hub_id` → `amflow-hub-id`. `source` não existe em nenhum momento na fonte — só na cópia
+   instalada, nunca no repositório do Creator. Todo passo abaixo que cite um desses campos para uma
+   skill lê e escreve em `metadata`. Para `agent`, `hook` e `command`, nenhum campo muda de lugar.
 
 ## Fase 2 — Validação e Revisão
 
 4. Validação silenciosa:
-   - Encerrar se ausentes: `name`, `type`, `version`.
+   - Encerrar se ausentes: `name`, `version`.
    - Exibir aviso (não bloqueia) se `author` ausente.
 
 5. Exibir sequencialmente os campos para revisão. Para cada um, perguntar **"Confirmar"** ou **"Editar"**:
@@ -72,7 +81,11 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | `revisao_output` | "Output atual: <d4>" | lista de 6 tipos → retorna aqui |
    | `revisao_tags` | "Tags atuais: <tags>" | checkbox com 3 sugestões → retorna aqui |
    | `revisao_descricao` | "Descrição atual: <description>" | survey intencao → loop → retorna aqui |
+   | `revisao_price` | "Preço: gratuito" ou "Preço: <valor> (centavos)" — gratuito é o padrão, decidido de novo a cada publicação | perguntar valor em centavos → retorna aqui |
 
+   `skill`: pular `revisao_categoria` e `revisao_output` — `d1`/`d2`/`d4` saíram do frontmatter da
+   norma nova e não têm mais onde escrever. Continuam existindo só como conversa do survey de criação
+   (`/amflow-builder:build`), não como campo a revisar aqui.
    Hooks: `d1`/`d2` são omitidos; `d4` fixo como `action` — exibir apenas: `"Output (fixo para hooks): action"` com somente "Confirmar".
    Workflow agents (`tags` contém `workflow`): pular `revisao_categoria` e `revisao_output`.
 
@@ -101,6 +114,9 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 **Cenário B** (atualização): `source: hub/...` **e** `hub_id` presente e não vazio.
 
+Para `skill`, `source` não entra no critério — nunca existe na fonte, publicada ou não. É só
+`amflow-hub-id`: ausente ou vazio → Cenário A; presente e não vazio → Cenário B.
+
 9. (Cenário B) Chame a tool `submission_status({ hub_id: "<hub_id>" })`:
 
    `status: pending_review` → encerrar: **"<nome> já tem uma submissão aguardando revisão. Aguarde a resolução antes de submeter uma atualização."**
@@ -121,7 +137,9 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 ## Fase 5 — Publicação
 
 13. Stripping do conteúdo a publicar (nunca modificar o arquivo local):
-    - Remover do frontmatter: `project`, `source`, `hub_id`
+    - `skill`: remover `metadata.amflow-hub-id`, se presente — o bundle não carrega hub_id. Nada mais
+      a remover do frontmatter: `type`/`project`/`source` já não estão lá pra remover
+    - Demais tipos: remover do frontmatter `project`, `source`, `hub_id`
     - Remover do corpo: paths absolutos (`~/`, `/Users/<user>/`, `/home/<user>/`) e ocorrências literais do nome do projeto
     - (Cenário B) Substituir seções não-selecionadas em [12] pelo conteúdo prod correspondente
 
@@ -147,7 +165,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
       changelog: "<texto>",     // ausente no Cenário A
       visibility: "<public|exclusive>",
       assigned_to: "<uuid>",    // presente apenas quando visibility: exclusive
-      price: <centavos>,        // ausente no frontmatter = 0
+      price: <centavos>,        // decidido em revisao_price (passo 5) — nunca lido do frontmatter, 0 por padrão
       files: [{ path: "<arquivo>", content: "<conteúdo>" }],
       confirm: true             // só true depois do passo 16 — nunca antes
     })
@@ -175,6 +193,10 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     | `version` | versão submetida (após bump) |
     | `source` | `hub/<tipo>/<nome>@<versão>` |
     | `status` | `published` |
+
+    Para `skill`, os três primeiros vivem em `metadata` (`amflow-hub-id`, `amflow-version`,
+    `amflow-status`) — **`source` fica de fora**: a norma reserva `amflow-source` só pra cópia
+    instalada, nunca escrever na fonte. Nos demais tipos, os quatro seguem no topo, sem mudança.
 
     Arquivo por tipo: `skill` → `SKILL.md` | `agent` → `<nome>.md` | `hook` → `hook.json` | `command` → `command.md`
 
