@@ -83,9 +83,6 @@ formulário.
 
 *Ensina como executar um tipo de tarefa. O método generaliza, os detalhes variam.*
 
-**Frontmatter enxuto.** Processo raramente precisa de extensão: use `effort` e `when_to_use` só
-quando o comportamento exigir.
-
 ### Frontmatter
 
 | Campo | Orientação |
@@ -117,9 +114,6 @@ quando o comportamento exigir.
 
 *Carrega conhecimento específico de um projeto ou organização — esquema de banco, convenções de nomenclatura, decisões arquiteturais.*
 
-**Use `when_to_use` à vontade.** Contexto de projeto raramente sai do repositório onde nasceu, e o
-gatilho costuma ser específico demais para caber no `description`.
-
 ### Frontmatter
 
 | Campo | Orientação |
@@ -146,10 +140,6 @@ gatilho costuma ser específico demais para caber no `description`.
 ## Ferramenta
 
 *Encapsula o uso correto de uma ferramenta específica — API, biblioteca, CLI.*
-
-**`compatibility` e `allowed-tools` são os campos que importam aqui** — é onde o requisito de
-ambiente e a pré-aprovação de ferramenta se declaram. As extensões raramente acrescentam algo a um
-wrapper de ferramenta.
 
 ### Frontmatter
 
@@ -180,8 +170,6 @@ wrapper de ferramenta.
 ## Domínio
 
 *Expertise vertical — combina processo + ferramentas + gotchas de um domínio específico (engenharia de dados, revisão jurídica, análise financeira).*
-
-**Frontmatter enxuto**, mesma lógica de Processo: a expertise está no corpo, não no topo.
 
 ### Frontmatter
 
