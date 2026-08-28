@@ -92,6 +92,7 @@ mkdir -p "<pasta>/.claude/agents"
 mkdir -p "<pasta>/.claude/hooks"
 mkdir -p "<pasta>/.claude/commands"
 mkdir -p "<pasta>/.claude/plugins"
+mkdir -p "<pasta>/.claude/modules"
 mkdir -p "<pasta>/.claude/rules"
 ```
 
@@ -124,6 +125,21 @@ que torna o recurso publicável: o Hub recusa submissão com `metadata` incomple
 
 Pedido de criação que chegue sem o comando → sugerir o comando antes de escrever
 qualquer arquivo.
+
+### Onde cada recurso vive
+
+| Tipo | Caminho |
+|---|---|
+| skill | `.claude/skills/<nome>/` |
+| agent | `.claude/agents/<nome>/` |
+| hook | `.claude/hooks/<nome>/` |
+| command | `.claude/commands/<nome>.md` |
+| module | `.claude/modules/<nome>/` |
+| plugin | `.claude/plugins/<nome>.json` |
+| workflow | `.claude/agents/<nome>-workflow.md` |
+
+Regra de projeto vai em `.claude/rules/`, um arquivo por assunto. Regra com `paths` no
+topo só carrega quando o Claude toca arquivo que casa com o glob.
 ```
 
 #### Seções por tipo
@@ -132,10 +148,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 
 **Design:**
 ```markdown
-## Mapa do Repositório
-
-- `.claude/` — configuração do Claude para este projeto
-
 ## Recursos Instalados
 
 ## Restrições
@@ -156,10 +168,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 
 **Development:**
 ```markdown
-## Mapa do Repositório
-
-- `.claude/` — configuração do Claude para este projeto
-
 ## Recursos Instalados
 
 ## Restrições
@@ -184,10 +192,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 
 **Marketing:**
 ```markdown
-## Mapa do Repositório
-
-- `.claude/` — configuração do Claude para este projeto
-
 ## Recursos Instalados
 
 ## Restrições
@@ -208,10 +212,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 
 **AI Builder:**
 ```markdown
-## Mapa do Repositório
-
-- `.claude/` — configuração do Claude para este projeto
-
 ## Recursos Instalados
 
 ## Restrições
@@ -511,9 +511,11 @@ Criados:
   .claude/hooks/
   .claude/commands/
   .claude/plugins/
+  .claude/modules/
   .claude/rules/
 
 Próximos passos:
+  /amflow-builder:start   — abrir a sessão neste projeto
   /amflow-builder:build   — criar recursos para o projeto
   /amflow-builder:publish — publicar recursos no Hub
 ```
