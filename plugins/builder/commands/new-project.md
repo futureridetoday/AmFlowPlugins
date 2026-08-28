@@ -159,11 +159,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 **Git**
 - PRs para `main` exigem revisão manual
 - Nunca fazer force push em `main`
-
-**Autonomia do Claude**
-- Decisões de direção criativa exigem aprovação prévia
-- Ações que afetam mais de 5 arquivos exigem apresentação de plano antes de executar
-- Nunca expandir escopo além do que foi solicitado sem aprovação explícita
 ```
 
 **Development:**
@@ -174,7 +169,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 
 **Banco de dados**
 - Nunca alterar schema sem migration versionada
-- Migrations sempre revisadas antes de aplicar
 
 **Segurança**
 - Nunca commitar variáveis de ambiente (`.env*` sempre no `.gitignore`)
@@ -183,11 +177,6 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 **Git**
 - PRs para `main` exigem revisão manual
 - Nunca fazer force push em `main`
-
-**Autonomia do Claude**
-- Decisões arquiteturais exigem aprovação prévia
-- Ações que afetam mais de 5 arquivos exigem apresentação de plano antes de executar
-- Nunca expandir escopo além do que foi solicitado sem aprovação explícita
 ```
 
 **Marketing:**
@@ -203,23 +192,11 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 **Git**
 - PRs para `main` exigem revisão manual
 - Nunca fazer force push em `main`
-
-**Autonomia do Claude**
-- Decisões editoriais e de posicionamento exigem aprovação prévia
-- Ações que afetam mais de 5 arquivos exigem apresentação de plano antes de executar
-- Nunca expandir escopo além do que foi solicitado sem aprovação explícita
 ```
 
 **AI Builder:**
 ```markdown
 ## Recursos Instalados
-
-## Restrições
-
-**Autonomia do Claude**
-- Decisões que impactam estrutura do projeto exigem aprovação prévia
-- Ações que afetam mais de 5 arquivos exigem apresentação de plano antes de executar
-- Nunca expandir escopo além do que foi solicitado sem aprovação explícita
 ```
 
 #### Fragmentos padrão
