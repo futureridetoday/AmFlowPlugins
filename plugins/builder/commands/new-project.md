@@ -115,6 +115,15 @@ Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → seç
 ## Visão Geral
 
 <descricao>
+
+## Recursos AmFlow
+
+Recurso novo — skill, agent, command, hook, plugin, workflow ou module — se cria por
+`/amflow-builder:build`, que aplica o template e o frontmatter da norma vigente. É o
+que torna o recurso publicável: o Hub recusa submissão com `metadata` incompleto.
+
+Pedido de criação que chegue sem o comando → sugerir o comando antes de escrever
+qualquer arquivo.
 ```
 
 #### Seções por tipo
