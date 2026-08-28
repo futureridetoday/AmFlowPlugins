@@ -101,7 +101,7 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 
 | Tipo | Destino | Template fonte |
 |---|---|---|
-| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill-code/` (cópia de diretório, exceto `GUIDE.md`) |
+| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/` (cópia de diretório, exceto `GUIDE.md`) |
 | `agent` | `.claude/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
 | `hook` | `.claude/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<evento>.sh` → `hook.sh` (chmod 755) |
 | `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
@@ -141,7 +141,7 @@ sem ele não passa no gate. Não preencher agora é aceitável; criar sem ele, n
 
 Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`, `hook-name`, `plugin-name`, `module-name`) pelo `nome`.
 
-**Skill:** a tabela acima não se aplica — segue o Template B da norma de frontmatter
+**Skill:** a tabela acima não se aplica — segue a norma de frontmatter
 (`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow). `d1`, `d2` e `d4` continuam
 coletados no survey (Fase 2, inalterado) para orientar `nome`, `tags` e `intencao`, mas não viram
 campo do frontmatter — pendentes do backlog `B-05` (`docs/plan/_inbox/_backlog.md`, no repositório

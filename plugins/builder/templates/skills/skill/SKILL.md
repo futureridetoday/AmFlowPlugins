@@ -1,6 +1,6 @@
 ---
 # → Guia de preenchimento por tipo: GUIDE.md
-# → Norma completa (as treze regras que o verificador aplica): scripts/frontmatter/skill-frontmatter.md no repositório AmFlow
+# → Norma completa e as regras que o verificador aplica: scripts/frontmatter/skill-frontmatter.md no repositório AmFlow
 
 # ── especificação Agent Skills — sempre presentes ─────────────────────────────
 name: skill-name           # igual ao nome do diretório · max 64 chars · somente lowercase, números e hífens · sem hífen inicial, final ou consecutivo
@@ -8,14 +8,14 @@ description: ""            # imperativo: "Use when..." | o que faz + quando usar
 license: ""                # ex: MIT | Apache-2.0 | Proprietary — obrigatório no AmFlow
 
 # ── especificação Agent Skills — condicionais ──────────────────────────────────
-# Nunca declarar sem necessidade real — campo presente e não usado é ruído que custa portabilidade.
+# Nunca declarar sem necessidade real — campo presente e não usado é ruído.
 # compatibility: ""          # só quando houver requisito real de ambiente (máx 500 chars) — a maioria das skills não precisa
 # allowed-tools: ""          # só quando a skill precisar de ferramenta pré-aprovada — ex "Bash(git *) Read"
 
 # ── claude code — só quando o campo carrega comportamento ─────────────────────
 # Nunca declarar valor default: descomentar é ato deliberado, não preenchimento de formulário.
 
-# when_to_use: ""            # só quando o gatilho não couber no description — soma no mesmo teto de 1.536 chars e custa a portabilidade (não existe em Cowork/routines/claude.ai)
+# when_to_use: ""            # só quando o gatilho não couber no description — é anexado a ele na listagem, e os dois somam no teto de 1.536 chars
 
 # disable-model-invocation: true   # só quando true — default é false, não declarar
 # user-invocable: false            # só quando false — default é true, não declarar
@@ -23,6 +23,7 @@ license: ""                # ex: MIT | Apache-2.0 | Proprietary — obrigatório
 
 # context: fork                # só quando fork — executa em subagente isolado
 # agent: ""                    # tipo de subagente — só quando context: fork
+# background: false            # só quando false, e só com context: fork — espera o subagente na mesma vez
 # effort: ""                   # low | medium | high | xhigh | max — só quando a skill exigir nível diferente do da sessão
 # model: ""                    # só quando a skill exigir um modelo específico (inherit é o padrão, não declarar)
 # shell: powershell            # só quando powershell — bash é o default, não declarar

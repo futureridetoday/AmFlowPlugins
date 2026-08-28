@@ -29,13 +29,14 @@ O Agent Skills open standard não define categorias fixas. O que existe são **4
 conteúdo** — cada um com necessidades distintas de frontmatter e seções. Um skill real pode combinar
 traços de mais de um tipo; use o arquétipo dominante como referência.
 
-Arquétipo é um eixo. **Onde a skill circula é outro, ortogonal** — o A/B da norma de frontmatter
-(`scripts/frontmatter/skill-frontmatter.md` §1 e §4, no repositório AmFlow). Template A (portável) só
-os seis campos da spec — roda em Claude Code, Cowork, routines, cloud session e claude.ai. Template B
-soma as treze extensões do Claude Code que carregam comportamento real — perde Cowork, routines e
-claude.ai, ganha em troca `effort`, `when_to_use`, `arguments` e o resto da lista. Cada arquétipo
-abaixo indica para qual template tende — tendência, não regra: uma skill de Processo que declara
-`arguments` nasce B mesmo sendo Processo.
+Arquétipo é o único eixo. **Não existe escolha de template.**
+
+Havia um segundo eixo aqui — A portável × B do Claude Code —, apoiado na ideia de que declarar
+extensão do Claude Code fazia o upload recusar o arquivo em Cowork, routines e claude.ai. **A medição
+de 2026-08-27 e 28 desmentiu:** dez sondas, dez uploads, nenhuma recusa, com as quatorze extensões
+declaradas. Ver a §4 da norma (`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow).
+
+Declare o campo que carrega comportamento; omita o resto. É higiene de leitura, não portabilidade.
 
 ---
 
@@ -71,10 +72,10 @@ preencher sozinho na Fase 0/3 (autor, uuid, data); `description`, tags e o que o
 comportamento real é survey, não copy-paste do template.
 
 **Nunca declarar campo no valor default.** `disable-model-invocation: false`, `user-invocable: true`,
-`shell: bash`, `context: ""`, `model: ""` — presente e no default é ruído, e ruído nas treze extensões
-custa a portabilidade: elas só existem no Claude Code, e reprovam o arquivo inteiro em Cowork, routines
-e claude.ai. Se a tabela do arquétipo não pedir o campo, ele fica comentado no template —
-descomentar é ato deliberado, não preenchimento de formulário.
+`shell: bash`, `context: ""`, `model: ""` — presente e no default é ruído. Não quebra nada em destino
+nenhum; é linha a mais para ler, editar e manter em dia, sem efeito. Se a tabela do arquétipo não
+pedir o campo, ele fica comentado no template — descomentar é ato deliberado, não preenchimento de
+formulário.
 
 ---
 
@@ -82,8 +83,8 @@ descomentar é ato deliberado, não preenchimento de formulário.
 
 *Ensina como executar um tipo de tarefa. O método generaliza, os detalhes variam.*
 
-**Tende a Template A.** Processo publicado no Hub perde Cowork se nascer B sem necessidade — só usa
-`effort`/`when_to_use` quando o comportamento realmente exigir.
+**Frontmatter enxuto.** Processo raramente precisa de extensão: use `effort` e `when_to_use` só
+quando o comportamento exigir.
 
 ### Frontmatter
 
@@ -116,9 +117,8 @@ descomentar é ato deliberado, não preenchimento de formulário.
 
 *Carrega conhecimento específico de um projeto ou organização — esquema de banco, convenções de nomenclatura, decisões arquiteturais.*
 
-**Tende a Template B.** Contexto de projeto raramente sai do repositório onde nasceu — fora dele a
-informação não serve pra nada, então usar `when_to_use` livremente não custa portabilidade nenhuma que
-já não estivesse perdida.
+**Use `when_to_use` à vontade.** Contexto de projeto raramente sai do repositório onde nasceu, e o
+gatilho costuma ser específico demais para caber no `description`.
 
 ### Frontmatter
 
@@ -147,9 +147,9 @@ já não estivesse perdida.
 
 *Encapsula o uso correto de uma ferramenta específica — API, biblioteca, CLI.*
 
-**Tende a Template A.** `compatibility` e `allowed-tools` valem nos dois templates — só sai de A se
-precisar de comportamento exclusivo do Claude Code, o que a maioria dos wrappers de ferramenta não
-precisa.
+**`compatibility` e `allowed-tools` são os campos que importam aqui** — é onde o requisito de
+ambiente e a pré-aprovação de ferramenta se declaram. As extensões raramente acrescentam algo a um
+wrapper de ferramenta.
 
 ### Frontmatter
 
@@ -181,8 +181,7 @@ precisa.
 
 *Expertise vertical — combina processo + ferramentas + gotchas de um domínio específico (engenharia de dados, revisão jurídica, análise financeira).*
 
-**Tende a Template A.** Domínio publicado no Hub perde Cowork se nascer B sem necessidade — mesma
-lógica de Processo.
+**Frontmatter enxuto**, mesma lógica de Processo: a expertise está no corpo, não no topo.
 
 ### Frontmatter
 

@@ -466,10 +466,8 @@ primeira publicação; `amflow-source` existe só na cópia instalada.
 (o `publish` escreve), `changes_requested`, `rejected`, `published`, `suspended`
 (o `publish-status` escreve), `deprecated` (Creator). Skill nova nasce em `draft`.
 
-**Dois destinos, duas formas.** Skill que precise rodar fora do Claude Code — Cowork, routines,
-claude.ai — usa só os campos da spec: o upload valida contra eles e rejeita o arquivo inteiro se
-houver extensão do Claude Code. Skill que fique no Claude Code pode usar as extensões que carreguem
-comportamento.
+**Uma forma só.** Declare os seis da spec e as extensões do Claude Code que carreguem comportamento.
+Medido em 2026-08-28: as quatorze extensões atravessam o upload do Cowork sem recusa.
 
 Não escrever frontmatter de skill à mão: usar `/amflow-builder:build`.
 
