@@ -8,7 +8,7 @@ tags: [start, onboarding, sessao, contexto, creator]
 
 # history
 author: Bortoli
-created: 2026-08-28
+created: 2026-08-30
 status: draft
 version: 1.0.0
 updated: ""
