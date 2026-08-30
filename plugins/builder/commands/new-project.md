@@ -338,7 +338,7 @@ Verificar antes de afirmar. Nenhuma informação sobre o estado do sistema, arqu
 
 1. Ferramentas dedicadas têm prioridade sobre Bash (Read, Edit, Write)
 2. Bash apenas para operações exclusivas de shell
-3. Agent para delegação de tarefas que poluiriam o contexto principal
+3. Agent para exploração ampla que consumiria mais de 3 queries no contexto principal
 
 ### Regras de Arquivo
 
