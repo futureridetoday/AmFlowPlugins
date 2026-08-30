@@ -374,88 +374,39 @@ paths:
 
 # Frontmatter de recurso
 
-Recurso do AmFlow é markdown com manifesto no topo. **Skill segue norma própria** — a spec Agent
-Skills, na seção seguinte. Agent, command e hook seguem a tabela desta.
+Recurso do AmFlow é markdown com manifesto no topo. Esta regra fixa o que não muda; a forma exata de
+cada campo é aplicada por `/amflow-builder:build`, que carrega o template e a norma da versão
+instalada do plugin.
 
-## Agent, command e hook
+## Não escrever à mão
 
-```yaml
-# about
-name: resource-name
-type: agent                   # agent | command | hook
-project: ""
-description: ""
-tags: []
-
-# history
-author: ""
-author_id: ""                 # uuid do usuário autenticado — o Builder preenche na Fase 0
-created: ""                   # YYYY-MM-DD
-status: draft
-version: 1.0.0
-updated: ""                   # YYYY-MM-DD
-
-# system
-scope: project                # global | project
-auto_load: false
-dependencies: []
-```
-
-Recurso publicável ganha a seção `hub`, preenchida por `/amflow-builder:publish` e
-`/amflow-builder:publish-status` — nunca à mão:
-
-```yaml
-# hub
-hub_id: ""                    # uuid atribuído pelo Hub na primeira submissão
-source: ""                    # hub/<tipo>/<nome>@<versão> | local
-price: 0                      # centavos — 0 é gratuito; definido pelo Creator
-```
-
-`auto_load: true` é exceção — só para recurso necessário em toda sessão.
+Recurso novo — skill, agent, command, hook, module — se cria por `/amflow-builder:build`. Frontmatter
+escrito à mão nasce fora da norma, e o Hub recusa submissão com `metadata` incompleto. Quando o
+comando não estiver disponível, abrir um recurso do mesmo tipo já existente no projeto e seguir a
+forma dele — nunca inventar campo.
 
 ## Skill
 
-O `SKILL.md` segue a [especificação Agent Skills](https://agentskills.io/specification). A tabela
-acima **não vale para skill**, e frontmatter de skill escrito a partir dela é rejeitado no submit.
-
-**Três regras estruturais:**
+O `SKILL.md` segue a [especificação Agent Skills](https://agentskills.io/specification), e **não** a
+forma dos outros tipos. Três regras estruturais:
 
 1. **Só o `SKILL.md` tem frontmatter.** Arquivo em `scripts/`, `references/`, `assets/` ou
    `templates/` não tem. A norma alcança o arquivo, não a pasta.
-2. **O topo aceita só os campos da spec.** `name` e `description` são obrigatórios; `license` é
-   obrigatório no AmFlow; `compatibility` e `allowed-tools` entram só com requisito real. Campo em
-   valor default não se escreve — omite-se.
+2. **O topo aceita só os campos da spec e as extensões do Claude Code.** Campo em valor default não
+   se escreve — omite-se.
 3. **Dado do AmFlow vive em `metadata`, nunca no topo**, com prefixo `amflow-` em kebab-case e
    **valor sempre string** — a spec define `metadata` como mapa de string para string, e valor que
    não seja string é descartado.
 
-```yaml
----
-name: nome-da-skill           # igual ao nome do diretório
-description: o que faz e quando usar
-license: ""
-metadata:
-  amflow-version: "1.0.0"
-  amflow-status: draft
-  amflow-author: ""
-  amflow-author-id: ""
-  amflow-updated: "YYYY-MM-DD"
-  amflow-tags: tag-um tag-dois
-  amflow-dependencies: skill/nome@1.0.0
----
-```
+A única chave com ponto é `amflow.module.<nome>`, registro de módulo instalado, escrito pelo
+`/amflow-builder:install-module`. Não uniformizar com o resto.
 
-Lista é separada por espaço; dependência é `type/name@version`. `amflow-hub-id` aparece após a
-primeira publicação; `amflow-source` existe só na cópia instalada.
+## Os outros tipos
 
-**`amflow-status` — oito valores:** `draft`, `review` (Creator escreve), `pending_review`
-(o `publish` escreve), `changes_requested`, `rejected`, `published`, `suspended`
-(o `publish-status` escreve), `deprecated` (Creator). Skill nova nasce em `draft`.
-
-**Uma forma só.** Declare os seis da spec e as extensões do Claude Code que carreguem comportamento.
-Medido em 2026-08-28: as quatorze extensões atravessam o upload do Cowork sem recusa.
-
-Não escrever frontmatter de skill à mão: usar `/amflow-builder:build`.
+Agent, command e hook usam frontmatter YAML comum, com identidade (`name`, `type`, `description`,
+`tags`), histórico (`author`, `version`, `status`, datas) e sistema (`scope`, `dependencies`). A
+seção `hub` — `hub_id`, `source`, `price` — é preenchida por `/amflow-builder:publish` e
+`/amflow-builder:publish-status`, nunca à mão.
 
 ## O que não é frontmatter
 
