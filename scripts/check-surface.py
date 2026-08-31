@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guarda as cinco propriedades da separação de superfícies MCP — unidade 0004-04.
+"""Guarda as propriedades que os plugins não podem perder — unidade 0004-04.
 
 As unidades 01 a 03 do plano `hub/0004-close-surface-split` (repo AmFlow)
 estabeleceram que cada plugin fala com a própria superfície: chave de
@@ -7,6 +7,15 @@ servidor, host, caminho e prosa que só cita tool alcançável dali.
 `.github/workflows/plugins.yml` validava só JSON e frontmatter — nada
 impedia essas quatro coisas de regredir. Este guard fecha o F4 daquele
 plano.
+
+A sexta não é de superfície: guarda que o `CLAUDE.md` gerado pelo `new-project`
+não volte a abrir com frontmatter. Ele foi removido em 2026-08-31 porque o
+Claude Code entrega o arquivo como mensagem de usuário e não interpreta YAML
+no topo — eram vinte e cinco linhas consumindo contexto em toda sessão sem
+leitor. A remoção quebrou quatro pontos que liam um campo `name` dali, e o
+alcance deste guard é justamente esse: ele protege a decisão, não a classe de
+bug. Consumidor que descreve produtor mudado continua sendo trabalho de
+revisão.
 
 A quinta propriedade veio depois, da revisão do `new-project` em 2026-08-31:
 a prosa também *nomeia* o conector, e isso não era verificado por ninguém.
@@ -160,6 +169,34 @@ def verificar_conector_na_prosa(nome: str, cfg: dict, chaves: set[str], erros: l
                     )
 
 
+def verificar_claude_md_gerado(erros: list[str]) -> None:
+    """Propriedade (6): o CLAUDE.md que o new-project gera não abre com frontmatter."""
+    rel = "plugins/builder/commands/new-project.md"
+    linhas = (RAIZ / rel).read_text(encoding="utf-8").splitlines()
+
+    try:
+        i = next(n for n, l in enumerate(linhas) if l.startswith("#### Seções fixas"))
+    except StopIteration:
+        erros.append(f"{rel}: não achei '#### Seções fixas' — o 5.2 mudou de forma, revisar este guard")
+        return
+
+    while i < len(linhas) and linhas[i].rstrip() != "```markdown":
+        i += 1
+    if i >= len(linhas):
+        erros.append(f"{rel}: '#### Seções fixas' não é seguido de bloco ```markdown")
+        return
+
+    primeira = next((l for l in linhas[i + 1:] if l.strip()), "")
+    if primeira.rstrip() == "---":
+        erros.append(
+            f"{rel}: o CLAUDE.md gerado voltou a abrir com frontmatter. O Claude Code "
+            "entrega o arquivo como mensagem de usuário e não lê YAML no topo — é "
+            "contexto gasto em toda sessão sem ninguém do outro lado"
+        )
+    elif not primeira.startswith("# "):
+        erros.append(f"{rel}: o CLAUDE.md gerado começa em {primeira!r}, esperado o `#` do título")
+
+
 def main() -> int:
     erros: list[str] = []
 
@@ -176,13 +213,15 @@ def main() -> int:
     for nome, cfg in SUPERFICIES.items():
         verificar_conector_na_prosa(nome, cfg, chaves, erros)
 
+    verificar_claude_md_gerado(erros)
+
     if erros:
         print(f"check-surface: {len(erros)} problema(s):\n", file=sys.stderr)
         for erro in erros:
             print(f"  - {erro}", file=sys.stderr)
         return 1
 
-    print("check-surface: as cinco propriedades valem para os dois plugins.")
+    print("check-surface: as seis propriedades valem.")
     return 0
 
 
