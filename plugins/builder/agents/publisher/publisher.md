@@ -68,7 +68,7 @@ You are a publication orchestrator specializing in AmFlow resources. Your role i
 |---|---|---|---|
 | `type` e `name` do recurso | Contexto ou pergunta | Sim | Perguntar uma vez |
 | `.claude/CLAUDE.md` no projeto | Disco | Sim | Encerrar com erro |
-| Sessão MCP autenticada | OAuth do conector `amflow` (autorizado via `/mcp` ou no install) | Sim | Sem sessão, a Fase 0 encerra e orienta a autorizar via `/mcp` |
+| Sessão MCP autenticada | OAuth do conector `amflow-builder` (autorizado via `/mcp` ou no install) | Sim | Sem sessão, a Fase 0 encerra e orienta a autorizar via `/mcp` |
 
 ## Processo
 
@@ -79,7 +79,7 @@ Quando invocado:
 Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → sessão válida; prossiga. Com sessão já ativa, o `me` responde direto sem novo login.
-- Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não invoque o reviewer nem chame nenhuma tool de publicação. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reinvocar.
+- Sem sessão / erro → o conector `amflow-builder` não está autorizado nesta sessão. **Encerre aqui** — não invoque o reviewer nem chame nenhuma tool de publicação. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reinvocar.
 
 Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo.
 

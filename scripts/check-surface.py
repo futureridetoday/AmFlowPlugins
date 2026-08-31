@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Guarda as quatro propriedades da separação de superfícies MCP — unidade 0004-04.
+"""Guarda as cinco propriedades da separação de superfícies MCP — unidade 0004-04.
 
 As unidades 01 a 03 do plano `hub/0004-close-surface-split` (repo AmFlow)
 estabeleceram que cada plugin fala com a própria superfície: chave de
@@ -7,6 +7,13 @@ servidor, host, caminho e prosa que só cita tool alcançável dali.
 `.github/workflows/plugins.yml` validava só JSON e frontmatter — nada
 impedia essas quatro coisas de regredir. Este guard fecha o F4 daquele
 plano.
+
+A quinta propriedade veio depois, da revisão do `new-project` em 2026-08-31:
+a prosa também *nomeia* o conector, e isso não era verificado por ninguém.
+Oito arquivos mandavam autorizar um conector `amflow` que não existe em
+lugar nenhum — quem caísse na mensagem procuraria esse nome na lista do
+`/mcp` e não acharia. As propriedades (1) e (2) já exigiam a chave certa no
+JSON; a (5) passa a exigir a mesma chave na prosa que fala dela.
 
 As duas listas de tools por superfície são copiadas de
 `hub/test/api/mcp-builder.test.ts:14` e `:20`, no repositório AmFlow — este
@@ -50,6 +57,12 @@ SUPERFICIES = {
 # positivo em `update` dentro de `check_updates` e em nome de command como
 # `/amflow-worker:install`.
 NOME = r"[A-Za-z_][A-Za-z0-9_]*"
+CHAVE = r"[A-Za-z][A-Za-z0-9_-]*"
+
+# Propriedade (5): a prosa nomeia o conector nestas duas formas, e só nelas.
+# Nome de command (`/amflow-worker:get`) e host não entram — não são citação
+# de conector, e casá-los daria falso positivo em prosa legítima.
+CITACAO_CONECTOR = re.compile(rf"\b(?:conector|servidor)(?: MCP)? `({CHAVE})`")
 CITACAO_UMA = re.compile(rf"\btool `({NOME})")
 CITACAO_DUAS = re.compile(rf"\btools `({NOME})[^`]*` e `({NOME})")
 
@@ -115,6 +128,38 @@ def verificar_prosa(nome: str, cfg: dict, tool_por_superficie: dict[str, str], e
                 )
 
 
+def verificar_conector_na_prosa(nome: str, cfg: dict, chaves: set[str], erros: list[str]) -> None:
+    """Propriedade (5): a prosa nomeia o conector da própria superfície, e com a chave que existe.
+
+    Duas falhas distintas, e a segunda é a que passou despercebida por meses:
+    citar a chave da outra superfície, e citar um nome que não é chave de
+    superfície nenhuma — `amflow` em vez de `amflow-builder`. O usuário não
+    tem como saber que o nome está errado; ele só não encontra o conector.
+    """
+    base = RAIZ / cfg["dir"]
+    chave = cfg["chave_servidor"]
+    for subdir in DIRS_PROSA:
+        pasta = base / subdir
+        if not pasta.is_dir():
+            continue
+        for arquivo in sorted(pasta.rglob("*.md")):
+            texto = arquivo.read_text(encoding="utf-8")
+            for citada in {m.group(1) for m in CITACAO_CONECTOR.finditer(texto)}:
+                if citada == chave:
+                    continue
+                rel = arquivo.relative_to(RAIZ)
+                if citada in chaves:
+                    erros.append(
+                        f"{rel}: nomeia o conector `{citada}`, da outra superfície — "
+                        f"o plugin '{nome}' fala com `{chave}`"
+                    )
+                else:
+                    erros.append(
+                        f"{rel}: nomeia o conector `{citada}`, que não é chave de servidor "
+                        f"em nenhum .mcp.json — esperado `{chave}`"
+                    )
+
+
 def main() -> int:
     erros: list[str] = []
 
@@ -127,13 +172,17 @@ def main() -> int:
     for nome, cfg in SUPERFICIES.items():
         verificar_prosa(nome, cfg, tool_por_superficie, erros)
 
+    chaves = {cfg["chave_servidor"] for cfg in SUPERFICIES.values()}
+    for nome, cfg in SUPERFICIES.items():
+        verificar_conector_na_prosa(nome, cfg, chaves, erros)
+
     if erros:
         print(f"check-surface: {len(erros)} problema(s):\n", file=sys.stderr)
         for erro in erros:
             print(f"  - {erro}", file=sys.stderr)
         return 1
 
-    print("check-surface: as quatro propriedades valem para os dois plugins.")
+    print("check-surface: as cinco propriedades valem para os dois plugins.")
     return 0
 
 

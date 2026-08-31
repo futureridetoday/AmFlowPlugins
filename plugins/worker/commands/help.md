@@ -36,7 +36,7 @@ Aceita também o nome direto: `/amflow-worker:help deep-research` pula a lista e
 Antes de qualquer outra ação, chame a tool `list_active_licenses` do servidor MCP `amflow-worker`.
 
 - Sucesso → siga com a lista devolvida.
-- Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui.** Oriente o
+- Sem sessão / erro → o conector `amflow-worker` não está autorizado nesta sessão. **Encerre aqui.** Oriente o
   usuário a autorizar o conector via `/mcp` e reexecutar.
 
 Nunca exiba tokens — a sessão OAuth é gerida pelo cliente.
