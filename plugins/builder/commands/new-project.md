@@ -10,8 +10,8 @@ tags: [new, onboarding, new-project, creator]
 author: Bortoli
 created: 2026-06-14
 status: stable
-version: 1.0.0
-updated: "2026-07-15"
+version: 2.0.0
+updated: "2026-08-31"
 
 # system
 scope: global
@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-builder:new-project
 
-Inicializa a estrutura `.claude/` e cria os arquivos base de um novo projeto AmFlow. Disponível para Creators e Managers com o plugin Builder instalado. Renomeado de `amflow-start` (D11) e, nesta versão, de `/amflow-builder:new`.
+Inicializa a estrutura `.claude/` e cria os arquivos base de um novo projeto AmFlow. Disponível para Creators e Managers com o plugin Builder instalado.
 
 ## Fase 0 — Autenticação (obrigatória)
 
@@ -89,16 +89,6 @@ Faça de 1 a 3 perguntas objetivas, uma por vez, para entender o projeto — o q
 Exibir a descrição proposta como sugestão primária e aceitar "Outro (digitar)" para texto livre. A resposta final é gravada em `<descricao>`.
 
 ## Execução (Passo 5)
-
-### 5.0 — Pré-execução
-
-```bash
-DATA=$(date +%Y-%m-%d)
-AUTHOR=$(git -C "<pasta>" config user.name 2>/dev/null || git config --global user.name 2>/dev/null)
-```
-`DATA` e `AUTHOR` não têm destino nos arquivos gerados desde que o `CLAUDE.md` deixou de ter frontmatter. `AUTHOR` vazio não bloqueia a execução.
-
-As guardas de pasta ficam no Passo 1, onde a pasta é escolhida.
 
 ### 5.1 — Criar estrutura
 
@@ -433,11 +423,9 @@ seção `hub` — `hub_id`, `source`, `price` — é preenchida por `/amflow-bui
 
 ### 5.4 — Criar `settings.json`
 
-Verificar se `~/.claude-plugin/defaults/settings.json` existe:
-- Existe → copiar para `<pasta>/.claude/settings.json`
-- Não existe → criar `<pasta>/.claude/settings.json` com conteúdo `{}`
+Criar `<pasta>/.claude/settings.json` com conteúdo `{}`.
 
-Se `<pasta>/.claude/settings.json` já existir → manter sem sobrescrever.
+Já existir → manter sem sobrescrever.
 
 ## Pós-execução
 
