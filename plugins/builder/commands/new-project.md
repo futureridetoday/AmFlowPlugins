@@ -96,10 +96,9 @@ não é erro nem motivo para adivinhar: sugerir o literal e seguir.
 
 A resposta final é gravada em `<nome-projeto>`.
 
-### Passo 3 — Tipo de projeto
+### Passo 3 — Escopo do projeto
 
-Seleção múltipla: de uma a seis opções. Um projeto raramente é uma coisa só — identidade visual que
-vira design system, produto que também produz conteúdo.
+Seleção múltipla: de uma a cinco opções.
 
 | Opção | Descrição |
 |---|---|
@@ -107,18 +106,22 @@ vira design system, produto que também produz conteúdo.
 | UX & UI Design | pesquisa, fluxos, interface e protótipo |
 | Design System | biblioteca de componentes, tokens e documentação de uso |
 | Development | aplicações, APIs, plataformas e sistemas |
-| AI Resources | automações, agentes, skills e recursos de IA |
 | Social Media | estratégia, campanhas e produção de conteúdo |
 
-O que foi marcado é gravado em `<tipo>`, separado por vírgula na ordem da tabela.
+O marcado é gravado em `<escopo>`, separado por vírgula na ordem da tabela.
 
-Hoje a escolha não altera o `.claude` gerado — todos os tipos produzem o mesmo arquivo, e o `<tipo>`
-existe para ficar registrado. A personalização por tipo é trabalho futuro, e é dela que este campo
-vai ser a entrada.
+**O tipo não é perguntado.** Todo projeto criado por este comando é do tipo `AI Builder`: o `new-project`
+é exclusivo do Builder, e o Builder produz recursos para o Worker. Perguntar teria uma resposta só.
+O que varia — e o que este passo captura — é o domínio em que esses recursos vão atuar: uma skill de
+naming e uma de migration de banco são as duas recursos de IA, e não se parecem em mais nada.
 
 ### Passo 4 — Descrição do projeto
 
-Faça de 1 a 3 perguntas objetivas, uma por vez, para entender o projeto — o que ele faz, para quem, e qual o objetivo principal. Use as respostas acumuladas (incluindo nome e tipo) para propor uma descrição de uma frase.
+Faça de 1 a 3 perguntas objetivas, uma por vez, para entender o projeto — o que ele faz, para quem, e
+qual o objetivo principal. As perguntas saem do `<escopo>`: o que se pergunta a um projeto de Branding
+não é o que se pergunta a um de Development, e escopo já marcado é contexto que não precisa ser
+perguntado de novo. Use as respostas acumuladas, mais nome e escopo, para propor uma descrição de uma
+frase.
 
 Exibir a descrição proposta como sugestão primária e aceitar "Outro (digitar)" para texto livre. A resposta final é gravada em `<descricao>`.
 
@@ -166,7 +169,8 @@ inferido do título, porque título é prosa: quem editar o `#` à mão, ou conf
 comando, quebraria a leitura em silêncio.
 
 **O que substituir, e o que copiar como está.** Nos blocos abaixo, só cinco marcadores vêm do
-survey: `<nome-projeto>`, `<pasta>`, `<tipo>`, `<descricao>` e `<perguntas-respostas>`. Todo o resto
+survey: `<nome-projeto>`, `<pasta>`, `<escopo>`, `<descricao>` e `<perguntas-respostas>` — o tipo é
+literal, `AI Builder`, e não vem de pergunta nenhuma. Todo o resto
 entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois —
 `<nome>` na tabela "Onde cada recurso vive" é o nome de um recurso qualquer, não o deste projeto. Substituí-lo produz um
 `CLAUDE.md` afirmando que as skills do projeto vivem em `.claude/skills/<nome-projeto>/`, que é falso
@@ -182,7 +186,8 @@ e não se parece com erro.
 | Campo | Valor |
 |---|---|
 | Nome do projeto | <nome-projeto> |
-| Tipo de projeto | <tipo> |
+| Tipo de projeto | AI Builder |
+| Escopo | <escopo> |
 
 ## Visão Geral
 
