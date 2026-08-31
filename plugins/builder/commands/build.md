@@ -42,7 +42,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 1. Identificar o projeto de destino:
    - Executar `pwd` → exibir caminho atual como sugestão. Aceitar "Informar outro caminho" (texto livre).
    - Validar que o caminho contém `.claude/CLAUDE.md` → encerrar com erro se ausente: **"Projeto não encontrado em: <caminho> — verifique se o diretório contém .claude/CLAUDE.md"**
-   - Ler `name` do `.claude/CLAUDE.md` como `project_name`.
+   - Ler o nome do projeto no título do `.claude/CLAUDE.md` como `project_name` (Fase 3, **De onde sai o `project`**).
 
 2. Perguntar o tipo de recurso:
 
@@ -181,10 +181,16 @@ Recurso já existe → encerrar: **"Recurso já existe: <caminho> — edite-o di
 | `d1` / `d2` | coletados (ausentes em hook, workflow e module) |
 | `d4` | coletado ou `action` para hook (ausente em plugin, workflow e module) |
 | `created` | `date +%Y-%m-%d` |
-| `project` | `name` lido do `.claude/CLAUDE.md` |
+| `project` | nome no título do `.claude/CLAUDE.md` (ver abaixo) |
 | `source` | `local` |
 | `author` | `git config user.name` (omitir se vazio) |
 | `author_id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
+
+**De onde sai o `project`.** Do título do `.claude/CLAUDE.md` — a primeira linha `#` —, descartando o
+sufixo `— Instruções do Projeto` quando houver: `# Decode and Code — Instruções do Projeto` dá
+`Decode and Code`. Não há campo de frontmatter para ler: o `CLAUDE.md` não tem frontmatter, e a
+instrução anterior mandava ler um `name` que deixou de existir. Sem `CLAUDE.md`, ou com um título do
+qual não se extrai nome, usar o nome da pasta do projeto.
 
 Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`, `hook-name`, `plugin-name`, `module-name`) pelo `nome`.
 

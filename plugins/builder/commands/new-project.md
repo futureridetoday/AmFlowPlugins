@@ -71,7 +71,30 @@ existe, e oferecer seria prometer o que não há.
 
 ### Passo 2 — Nome do projeto
 
-Derivar o nome do último segmento do caminho (ex: `/Users/rafael/Code/MeuApp` → `MeuApp`). Exibir como sugestão; aceitar "Informar outro nome". A resposta final é gravada em `<nome-projeto>`.
+Derivar do último segmento do caminho. O nome não fica só no título do `CLAUDE.md`: o
+`/amflow-builder:build` o copia para o campo `project` do frontmatter de todo recurso criado, e dali
+ele vai ao Hub na publicação. Pasta com nome composto sugerida crua se propaga por tudo isso.
+
+Oferecer, nesta ordem: o **nome legível derivado** — só quando diferir do literal —, o **literal da
+pasta**, e "Informar outro nome".
+
+| Forma da pasta | Sugestão | Exemplo |
+|---|---|---|
+| Com separador (`-`, `_`, `.`) | trocar por espaço e capitalizar | `nome-do-meu-projeto` → `Nome do Meu Projeto` |
+| CamelCase / PascalCase | manter como está | `AmFlow` → `AmFlow` |
+| Uma palavra, tudo minúsculo | segmentar, se reconhecer as palavras | `decodeandcode` → `Decode and Code` |
+
+CamelCase fica intacto de propósito: quem escreveu `AmFlow` escolheu aquela forma, e "Am Flow" desfaz
+a escolha.
+
+Conectores em minúscula fora da primeira posição, **na língua do próprio nome** — `de`, `do`, `da`,
+`dos`, `das`, `e`, `em`, `no`, `na`, `para`, `com` em português; `and`, `of`, `the`, `for`, `in` em
+inglês. `decodeandcode` vira `Decode and Code`, não `Decode And Code`.
+
+Nunca inventar palavra que não esteja no nome da pasta. Não reconhecer as palavras de um nome colado
+não é erro nem motivo para adivinhar: sugerir o literal e seguir.
+
+A resposta final é gravada em `<nome-projeto>`.
 
 ### Passo 3 — Tipo de projeto
 
