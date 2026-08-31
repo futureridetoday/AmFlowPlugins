@@ -98,12 +98,23 @@ A resposta final é gravada em `<nome-projeto>`.
 
 ### Passo 3 — Tipo de projeto
 
+Seleção múltipla: de uma a seis opções. Um projeto raramente é uma coisa só — identidade visual que
+vira design system, produto que também produz conteúdo.
+
 | Opção | Descrição |
 |---|---|
-| Design | identidade visual, UX/UI e design de produto |
+| Branding | identidade de marca, naming, verbal e visual |
+| UX & UI Design | pesquisa, fluxos, interface e protótipo |
+| Design System | biblioteca de componentes, tokens e documentação de uso |
 | Development | aplicações, APIs, plataformas e sistemas |
-| Marketing | estratégia, campanhas e produção de conteúdo |
-| AI Builder | automações, agentes e recursos de IA |
+| AI Resources | automações, agentes, skills e recursos de IA |
+| Social Media | estratégia, campanhas e produção de conteúdo |
+
+O que foi marcado é gravado em `<tipo>`, separado por vírgula na ordem da tabela.
+
+Hoje a escolha não altera o `.claude` gerado — todos os tipos produzem o mesmo arquivo, e o `<tipo>`
+existe para ficar registrado. A personalização por tipo é trabalho futuro, e é dela que este campo
+vai ser a entrada.
 
 ### Passo 4 — Descrição do projeto
 
@@ -140,7 +151,7 @@ mkdir -p "<pasta>/.claude/rules"
 
 ### 5.2 — Gerar `.claude/CLAUDE.md`
 
-Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → seções por tipo → fragmentos padrão.
+Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → fragmentos padrão.
 
 **Sem frontmatter.** O `CLAUDE.md` não é manifesto de recurso: o Claude Code o entrega como mensagem de usuário e não interpreta bloco YAML no topo — frontmatter ali é texto que consome contexto em toda sessão sem ser lido por nada. O arquivo começa direto no `#` do título.
 
@@ -157,7 +168,7 @@ entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aqu
 `CLAUDE.md` afirmando que as skills do projeto vivem em `.claude/skills/<nome-projeto>/`, que é falso
 e não se parece com erro.
 
-#### Seções fixas (todos os tipos)
+#### Seções fixas
 
 ```markdown
 # <nome-projeto> — Instruções do Projeto
@@ -198,35 +209,10 @@ qualquer arquivo.
 
 Regra de projeto vai em `.claude/rules/`, um arquivo por assunto. Regra com `paths` no
 topo só carrega quando o Claude toca arquivo que casa com o glob.
-```
 
-#### Seções por tipo
-
-Incluir **apenas** o bloco correspondente ao tipo escolhido:
-
-**Design:**
-```markdown
 ## Recursos Instalados
 
 ## Restrições
-
-**Assets**
-- Nunca usar assets fora de `design/` como fonte
-- Tokens de design alterados na fonte antes de propagar para implementação
-
-**Git**
-- PRs para `main` exigem revisão manual
-- Nunca fazer force push em `main`
-```
-
-**Development:**
-```markdown
-## Recursos Instalados
-
-## Restrições
-
-**Banco de dados**
-- Nunca alterar schema sem migration versionada
 
 **Segurança**
 - Nunca commitar variáveis de ambiente (`.env*` sempre no `.gitignore`)
@@ -237,25 +223,9 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 - Nunca fazer force push em `main`
 ```
 
-**Marketing:**
-```markdown
-## Recursos Instalados
-
-## Restrições
-
-**Conteúdo**
-- Nunca publicar conteúdo sem aprovação explícita
-- Assets de marca consultados sempre antes de produzir
-
-**Git**
-- PRs para `main` exigem revisão manual
-- Nunca fazer force push em `main`
-```
-
-**AI Builder:**
-```markdown
-## Recursos Instalados
-```
+As restrições são só o que vale para qualquer projeto. Havia um bloco por tipo, e a regra de migration
+que vivia no de Development saía errada num projeto de Branding — restrição falsa no `CLAUDE.md`
+ensina a ignorar as verdadeiras. Volta quando a personalização por tipo existir, que é o lugar dela.
 
 #### Fragmentos padrão
 
