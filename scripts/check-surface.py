@@ -186,7 +186,12 @@ def verificar_claude_md_gerado(erros: list[str]) -> None:
         erros.append(f"{rel}: '#### Seções fixas' não é seguido de bloco ```markdown")
         return
 
-    primeira = next((l for l in linhas[i + 1:] if l.strip()), "")
+    corpo = []
+    j = i + 1
+    while j < len(linhas) and linhas[j].rstrip() != "```":
+        corpo.append(linhas[j]); j += 1
+
+    primeira = next((l for l in corpo if l.strip()), "")
     if primeira.rstrip() == "---":
         erros.append(
             f"{rel}: o CLAUDE.md gerado voltou a abrir com frontmatter. O Claude Code "
@@ -195,6 +200,17 @@ def verificar_claude_md_gerado(erros: list[str]) -> None:
         )
     elif not primeira.startswith("# "):
         erros.append(f"{rel}: o CLAUDE.md gerado começa em {primeira!r}, esperado o `#` do título")
+
+    # O nome do projeto é lido por build.md, build-resource/SKILL.md e publisher.md
+    # para preencher `project` no frontmatter de todo recurso. Se o produtor parar
+    # de escrever a linha, os três leem um arquivo que não a tem — que foi
+    # exatamente a regressão de 2026-08-31, quando o frontmatter saiu daqui.
+    if not any(l.startswith("| Nome do projeto |") for l in corpo):
+        erros.append(
+            f"{rel}: o CLAUDE.md gerado não tem a linha '| Nome do projeto |' na tabela "
+            "Identidade — build.md, build-resource/SKILL.md e publisher.md leem esse "
+            "campo para preencher `project` no frontmatter dos recursos"
+        )
 
 
 def main() -> int:

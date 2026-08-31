@@ -144,6 +144,12 @@ Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → seç
 
 **Sem frontmatter.** O `CLAUDE.md` não é manifesto de recurso: o Claude Code o entrega como mensagem de usuário e não interpreta bloco YAML no topo — frontmatter ali é texto que consome contexto em toda sessão sem ser lido por nada. O arquivo começa direto no `#` do título.
 
+**O nome do projeto no corpo, não em frontmatter.** A linha "Nome do projeto" da tabela Identidade é
+o que o `/amflow-builder:build` lê para preencher o campo `project` do frontmatter de todo recurso.
+Fica no corpo porque frontmatter no `CLAUDE.md` não é lido por nada — e fica declarado, em vez de
+inferido do título, porque título é prosa: quem editar o `#` à mão, ou configurar o projeto sem este
+comando, quebraria a leitura em silêncio.
+
 **O que substituir, e o que copiar como está.** Nos blocos abaixo, só cinco marcadores vêm do
 survey: `<nome-projeto>`, `<pasta>`, `<tipo>`, `<descricao>` e `<perguntas-respostas>`. Todo o resto
 entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois —
@@ -160,6 +166,7 @@ e não se parece com erro.
 
 | Campo | Valor |
 |---|---|
+| Nome do projeto | <nome-projeto> |
 | Tipo de projeto | <tipo> |
 
 ## Visão Geral

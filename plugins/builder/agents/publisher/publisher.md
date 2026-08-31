@@ -163,7 +163,7 @@ Sem `current_version` → exibir: **"<name> ainda não tem versão aprovada em p
 Preparar conteúdo limpo para o Hub (nunca modificar o arquivo local nesta etapa):
 - `skill` → remover de `metadata` da cópia: `amflow-hub-id`. Não há `project` nem `source` a remover — a norma de skill não os tem
 - `agent`, `hook`, `command` → remover do frontmatter da cópia: `project`, `source`, `hub_id`
-- Remover do corpo da cópia: paths absolutos (`~/`, `/Users/<user>/`, `/home/<user>/`) e ocorrências literais do nome do projeto (o título do `.claude/CLAUDE.md`, ou o campo `project` do próprio recurso)
+- Remover do corpo da cópia: paths absolutos (`~/`, `/Users/<user>/`, `/home/<user>/`) e ocorrências literais do nome do projeto (a linha "Nome do projeto" do `.claude/CLAUDE.md`, ou o campo `project` do próprio recurso)
 
 Arquivos a incluir no payload por tipo:
 - `skill` → `SKILL.md`
