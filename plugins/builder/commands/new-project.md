@@ -71,7 +71,7 @@ existe, e oferecer seria prometer o que não há.
 
 ### Passo 2 — Nome do projeto
 
-Derivar o nome do último segmento do caminho (ex: `/Users/rafael/Code/MeuApp` → `MeuApp`). Exibir como sugestão; aceitar "Informar outro nome".
+Derivar o nome do último segmento do caminho (ex: `/Users/rafael/Code/MeuApp` → `MeuApp`). Exibir como sugestão; aceitar "Informar outro nome". A resposta final é gravada em `<nome-projeto>`.
 
 ### Passo 3 — Tipo de projeto
 
@@ -108,10 +108,17 @@ Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → seç
 
 **Sem frontmatter.** O `CLAUDE.md` não é manifesto de recurso: o Claude Code o entrega como mensagem de usuário e não interpreta bloco YAML no topo — frontmatter ali é texto que consome contexto em toda sessão sem ser lido por nada. O arquivo começa direto no `#` do título.
 
+**O que substituir, e o que copiar como está.** Nos blocos abaixo, só quatro marcadores vêm do
+survey: `<nome-projeto>`, `<pasta>`, `<tipo>` e `<descricao>`. Todo o resto entre `<>` é conteúdo do
+arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois — `<nome>` na tabela
+"Onde cada recurso vive" é o nome de um recurso qualquer, não o deste projeto. Substituí-lo produz um
+`CLAUDE.md` afirmando que as skills do projeto vivem em `.claude/skills/<nome-projeto>/`, que é falso
+e não se parece com erro.
+
 #### Seções fixas (todos os tipos)
 
 ```markdown
-# <nome> — Instruções do Projeto
+# <nome-projeto> — Instruções do Projeto
 
 ## Identidade
 
@@ -432,7 +439,7 @@ Já existir → manter sem sobrescrever.
 Exibir ao usuário:
 
 ```
-[ok] Projeto '<nome>' configurado em <pasta>
+[ok] Projeto '<nome-projeto>' configurado em <pasta>
 
 Criados:
   .claude/CLAUDE.md
