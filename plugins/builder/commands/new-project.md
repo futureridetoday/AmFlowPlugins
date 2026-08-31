@@ -35,11 +35,13 @@ Antes de qualquer outra ação (inclusive o survey e qualquer criação de arqui
 - Sucesso → o comando segue. Com sessão já ativa, o `me` responde direto e o comando segue sem novo login. Nenhum arquivo gerado carrega o `user_id`: a Fase 0 é o gate de autenticação do plugin, não fonte de carimbo.
 - Sem sessão / erro → o conector `amflow-builder` não está autorizado nesta sessão. **Encerre aqui** — não
   prossiga para o survey nem crie qualquer arquivo. Este costuma ser o primeiro comando que o Creator
-  roda depois de instalar o plugin: dizer só "autorize" o deixa sem saber o que perdeu. Explique, em
-  três linhas: o que o comando faria (estrutura `.claude/` e instruções do projeto), que a autorização
-  é única e vale para todos os comandos do Builder, e como fazê-la — rodar `/mcp` no terminal
-  interativo e autorizar `amflow-builder`, ou reinstalar o plugin. Encerrar com o convite a reexecutar
-  `/amflow-builder:new-project`.
+  roda depois de instalar o plugin: dizer só "autorize" o deixa sem saber o que perdeu. Explique, sem
+  passar de um parágrafo curto: o que o comando faria (estrutura `.claude/` e instruções do projeto), que a autorização
+  é única e vale para todos os comandos do Builder, e como fazê-la. O "como" depende de onde a sessão
+  roda, e dar só um caminho deixa metade dos Creators sem saída: no terminal interativo, `/mcp` e
+  autorizar `amflow-builder`; nas demais superfícies — sessão não-interativa, app ou web —, `/mcp` não
+  existe, e a autorização sai pelas configurações de conectores da conta. Encerrar com o convite a
+  reexecutar `/amflow-builder:new-project`.
 
 Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo.
 
