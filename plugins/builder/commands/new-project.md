@@ -176,13 +176,15 @@ Fica no corpo porque frontmatter no `CLAUDE.md` não é lido por nada — e fica
 inferido do título, porque título é prosa: quem editar o `#` à mão, ou configurar o projeto sem este
 comando, quebraria a leitura em silêncio.
 
-**O que substituir, e o que copiar como está.** Nos blocos abaixo, só cinco marcadores vêm do
-survey: `<nome-projeto>`, `<pasta>`, `<areas-de-atuacao>`, `<descricao>` e `<perguntas-respostas>` —
-o tipo de projeto é literal e não vem de pergunta nenhuma. Todo o resto
-entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois —
-`<nome>` na tabela "Onde cada recurso vive" é o nome de um recurso qualquer, não o deste projeto. Substituí-lo produz um
-`CLAUDE.md` afirmando que as skills do projeto vivem em `.claude/skills/<nome-projeto>/`, que é falso
-e não se parece com erro.
+**O que substituir, e o que copiar como está.** Nos blocos abaixo, só quatro marcadores vêm do
+survey: `<nome-projeto>`, `<areas-de-atuacao>`, `<descricao>` e `<perguntas-respostas>`. O tipo de
+projeto é literal e não vem de pergunta nenhuma, e `<pasta>` não entra aqui — ela é destino de
+escrita, usada no 5.1, no 5.4 e na pós-execução, nunca conteúdo do arquivo.
+
+Todo o resto entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele
+`CLAUDE.md` depois — `<nome>` na tabela "Onde cada recurso vive" é o nome de um recurso qualquer, não
+o deste projeto. Substituí-lo produz um `CLAUDE.md` afirmando que as skills do projeto vivem em
+`.claude/skills/<nome-projeto>/`, que é falso e não se parece com erro.
 
 #### Seções fixas
 
