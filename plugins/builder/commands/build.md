@@ -150,7 +150,7 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 
 | Tipo | Destino | Template |
 |---|---|---|
-| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/default/` (copiar diretório inteiro) |
+| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/` (copiar diretório inteiro, exceto `GUIDE.md`) |
 | `agent` | `.claude/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
 | `hook` | `.claude/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<script>.sh` → `hook.sh` (chmod 755) |
 | `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
