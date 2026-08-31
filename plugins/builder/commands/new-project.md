@@ -140,14 +140,18 @@ Uma pergunta só respondida → uma linha só. Nunca preencher as outras.
 ### 5.1 — Criar estrutura
 
 ```bash
-mkdir -p "<pasta>/.claude/skills"
-mkdir -p "<pasta>/.claude/agents"
-mkdir -p "<pasta>/.claude/hooks"
-mkdir -p "<pasta>/.claude/commands"
-mkdir -p "<pasta>/.claude/plugins"
-mkdir -p "<pasta>/.claude/modules"
-mkdir -p "<pasta>/.claude/rules"
+for d in skills agents hooks commands plugins modules rules; do
+  mkdir -p "<pasta>/.claude/$d"
+  touch "<pasta>/.claude/$d/.gitkeep"
+done
 ```
+
+O `.gitkeep` existe porque o git não versiona diretório vazio: sem ele, o Creator faz o primeiro
+commit e as sete pastas somem do repositório — quem clonar recebe só os arquivos, e a estrutura que a
+pós-execução anunciou não é a que o time recebe. Nada quebra em execução, já que o Write recria o
+diretório pai; o que se perde é a estrutura combinada.
+
+Arquivo já existente não é tocado: `touch` num `.gitkeep` que já está lá não muda conteúdo.
 
 ### 5.2 — Gerar `.claude/CLAUDE.md`
 
@@ -391,6 +395,10 @@ Verificar antes de afirmar. Nenhuma informação sobre o estado do sistema, arqu
 
 ### 5.3 — Gerar `.claude/rules/frontmatter.md`
 
+Já existir → manter sem sobrescrever. O Passo 1 encerra o comando quando há `CLAUDE.md`, então o
+caso que sobra é o projeto que tem regras sem `CLAUDE.md` — configurado à mão, e justamente o que não
+se deve atropelar.
+
 Gerar com a ferramenta Write, literalmente como abaixo. A norma de frontmatter não vive no `CLAUDE.md`: é procedimento de um domínio específico, e como regra escopada por `paths` só entra em contexto quando o Claude toca um recurso — em vez de custar contexto em toda sessão.
 
 O bloco `paths` no topo **é** frontmatter, e aqui é lido: `.claude/rules/` é um dos dois lugares onde o Claude Code interpreta YAML no topo do arquivo.
@@ -477,7 +485,6 @@ Próximos passos:
 
 ## Restrições
 
-- Verificar existência da pasta antes de criar qualquer coisa.
 - Nunca criar `.claude/CLAUDE.md` se já existir.
 - Nunca sobrescrever `.claude/settings.json` nem `.claude/rules/frontmatter.md` se já existirem.
 - O `CLAUDE.md` gerado não tem frontmatter.
