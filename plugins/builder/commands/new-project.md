@@ -229,7 +229,8 @@ Incluir **apenas** o bloco correspondente ao tipo escolhido:
 
 #### Fragmentos padrão
 
-Incluir ao final do arquivo, nesta ordem, cada seção separada por `---`:
+Incluir ao final do arquivo, nesta ordem, copiando cada bloco como está. O `---` que separa as
+seções já abre cada fragmento — não acrescentar outro entre eles.
 
 **Fragmento 1 — Idioma e Nomenclatura:**
 ```markdown
