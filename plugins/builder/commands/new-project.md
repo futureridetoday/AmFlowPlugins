@@ -53,6 +53,22 @@ Faça uma pergunta por vez, usando o contexto acumulado para gerar sugestões.
 
 Executar `pwd` e exibir o caminho atual como sugestão primária. Aceitar "Informar outro caminho" para texto livre.
 
+Com a pasta escolhida, verificar as duas condições que só dependem dela — aqui, e não na execução: as
+duas encerram o comando, e encerrar depois do survey desperdiça as perguntas dos Passos 2 a 4.
+
+```bash
+test -d "<pasta>"
+```
+Não existe → encerrar: **"Diretório não encontrado: <pasta>"**
+
+```bash
+test -f "<pasta>/.claude/CLAUDE.md"
+```
+Existe → encerrar: **"Projeto já configurado em <pasta> — execute /amflow-builder:build para criar recursos."**
+
+Encerrar mesmo: não oferecer reconfigurar. Nenhum comando do Builder atualiza um `CLAUDE.md` que já
+existe, e oferecer seria prometer o que não há.
+
 ### Passo 2 — Nome do projeto
 
 Derivar o nome do último segmento do caminho (ex: `/Users/rafael/Code/MeuApp` → `MeuApp`). Exibir como sugestão; aceitar "Informar outro nome".
@@ -77,20 +93,12 @@ Exibir a descrição proposta como sugestão primária e aceitar "Outro (digitar
 ### 5.0 — Pré-execução
 
 ```bash
-test -d "<pasta>"
-```
-Não existe → encerrar: **"Diretório não encontrado: <pasta>"**
-
-```bash
-test -f "<pasta>/.claude/CLAUDE.md"
-```
-Existe → encerrar: **"Projeto já configurado em <pasta> — execute /amflow-builder:build para criar recursos."**
-
-```bash
 DATA=$(date +%Y-%m-%d)
 AUTHOR=$(git -C "<pasta>" config user.name 2>/dev/null || git config --global user.name 2>/dev/null)
 ```
 `DATA` e `AUTHOR` não têm destino nos arquivos gerados desde que o `CLAUDE.md` deixou de ter frontmatter. `AUTHOR` vazio não bloqueia a execução.
+
+As guardas de pasta ficam no Passo 1, onde a pasta é escolhida.
 
 ### 5.1 — Criar estrutura
 
