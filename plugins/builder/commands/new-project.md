@@ -96,7 +96,7 @@ não é erro nem motivo para adivinhar: sugerir o literal e seguir.
 
 A resposta final é gravada em `<nome-projeto>`.
 
-### Passo 3 — Escopo do projeto
+### Passo 3 — Áreas de atuação
 
 Seleção múltipla: de uma a cinco opções.
 
@@ -108,20 +108,28 @@ Seleção múltipla: de uma a cinco opções.
 | Development | aplicações, APIs, plataformas e sistemas |
 | Social Media | estratégia, campanhas e produção de conteúdo |
 
-O marcado é gravado em `<escopo>`, separado por vírgula na ordem da tabela.
+O marcado é gravado em `<areas-de-atuacao>`, separado por vírgula na ordem da tabela.
 
-**O tipo não é perguntado.** Todo projeto criado por este comando é do tipo `AI Builder`: o `new-project`
-é exclusivo do Builder, e o Builder produz recursos para o Worker. Perguntar teria uma resposta só.
-O que varia — e o que este passo captura — é o domínio em que esses recursos vão atuar: uma skill de
-naming e uma de migration de banco são as duas recursos de IA, e não se parecem em mais nada.
+A lista cresce. Cada área é uma chave de composição — quando houver instrução específica por área,
+ela entra por aqui, e é por isso que o campo é lista e não escolha única.
+
+**O tipo não é perguntado.** Ele é literal, e diz o que o projeto produz:
+`Recursos para Claude Code — skills, agents, commands e hooks`. O `new-project` é exclusivo do Builder, e o
+Builder produz recursos para o Worker — perguntar teria uma resposta só. Está escrito por extenso, e
+não como rótulo de categoria, porque quem lê a tabela é um Claude abrindo o projeto pela primeira
+vez: `AI Builder` admitia tanto "constrói modelos de IA" quanto "usa IA", e não citava Claude Code
+nem skill.
+
+O que varia — e o que este passo captura — é onde esses recursos vão atuar: uma skill de naming e uma
+de migration de banco são as duas recursos para o Claude Code, e não se parecem em mais nada.
 
 ### Passo 4 — Descrição do projeto
 
 Faça de 1 a 3 perguntas objetivas, uma por vez, para entender o projeto — o que ele faz, para quem, e
-qual o objetivo principal. As perguntas saem do `<escopo>`: o que se pergunta a um projeto de Branding
-não é o que se pergunta a um de Development, e escopo já marcado é contexto que não precisa ser
-perguntado de novo. Use as respostas acumuladas, mais nome e escopo, para propor uma descrição de uma
-frase.
+qual o objetivo principal. As perguntas saem de `<areas-de-atuacao>`: o que se pergunta a um projeto
+de Branding não é o que se pergunta a um de Development, e área já marcada é contexto que não precisa
+ser perguntado de novo. Use as respostas acumuladas, mais nome e áreas, para propor uma descrição de
+uma frase.
 
 Exibir a descrição proposta como sugestão primária e aceitar "Outro (digitar)" para texto livre. A resposta final é gravada em `<descricao>`.
 
@@ -169,8 +177,8 @@ inferido do título, porque título é prosa: quem editar o `#` à mão, ou conf
 comando, quebraria a leitura em silêncio.
 
 **O que substituir, e o que copiar como está.** Nos blocos abaixo, só cinco marcadores vêm do
-survey: `<nome-projeto>`, `<pasta>`, `<escopo>`, `<descricao>` e `<perguntas-respostas>` — o tipo é
-literal, `AI Builder`, e não vem de pergunta nenhuma. Todo o resto
+survey: `<nome-projeto>`, `<pasta>`, `<areas-de-atuacao>`, `<descricao>` e `<perguntas-respostas>` —
+o tipo de projeto é literal e não vem de pergunta nenhuma. Todo o resto
 entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois —
 `<nome>` na tabela "Onde cada recurso vive" é o nome de um recurso qualquer, não o deste projeto. Substituí-lo produz um
 `CLAUDE.md` afirmando que as skills do projeto vivem em `.claude/skills/<nome-projeto>/`, que é falso
@@ -186,8 +194,8 @@ e não se parece com erro.
 | Campo | Valor |
 |---|---|
 | Nome do projeto | <nome-projeto> |
-| Tipo de projeto | AI Builder |
-| Escopo | <escopo> |
+| Tipo de projeto | Recursos para Claude Code — skills, agents, commands e hooks |
+| Áreas de atuação | <areas-de-atuacao> |
 
 ## Visão Geral
 
