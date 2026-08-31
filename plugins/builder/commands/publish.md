@@ -36,7 +36,7 @@ Normaliza e publica um recurso do projeto no Hub. Tipos suportados: `skill`, `ag
 Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
 
 - Sucesso → sessão válida; prossiga. Com sessão já ativa, o `me` responde direto sem novo login.
-- Sem sessão / erro → o conector `amflow` não está autorizado nesta sessão. **Encerre aqui** — não execute o scan nem chame a tool `publish`. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.
+- Sem sessão / erro → o conector `amflow-builder` não está autorizado nesta sessão. **Encerre aqui** — não execute o scan nem chame a tool `publish`. Oriente o usuário a autorizar o conector via `/mcp` (ou no install do plugin) e reexecutar.
 
 Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo.
 
