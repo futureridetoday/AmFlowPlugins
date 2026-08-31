@@ -88,6 +88,19 @@ Faça de 1 a 3 perguntas objetivas, uma por vez, para entender o projeto — o q
 
 Exibir a descrição proposta como sugestão primária e aceitar "Outro (digitar)" para texto livre. A resposta final é gravada em `<descricao>`.
 
+Guardar também o que foi perguntado e o que foi respondido, em `<perguntas-respostas>`: uma linha por
+pergunta feita, na forma `- **<pergunta>** — <resposta>`. A descrição é uma destilação, e destilar
+perde — o que o Creator disse sobre o projeto é a informação mais rica que este comando coleta, e sem
+isto ela morre no fim do survey.
+
+Duas regras para essas linhas. **Transcrever, não reescrever:** a resposta entra como o Creator a
+deu, corrigida só no óbvio. **Produto e propósito, não arquitetura:** a checagem de `/doctor` propõe
+cortar de um `CLAUDE.md` o que o Claude deriva do código — layout de diretórios, dependências,
+panorama de arquitetura. O que o projeto faz e para quem não é derivável e fica; se uma resposta
+descambar para como o sistema é montado, ela é candidata a corte já no dia seguinte.
+
+Uma pergunta só respondida → uma linha só. Nunca preencher as outras.
+
 ## Execução (Passo 5)
 
 ### 5.1 — Criar estrutura
@@ -108,10 +121,10 @@ Gerar com a ferramenta Write. O arquivo é composto por: seções fixas → seç
 
 **Sem frontmatter.** O `CLAUDE.md` não é manifesto de recurso: o Claude Code o entrega como mensagem de usuário e não interpreta bloco YAML no topo — frontmatter ali é texto que consome contexto em toda sessão sem ser lido por nada. O arquivo começa direto no `#` do título.
 
-**O que substituir, e o que copiar como está.** Nos blocos abaixo, só quatro marcadores vêm do
-survey: `<nome-projeto>`, `<pasta>`, `<tipo>` e `<descricao>`. Todo o resto entre `<>` é conteúdo do
-arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois — `<nome>` na tabela
-"Onde cada recurso vive" é o nome de um recurso qualquer, não o deste projeto. Substituí-lo produz um
+**O que substituir, e o que copiar como está.** Nos blocos abaixo, só cinco marcadores vêm do
+survey: `<nome-projeto>`, `<pasta>`, `<tipo>`, `<descricao>` e `<perguntas-respostas>`. Todo o resto
+entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele `CLAUDE.md` depois —
+`<nome>` na tabela "Onde cada recurso vive" é o nome de um recurso qualquer, não o deste projeto. Substituí-lo produz um
 `CLAUDE.md` afirmando que as skills do projeto vivem em `.claude/skills/<nome-projeto>/`, que é falso
 e não se parece com erro.
 
@@ -129,6 +142,8 @@ e não se parece com erro.
 ## Visão Geral
 
 <descricao>
+
+<perguntas-respostas>
 
 ## Recursos AmFlow
 
