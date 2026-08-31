@@ -88,10 +88,14 @@ Um `find` por tipo — pasta ausente ou vazia devolve nada e não afeta os outro
 
 ```bash
 for t in skills agents hooks commands modules; do
-  n=$(find ".claude/$t" -mindepth 1 -maxdepth 1 2>/dev/null | wc -l | tr -d ' ')
+  n=$(find ".claude/$t" -mindepth 1 -maxdepth 1 -not -name '.*' 2>/dev/null | wc -l | tr -d ' ')
   echo "$t: $n"
 done
 ```
+
+O `-not -name '.*'` não é zelo: o `/amflow-builder:new-project` põe um `.gitkeep` em cada pasta para
+que elas sobrevivam ao primeiro commit. Sem o filtro, todo projeto recém-criado é reportado com um
+recurso de cada tipo, e nenhum existe.
 
 ## Saída
 
