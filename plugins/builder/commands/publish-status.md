@@ -54,10 +54,9 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    - `hook` → `.claude/hooks/*/hook.json`
    - `command` → `.claude/commands/*.md`
 
-   **Onde cada dado mora, por tipo.** `skill` segue norma própria —
-   `scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow: o dado do AmFlow vive no bloco
-   `metadata`, com prefixo `amflow-`. Os outros três seguem a tabela do `.claude/CLAUDE.md`, com os
-   campos no topo.
+   **Onde cada dado mora, por tipo.** `skill` segue norma própria — o porquê está em
+   `builder-resource-standards`: o dado do AmFlow vive no bloco `metadata`, com prefixo `amflow-`.
+   Os outros três seguem a tabela do `.claude/CLAUDE.md`, com os campos no topo.
 
    | Dado | `skill` | `agent`, `hook`, `command` |
    |---|---|---|

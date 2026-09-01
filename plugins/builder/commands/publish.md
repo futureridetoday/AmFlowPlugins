@@ -60,7 +60,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    exigido lá (passo 4). Ler o arquivo do recurso com Read para obter o frontmatter completo.
 
    **Onde cada campo vive, por tipo.** Para `skill`, seis campos saíram do topo e foram para
-   `metadata` (norma em `scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow):
+   `metadata` (o porquê está em `builder-resource-standards`):
    `version` → `amflow-version`, `status` → `amflow-status`, `author` → `amflow-author`, `tags` →
    `amflow-tags` (separadas por espaço, nunca lista), `dependencies` → `amflow-dependencies`,
    `hub_id` → `amflow-hub-id`. `source` não existe em nenhum momento na fonte — só na cópia

@@ -118,10 +118,9 @@ Ler o arquivo do recurso com Read. Extrair do frontmatter: `name`, a versão, o 
 `visibility`, `assigned_to`, `description` e as tags. `type` vem da pasta em que o recurso foi
 encontrado, não do frontmatter. **`price` não é lido do arquivo** — ver etapa 6.
 
-**Onde cada dado mora, por tipo.** `skill` segue norma própria —
-`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow: o dado do AmFlow vive no bloco
-`metadata`, com prefixo `amflow-`. Os outros três seguem a tabela do `.claude/CLAUDE.md`, com os
-campos no topo.
+**Onde cada dado mora, por tipo.** `skill` segue norma própria — o porquê está em
+`builder-resource-standards`: o dado do AmFlow vive no bloco `metadata`, com prefixo `amflow-`. Os
+outros três seguem a tabela do `.claude/CLAUDE.md`, com os campos no topo.
 
 | Dado | `skill` | `agent`, `hook`, `command` |
 |---|---|---|

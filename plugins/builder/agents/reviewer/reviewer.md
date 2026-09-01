@@ -152,9 +152,9 @@ Quando invocado:
    depois da 1ª publicação; o segundo, só na cópia instalada. Ausentes na fonte é o estado correto,
    e reportá-los seria falso positivo.
 
-   Esta tabela reproduz R-03 e R-07 da norma `skill-frontmatter.md` §3, no repositório AmFlow — duas
-   das dezessete regras; a etapa 7 adiciona R-08 e R-17. As treze restantes, entre elas campo fora da
-   spec, valor não-string em `metadata` e limites de tamanho, existem só no verificador.
+   Esta tabela reproduz R-03 e R-07 — duas das dezessete regras que o `check.py` vendorizado também
+   aplica; a etapa 7 adiciona R-08 e R-17. As treze restantes, entre elas campo fora da spec, valor
+   não-string em `metadata` e limites de tamanho, existem só no verificador.
 
    Até 2026-09-01 reproduzir era a única saída: o verificador não viajava no plugin, e delegar era
    impossível. Agora ele viaja, vendorizado em `${CLAUDE_PLUGIN_ROOT}/scripts/`, e a cópia tem guard

@@ -54,8 +54,8 @@ Declare o campo que carrega comportamento; omita o resto. É higiene de leitura,
 ## O que toda skill declara, seja qual for o arquétipo
 
 As tabelas de cada arquétipo, mais abaixo, cobrem só o que varia por tipo. Isto aqui é piso, não teto
-— frontmatter e `metadata` seguem a norma do AmFlow por inteiro
-(`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow).
+— frontmatter e `metadata` seguem a norma do AmFlow por inteiro. O porquê de cada campo está em
+`builder-resource-standards`, no mesmo plugin.
 
 | Campo | Por quê |
 |---|---|

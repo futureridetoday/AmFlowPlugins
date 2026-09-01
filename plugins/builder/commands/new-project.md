@@ -214,6 +214,10 @@ que torna o recurso publicável: o Hub recusa submissão com `metadata` incomple
 Pedido de criação que chegue sem o comando → sugerir o comando antes de escrever
 qualquer arquivo.
 
+Conteúdo do recurso — descrição, seções, antipadrão de referência que não sobrevive à
+publicação — segue `builder-resource-standards`, consultada ao escrever ou revisar o
+corpo da skill.
+
 ### Onde cada recurso vive
 
 | Tipo | Caminho |

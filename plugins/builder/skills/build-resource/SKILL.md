@@ -111,7 +111,7 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 
 Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse → `post-tool-use.sh` | Stop → `stop.sh` | SubagentStop → `subagent-stop.sh` | SessionStart → `session-start.sh`.
 
-Cópia do template de skill exclui `GUIDE.md`: ele orienta quem cria a skill, não é arquivo interno dela. Copiá-lo poria dentro da skill gerada um arquivo com frontmatter fora do padrão de catálogo (`scripts/frontmatter/skill-frontmatter.md` §1, no repositório AmFlow).
+Cópia do template de skill exclui `GUIDE.md`: ele orienta quem cria a skill, não é arquivo interno dela. Copiá-lo poria dentro da skill gerada um arquivo com frontmatter fora do padrão de catálogo (R-01, que o `check.py` vendorizado aplica).
 
 **Ler o `GUIDE.md`, nunca apontar para ele.** Ao criar uma `skill`, ler
 `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/GUIDE.md` antes de preencher o `SKILL.md` — ele traz os
@@ -155,8 +155,8 @@ gerado antes desta versão: o título, descartando o sufixo `— Instruções do
 
 Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`, `hook-name`, `plugin-name`, `module-name`) pelo `nome`.
 
-**Skill:** a tabela acima não se aplica — segue a norma de frontmatter
-(`scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow). `d1`, `d2` e `d4` continuam
+**Skill:** a tabela acima não se aplica — segue a norma de frontmatter própria, com o porquê em
+`builder-resource-standards`. `d1`, `d2` e `d4` continuam
 coletados no survey (Fase 2, inalterado) para orientar `nome`, `tags` e `intencao`, mas não viram
 campo do frontmatter — pendentes do backlog `B-05` (`docs/plan/_inbox/_backlog.md`, no repositório
 AmFlow). `type`, `created`, `project` e `source` não se aplicam: derivam da pasta, do git e do
