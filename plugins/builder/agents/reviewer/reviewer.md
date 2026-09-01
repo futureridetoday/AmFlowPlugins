@@ -88,7 +88,10 @@ Quando invocado:
 
 3. Ler o arquivo com a ferramenta Read. Separar frontmatter (entre `---`) do corpo (tudo após o segundo `---`).
 
-4. **Verificação de frontmatter** — checar campos obrigatórios e recomendados:
+4. **Verificação de frontmatter** — o que é obrigatório **depende do tipo**. `skill` não segue a
+   forma dos outros três: aplicar a tabela do tipo certo, nunca a do outro.
+
+   **`agent`, `command` e `hook`** — campos no topo. Em hook, verificados em `hook.json`.
 
    | Campo | Nível | Bloqueante |
    |---|---|---|
@@ -101,13 +104,53 @@ Quando invocado:
    | `tags` | recomendado | — |
    | `created` | recomendado | — |
 
-   Para hooks: os campos acima são verificados em `hook.json`.
+   **`skill`** — segue a especificação Agent Skills. No topo vivem só os campos da spec; todo dado do
+   AmFlow vive em `metadata`, com prefixo `amflow-` e valor sempre string. **`type`, `version`,
+   `status` e `created` não existem no topo de uma skill** — cobrar qualquer um deles aqui reprova
+   uma skill correta, que é o defeito que esta divisão por tipo corrige.
+
+   | Campo | Nível | Bloqueante |
+   |---|---|---|
+   | `name` | obrigatório | ✓ |
+   | `description` | obrigatório | ✓ |
+   | `license` | obrigatório | ✓ |
+   | `metadata` | obrigatório | ✓ |
+   | `metadata.amflow-version` | obrigatório, com valor | ✓ |
+   | `metadata.amflow-status` | obrigatório, com valor | ✓ |
+   | `metadata.amflow-author` | obrigatório, com valor | ✓ |
+   | `metadata.amflow-author-id` | obrigatório, com valor | ✓ |
+   | `metadata.amflow-updated` | obrigatório, com valor | ✓ |
+   | `metadata.amflow-tags` | obrigatório, com valor | ✓ |
+   | `metadata.amflow-dependencies` | chave obrigatória, valor pode ser vazio | ✓ |
+
+   `amflow-dependencies` é a única das sete que passa vazia: skill sem dependência é o caso comum, e
+   exigir valor tornaria a regra insatisfazível para a maioria.
+
+   **Nunca cobrar `amflow-hub-id` nem `amflow-source` numa skill em revisão.** O primeiro só existe
+   depois da 1ª publicação; o segundo, só na cópia instalada. Ausentes na fonte é o estado correto,
+   e reportá-los seria falso positivo.
+
+   Esta tabela reproduz a norma `scripts/frontmatter/skill-frontmatter.md` §3, no repositório AmFlow,
+   na forma que o verificador `scripts/frontmatter/check.py` aplica (R-03 e R-07). A norma e o
+   verificador são recursos de sistema — não viajam no plugin —, e por isso a checagem é reproduzida
+   aqui em vez de delegada. Norma alterada lá exige atualizar esta tabela: nada detecta a divergência
+   sozinho.
 
 5. **Verificação de qualidade do corpo**:
    - Corpo não pode estar vazio ou conter apenas placeholders do template (`<o que faz>`, `<passo 1>`, `[template do output]`, `<responsabilidade 1>`, etc.)
    - `description` no frontmatter não pode ser texto padrão de template
    - Para `skill` e `agent`: corpo deve ter ao menos 2 passos ou instruções concretas e específicas
    - Para `command`: deve conter ao menos uma instrução executável concreta
+   - Para `skill`: `evals/eval_queries.json` preenchido — `skill_name` igual ao nome real (não
+     `skill-name`), `description_under_test` não-vazio, e ao menos um caso com `should_trigger:
+     false` que não seja o texto do template. Ausente, intocado ou sem nenhum *near-miss* → problema
+     bloqueante.
+
+     A `description` é a superfície inteira de ativação de uma skill: é o único texto que decide se
+     ela é invocada. Um conjunto de queries só com `should_trigger: true` confirma o óbvio e não
+     testa fronteira nenhuma — o que separa descrição boa de descrição larga demais é o caso vizinho
+     que **não** deve ativar. Nada aqui executa as queries; o valor está em obrigar o autor a
+     declará-las
    - Para `hook`: verificar existência e conteúdo de `hook.sh`:
      ```bash
      ls .claude/hooks/<name>/hook.sh 2>/dev/null && wc -l .claude/hooks/<name>/hook.sh || echo "missing"
@@ -133,8 +176,9 @@ Quando invocado:
 
 7. **Conformidade de estrutura**:
    - `name` em kebab-case (minúsculas e hífens; sem espaços, underscores, maiúsculas ou hífens consecutivos)
-   - `version` em formato semver (`X.Y.Z`)
-   - `type` é um dos valores válidos: `skill`, `agent`, `hook`, `command`
+   - `version` em formato semver (`X.Y.Z`) — em skill, o campo é `metadata.amflow-version`
+   - `type` é um dos valores válidos: `agent`, `hook`, `command`. **Skill não declara `type`** — a
+     ausência do campo numa skill é o estado correto, não um problema a reportar
    - Para `skill`: diretório `.claude/skills/<name>/` existe e contém `SKILL.md`
    - Para `agent`: arquivo não termina em `-workflow.md` (a menos que `tags` contenha `workflow`)
 

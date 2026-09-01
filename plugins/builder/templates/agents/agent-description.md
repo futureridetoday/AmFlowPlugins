@@ -1,5 +1,4 @@
 <!-- Destino: agents/<nome>/agent-description.md — raiz da pasta do agent, ao lado do <nome>.md.
-     Norma: docs/plan/system/resource-description.md (repositório AmFlow).
 
      Agent é diretório, como skill: agents/<nome>/<nome>.md + agent-description.md.
      A descoberta do Claude Code é recursiva e a identidade vem do campo `name` do frontmatter,

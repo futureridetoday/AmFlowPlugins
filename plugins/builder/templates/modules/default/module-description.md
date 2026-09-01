@@ -1,6 +1,5 @@
 <!-- Destino: modules/<nome>/module-description.md — raiz da pasta do módulo, ao lado do
      module.json e do MODULE.md.
-     Norma: docs/plan/system/resource-description.md (repositório AmFlow).
 
      Markdown puro: sem frontmatter, sem YAML, sem JSON. A identidade já vive no module.json.
 

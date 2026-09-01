@@ -113,6 +113,12 @@ Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse
 
 Cópia do template de skill exclui `GUIDE.md`: ele orienta quem cria a skill, não é arquivo interno dela. Copiá-lo poria dentro da skill gerada um arquivo com frontmatter fora do padrão de catálogo (`scripts/frontmatter/skill-frontmatter.md` §1, no repositório AmFlow).
 
+**Ler o `GUIDE.md`, nunca apontar para ele.** Ao criar uma `skill`, ler
+`${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/GUIDE.md` antes de preencher o `SKILL.md` — ele traz os
+quatro arquétipos, o peso de cada seção por arquétipo e os padrões de instrução A–E. O arquivo é
+legível aqui, do lado do plugin; do lado do projeto não existe, porque a cópia o exclui de propósito.
+Ponteiro para ele dentro da skill gerada não resolve, e ainda viaja ao Hub junto com o recurso.
+
 Se template não encontrado → gerar arquivo com frontmatter completo e seções padrão do tipo inline.
 Se recurso já existe no destino → encerrar: `Recurso já existe: <caminho> — edite-o diretamente ou use /amflow-builder:publish para publicá-lo`
 
@@ -178,6 +184,9 @@ Listar arquivos criados e sugerir próximos passos:
 - Editar o recurso (preencher o conteúdo específico)
 - Preencher o `[tipo]-description.md` — em skill, agent e módulo. Sem ele preenchido a publicação é
   recusada, e é o texto que a página do Hub exibe a quem considera comprar
+- Preencher `evals/eval_queries.json` — em skill. São os prompts que devem ativá-la e os *near-miss*
+  que não devem: para uma skill, a `description` é a superfície inteira de ativação, e declarar os
+  near-miss é o que expõe uma descrição larga demais. Também é exigido na publicação
 - `/amflow-builder:publish` quando o recurso estiver pronto
 
 ## Restrições

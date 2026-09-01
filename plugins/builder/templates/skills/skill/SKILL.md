@@ -1,7 +1,4 @@
 ---
-# → Guia de preenchimento por tipo: GUIDE.md
-# → Norma completa e as regras que o verificador aplica: scripts/frontmatter/skill-frontmatter.md no repositório AmFlow
-
 # ── especificação Agent Skills — sempre presentes ─────────────────────────────
 name: skill-name           # igual ao nome do diretório · max 64 chars · somente lowercase, números e hífens · sem hífen inicial, final ou consecutivo
 description: ""            # imperativo: "Use when..." | o que faz + quando usar (máx 1.024 chars)
@@ -40,8 +37,12 @@ license: ""                # ex: MIT | Apache-2.0 | Proprietary — obrigatório
 #           command: "./scripts/validate.sh"
 
 # ── dado próprio do AmFlow — nunca no topo, sempre em metadata ────────────────
-# As nove chaves e a obrigatoriedade de cada uma por contexto (fonte / bundle / cópia
-# instalada) estão em scripts/frontmatter/skill-frontmatter.md §3, no repositório AmFlow.
+# Prefixo amflow- em kebab-case, valor sempre string — a spec define metadata como mapa
+# de string para string, e valor que não seja string é descartado.
+# As sete chaves descomentadas são obrigatórias desde a criação — presentes sempre, e
+# com valor exceto amflow-dependencies, que pode ficar vazia.
+# amflow-hub-id só existe após a 1ª publicação. amflow-source nunca aparece aqui: só na
+# cópia instalada, nunca no repositório do Creator.
 metadata:
   amflow-version: "1.0.0"
   amflow-status: draft
@@ -56,7 +57,6 @@ metadata:
 # ── referências de criação ────────────────────────────────────────────────────
 # [1] Agent Skills open standard (specification)  https://agentskills.io/specification
 # [2] Claude Code — Extend Claude with skills     https://code.claude.com/docs/en/skills
-# [3] Norma de frontmatter do AmFlow              scripts/frontmatter/skill-frontmatter.md (repositório AmFlow)
 ---
 
 # [Nome da Skill]

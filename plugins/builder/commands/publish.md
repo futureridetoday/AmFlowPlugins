@@ -60,7 +60,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    exigido lá (passo 4). Ler o arquivo do recurso com Read para obter o frontmatter completo.
 
    **Onde cada campo vive, por tipo.** Para `skill`, seis campos saíram do topo e foram para
-   `metadata` (norma em `docs/plan/_inbox/skill-frontmatter-standard.md`, no repositório AmFlow):
+   `metadata` (norma em `scripts/frontmatter/skill-frontmatter.md`, no repositório AmFlow):
    `version` → `amflow-version`, `status` → `amflow-status`, `author` → `amflow-author`, `tags` →
    `amflow-tags` (separadas por espaço, nunca lista), `dependencies` → `amflow-dependencies`,
    `hub_id` → `amflow-hub-id`. `source` não existe em nenhum momento na fonte — só na cópia
@@ -72,6 +72,13 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 4. Validação silenciosa:
    - Encerrar se ausentes: `name`, `version`.
    - Exibir aviso (não bloqueia) se `author` ausente.
+   - Para `skill`: encerrar se `evals/eval_queries.json` estiver ausente, intocado (`skill_name` ainda
+     `skill-name`, ou `description_under_test` vazio) ou sem nenhum caso `should_trigger: false` que
+     não seja o texto do template — **"Evals não preenchidos: `<caminho>` — declare ao menos um
+     near-miss antes de publicar."**
+
+     A `description` é a única superfície de ativação de uma skill, e o near-miss é o que expõe uma
+     descrição larga demais. Nada aqui executa as queries: o gate é sobre declará-las.
 
 5. Exibir sequencialmente os campos para revisão. Para cada um, perguntar **"Confirmar"** ou **"Editar"**:
 

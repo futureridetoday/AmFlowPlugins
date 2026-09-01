@@ -160,6 +160,11 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 
 Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse → `post-tool-use.sh` | Stop → `stop.sh` | SubagentStop → `subagent-stop.sh` | SessionStart → `session-start.sh`.
 
+**Ler o `GUIDE.md`, nunca apontar para ele.** Ao criar uma `skill`, ler
+`${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/GUIDE.md` antes de preencher o `SKILL.md` — arquétipos,
+peso de cada seção e padrões de instrução. Ele é legível do lado do plugin; do lado do projeto não
+existe, porque a cópia o exclui de propósito.
+
 **Documento de descrição.** Skill, agent e módulo nascem com um `[tipo]-description.md` na raiz da
 própria pasta. Em skill e módulo ele vem na cópia de diretório; em agent é copiado à parte. É obrigatório
 para publicar no Hub. O bloco de comentários do template é orientação de preenchimento e existe para
@@ -204,6 +209,8 @@ Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`,
 
 Listar arquivos criados e orientar próximos passos:
 - Editar o recurso e preencher o conteúdo específico
+- Preencher `evals/eval_queries.json` — em skill. Os prompts que devem ativá-la e os *near-miss* que
+  não devem. Exigido na publicação
 - `/amflow-builder:publish` quando o recurso estiver pronto
 
 ## Restrições

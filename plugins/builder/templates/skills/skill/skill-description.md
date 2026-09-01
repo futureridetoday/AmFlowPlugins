@@ -1,5 +1,4 @@
 <!-- Destino: skills/<nome>/skill-description.md — raiz da pasta da skill, ao lado do SKILL.md.
-     Norma: docs/plan/system/resource-description.md (repositório AmFlow).
 
      Markdown puro: sem frontmatter, sem YAML, sem JSON. Os metadados já vivem no SKILL.md.
 
