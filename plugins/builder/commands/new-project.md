@@ -179,7 +179,7 @@ comando, quebraria a leitura em silêncio.
 **O que substituir, e o que copiar como está.** Nos blocos abaixo, só quatro marcadores vêm do
 survey: `<nome-projeto>`, `<areas-de-atuacao>`, `<descricao>` e `<perguntas-respostas>`. O tipo de
 projeto é literal e não vem de pergunta nenhuma, e `<pasta>` não entra aqui — ela é destino de
-escrita, usada no 5.1, no 5.4 e na pós-execução, nunca conteúdo do arquivo.
+escrita, usada no 5.1, no 5.5 e na pós-execução, nunca conteúdo do arquivo.
 
 Todo o resto entre `<>` é conteúdo do arquivo gerado, endereçado ao Claude que vai ler aquele
 `CLAUDE.md` depois — `<nome>` na tabela "Onde cada recurso vive" é o nome de um recurso qualquer, não
@@ -260,13 +260,12 @@ Anexar ao final do arquivo, nesta ordem, o conteúdo de cada um destes, lido de
 | 1 | `1-idioma-e-nomenclatura.md` | Idioma e Nomenclatura |
 | 2 | `2-comunicacao.md` | Comunicação |
 | 3 | `3-protocolo-de-execucao.md` | Protocolo de Execução |
-| 4 | `4-protocolo-anti-alucinacao.md` | Protocolo Anti-Alucinação |
-| 5 | `5-uso-de-ferramentas.md` | Uso de Ferramentas |
+| 4 | `4-uso-de-ferramentas.md` | Uso de Ferramentas |
 
 Copiar cada arquivo como está, sem reescrever e sem acrescentar separador: o `---` que separa as
 seções já abre cada um deles.
 
-Os cinco valem para qualquer projeto, e por isso não dependem do tipo escolhido no Passo 3. Vivem
+Os quatro valem para qualquer projeto, e por isso não dependem do tipo escolhido no Passo 3. Vivem
 fora deste arquivo porque são conteúdo do artefato, não lógica do comando — e porque a variação por
 tipo, quando existir, será uma lista de arquivos por tipo, não blocos alternativos aqui dentro.
 
@@ -329,7 +328,18 @@ seção `hub` — `hub_id`, `source`, `price` — é preenchida por `/amflow-bui
 - **Arquivo interno de skill** — ver regra 1 acima.
 ````
 
-### 5.4 — Criar `settings.json`
+### 5.4 — Gerar `.claude/rules/grounding-and-verification.md`
+
+Já existir → manter sem sobrescrever, pelo mesmo motivo do 5.3: o caso que sobra é o projeto com
+regras sem `CLAUDE.md`, configurado à mão.
+
+Copiar verbatim de `${CLAUDE_PLUGIN_ROOT}/templates/rules/grounding-and-verification.md` com a
+ferramenta Write. Sem reescrever.
+
+Diferente do 5.3, esta regra **não tem bloco `paths`**: grounding é conduta permanente, não
+procedimento de um domínio. Sem `paths`, entra em contexto em toda sessão — que é o que se quer.
+
+### 5.5 — Criar `settings.json`
 
 Criar `<pasta>/.claude/settings.json` com conteúdo `{}`.
 
@@ -345,6 +355,7 @@ Exibir ao usuário:
 Criados:
   .claude/CLAUDE.md
   .claude/rules/frontmatter.md
+  .claude/rules/grounding-and-verification.md
   .claude/settings.json
   .claude/skills/
   .claude/agents/
@@ -363,5 +374,5 @@ Próximos passos:
 ## Restrições
 
 - Nunca criar `.claude/CLAUDE.md` se já existir.
-- Nunca sobrescrever `.claude/settings.json` nem `.claude/rules/frontmatter.md` se já existirem.
+- Nunca sobrescrever `.claude/settings.json`, `.claude/rules/frontmatter.md` nem `.claude/rules/grounding-and-verification.md` se já existirem.
 - O `CLAUDE.md` gerado não tem frontmatter.
