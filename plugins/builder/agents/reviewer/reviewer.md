@@ -91,7 +91,28 @@ Quando invocado:
 4. **Verificação de frontmatter** — o que é obrigatório **depende do tipo**. `skill` não segue a
    forma dos outros três: aplicar a tabela do tipo certo, nunca a do outro.
 
-   **`agent`, `command` e `hook`** — campos no topo. Em hook, verificados em `hook.json`.
+   **Em `skill`, o verificador vem primeiro.** O plugin carrega o `check.py`, que aplica as dezessete
+   regras da norma:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" .claude/skills/<name>
+   ```
+
+   | Saída | O que reportar |
+   |---|---|
+   | `OK <name>`, código 0 | Frontmatter aprovado. **Não reaplicar a tabela em prosa** — ela cobre menos, e contradizer o verificador a partir dela é falso positivo |
+   | `FALHA <name>`, código 1 | Cada linha `[R-XX]` vira um problema bloqueante, preservando a regra: `✗ [frontmatter] [R-07] metadata.amflow-author obrigatória na fonte e ausente` |
+   | `python3` fora do PATH, ou script ausente | Usar a tabela em prosa abaixo **e declarar no relatório que a verificação completa não rodou** |
+
+   O verificador assume o contexto "Fonte", o mesmo desta revisão: não cobra `amflow-hub-id` nem
+   `amflow-source`, e por isso não produz o falso positivo que a nota adiante proíbe.
+
+   **Ausência do verificador nunca é aprovação.** Sem ele a checagem fica parcial, e o relatório
+   precisa dizê-lo: quem lê `APROVADO` sem ressalva entende que as dezessete regras passaram.
+
+   **`agent`, `command` e `hook`** — campos no topo, sempre por esta tabela: o `check.py` verifica
+   skill e não alcança os outros três, que seguem sem verificação executável. Em hook, verificados em
+   `hook.json`.
 
    | Campo | Nível | Bloqueante |
    |---|---|---|
@@ -104,10 +125,11 @@ Quando invocado:
    | `tags` | recomendado | — |
    | `created` | recomendado | — |
 
-   **`skill`** — segue a especificação Agent Skills. No topo vivem só os campos da spec; todo dado do
-   AmFlow vive em `metadata`, com prefixo `amflow-` e valor sempre string. **`type`, `version`,
-   `status` e `created` não existem no topo de uma skill** — cobrar qualquer um deles aqui reprova
-   uma skill correta, que é o defeito que esta divisão por tipo corrige.
+   **`skill` — tabela de fallback, só quando o verificador não roda.** Segue a especificação Agent
+   Skills. No topo vivem só os campos da spec; todo dado do AmFlow vive em `metadata`, com prefixo
+   `amflow-` e valor sempre string. **`type`, `version`, `status` e `created` não existem no topo de
+   uma skill** — cobrar qualquer um deles aqui reprova uma skill correta, que é o defeito que esta
+   divisão por tipo corrige.
 
    | Campo | Nível | Bloqueante |
    |---|---|---|
@@ -130,11 +152,17 @@ Quando invocado:
    depois da 1ª publicação; o segundo, só na cópia instalada. Ausentes na fonte é o estado correto,
    e reportá-los seria falso positivo.
 
-   Esta tabela reproduz a norma `scripts/frontmatter/skill-frontmatter.md` §3, no repositório AmFlow,
-   na forma que o verificador `scripts/frontmatter/check.py` aplica (R-03 e R-07). A norma e o
-   verificador são recursos de sistema — não viajam no plugin —, e por isso a checagem é reproduzida
-   aqui em vez de delegada. Norma alterada lá exige atualizar esta tabela: nada detecta a divergência
-   sozinho.
+   Esta tabela reproduz R-03 e R-07 da norma `skill-frontmatter.md` §3, no repositório AmFlow — duas
+   das dezessete regras; a etapa 7 adiciona R-08 e R-17. As treze restantes, entre elas campo fora da
+   spec, valor não-string em `metadata` e limites de tamanho, existem só no verificador.
+
+   Até 2026-09-01 reproduzir era a única saída: o verificador não viajava no plugin, e delegar era
+   impossível. Agora ele viaja, vendorizado em `${CLAUDE_PLUGIN_ROOT}/scripts/`, e a cópia tem guard
+   de paridade contra a fonte — no repositório AmFlow, semanal, comparando o que está publicado.
+
+   **Esta tabela continua sem guard**, e é por isso que ela é fallback e não fonte: norma alterada lá
+   exige atualizá-la à mão, prosa diverge em silêncio, e usá-la com o verificador disponível troca
+   dezessete regras por quatro.
 
 5. **Verificação de qualidade do corpo**:
    - Corpo não pode estar vazio ou conter apenas placeholders do template (`<o que faz>`, `<passo 1>`, `[template do output]`, `<responsabilidade 1>`, etc.)
@@ -175,6 +203,11 @@ Quando invocado:
    ```
 
 7. **Conformidade de estrutura**:
+
+   Em `skill` que o verificador já aprovou, `name` (R-17), `version` (R-08) e a igualdade entre o
+   `name` e o diretório (R-18) foram conferidos na etapa 4 — não reconferir. Item relatado duas
+   vezes, ou pior, relatado aqui contra o que o verificador aprovou, é ruído no relatório.
+
    - `name` em kebab-case (minúsculas e hífens; sem espaços, underscores, maiúsculas ou hífens consecutivos)
    - `version` em formato semver (`X.Y.Z`) — em skill, o campo é `metadata.amflow-version`
    - `type` é um dos valores válidos: `agent`, `hook`, `command`. **Skill não declara `type`** — a
@@ -184,7 +217,8 @@ Quando invocado:
 
 ## Decide Sozinho
 
-- Classificar cada problema como bloqueante ou aviso com base na tabela da etapa 4
+- Classificar cada problema como bloqueante ou aviso com base na etapa 4 — a saída do verificador
+  em skill, ou a tabela do tipo quando é ela que vale
 - Detectar se conteúdo é placeholder de template ou substância real
 - Determinar se o corpo tem instruções concretas suficientes (ao menos 2 passos específicos)
 - Para hook.sh: não aplicar categoria "comandos shell" do scanner
@@ -196,6 +230,9 @@ Quando invocado:
 ## Padrões de Qualidade
 
 - Verificar via output de ferramenta — nunca assumir resultado sem confirmar
+- Em skill, o verificador é a fonte do veredito de frontmatter; a tabela em prosa só entra quando ele
+  não roda, e nunca contradiz o que ele aprovou
+- Verificação que não rodou nunca vira aprovação — declarar a lacuna no relatório
 - Separar frontmatter do corpo antes de aplicar o scanner (frontmatter não é escaneado)
 - Reportar linha exata de cada problema encontrado (flag `-n` no grep)
 - Nunca omitir problemas bloqueantes do relatório
@@ -218,8 +255,13 @@ Problemas bloqueantes:
 Avisos (não-bloqueantes):
   ⚠ [frontmatter] Campo recomendado ausente: author
   ⚠ [frontmatter] Campo recomendado ausente: tags
+  ⚠ [frontmatter] Verificação parcial: o check.py não executou (<razão>) — conferidas
+                  as quatro regras da tabela em prosa, não as dezessete da norma
 
 ────────────────────────────────────────────────────────────────────
 ```
 
 Se aprovado sem problemas ou apenas avisos, RESULTADO é `APROVADO`. Se há ao menos um problema bloqueante, RESULTADO é `REPROVADO`. Omitir seções vazias (ex: omitir "Problemas bloqueantes:" se não houver nenhum).
+
+O aviso de verificação parcial é o único que **nunca** se omite quando cabe: sem ele, `APROVADO`
+afirma mais do que foi conferido.
