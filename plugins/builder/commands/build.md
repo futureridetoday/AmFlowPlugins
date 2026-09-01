@@ -205,6 +205,30 @@ Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`,
 
 **Workflow:** preencher `## Definição` com nodes e edges extraídos de `visao_geral`. Gerar `<nome>-workflow.mmd` como `flowchart TD` — nós `type: human` com prefixo `👤`, back-edges com sufixo `↻` na label da aresta.
 
+## Fase 3.5 — Verificar a skill gerada
+
+**Só para `skill`.** O verificador aplica a norma de frontmatter de skill e nada mais — rodá-lo sobre
+os outros seis tipos devolve `[R-03] SKILL.md não encontrado`, que é ruído, não achado. Nos demais,
+pular esta fase sem mencioná-la.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" <caminho-do-projeto>/.claude/skills/<nome>
+```
+
+`OK <nome>` e código 0 → Fase 4. `FALHA <nome>` com linhas `[R-XX]` e código 1 → corrigir o campo
+apontado e rodar de novo, antes da Fase 4.
+
+Reprovar aqui é defeito do Builder: nesta fase o `SKILL.md` só tem o que o template trouxe e o que a
+Fase 3 carimbou. Nunca relatar a skill como verificada sem ter lido `OK` na saída.
+
+**Quando o verificador não roda** — `python3` fora do PATH, ou
+`${CLAUDE_PLUGIN_ROOT}/scripts/check.py` ausente numa instalação anterior à vendorização: dizer ao
+Creator, em uma linha, que a verificação não rodou e por quê, e seguir para a Fase 4. A skill foi
+criada e é entregue; o que faltou foi a conferência.
+
+Ausência não é aprovação. Sem o verificador, a primeira conferência de frontmatter passa a ser a de
+`/amflow-builder:publish` — mais tarde, e depois de o Creator já ter tocado o arquivo.
+
 ## Fase 4 — Exibir resultado
 
 Listar arquivos criados e orientar próximos passos:
@@ -222,3 +246,4 @@ Listar arquivos criados e orientar próximos passos:
   fonte (R-07), e o agent `reviewer` cobra o mesmo. A tool `me` não serve de saída — devolve só o
   `user_id`, sem perfil.
 - Nunca sobrescrever recurso existente.
+- Verificador ausente ou não executável não é aprovação — relatar que não rodou.

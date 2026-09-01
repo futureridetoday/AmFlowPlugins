@@ -178,6 +178,41 @@ não os toca.
 
 **Workflow extra:** preencher `## Definição` com nodes e edges extraídos de `visao_geral`. Gerar `<nome>-workflow.mmd` como `flowchart TD` — nós `type: human` com prefixo `👤`, back-edges com sufixo `↻` na label.
 
+### Fase 3.5 — Verificar a skill gerada
+
+**Só para `skill`.** O verificador aplica a norma de frontmatter de skill e nada mais — rodá-lo sobre
+agent, command, hook, plugin, workflow ou module devolve `[R-03] SKILL.md não encontrado`, que é
+ruído, não achado. Nos outros seis tipos, pular esta fase sem mencioná-la.
+
+```bash
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" <caminho-do-projeto>/.claude/skills/<nome>
+```
+
+| Saída | O que fazer |
+|---|---|
+| `OK <nome>`, código 0 | Seguir para a Fase 4 |
+| `FALHA <nome>` e linhas `[R-XX]`, código 1 | Corrigir o campo apontado e rodar de novo, antes da Fase 4 |
+
+**Reprovar aqui é defeito do Builder, não do Creator.** Nesta fase o `SKILL.md` só tem o que o
+template trouxe e o que a Fase 3 carimbou — não há conteúdo autoral ainda. Entregar assim empurra
+para a publicação um recurso que o gate vai barrar, e o Creator não tem como saber que a causa
+nasceu aqui. Corrigir e reexecutar é parte da fase.
+
+Nunca relatar a skill como verificada sem ter lido `OK` na saída.
+
+**Quando o verificador não roda.** Duas ausências, com o mesmo tratamento:
+
+- `python3` fora do PATH
+- `${CLAUDE_PLUGIN_ROOT}/scripts/check.py` ausente — instalação do plugin anterior à vendorização
+
+Nos dois casos: **dizer ao Creator, em uma linha, que a verificação não rodou e por quê**, e seguir
+para a Fase 4. A skill foi criada e é entregue; o que faltou foi a conferência.
+
+**Nunca tratar ausência como aprovação.** `command not found` e arquivo ausente não são código 0, e
+silenciar isso entrega como verificada uma skill que ninguém verificou. Sem o verificador, a primeira
+conferência de frontmatter passa a ser a de `/amflow-builder:publish` — a skill continua publicável,
+e o custo é o erro aparecer mais tarde.
+
 ### Fase 4 — Exibir resultado
 
 Listar arquivos criados e sugerir próximos passos:
@@ -198,3 +233,5 @@ Listar arquivos criados e sugerir próximos passos:
   fonte (R-07), e o agent `reviewer` cobra o mesmo — recurso que nasce sem ela reprova na revisão e
   não publica. A tool `me` não serve de saída: devolve só o `user_id`, sem perfil.
 - Nunca sobrescrever recurso existente sem confirmação explícita.
+- Verificador ausente ou não executável não é aprovação — relatar que não rodou. Skill entregue como
+  verificada sem `OK` na saída é a falha mais cara desta skill: o Creator descobre na publicação.
