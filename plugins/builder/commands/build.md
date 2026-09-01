@@ -188,7 +188,7 @@ Recurso já existe → encerrar: **"Recurso já existe: <caminho> — edite-o di
 | `created` | `date +%Y-%m-%d` |
 | `project` | "Nome do projeto" da tabela Identidade do `.claude/CLAUDE.md` (ver abaixo) |
 | `source` | `local` |
-| `author` | `git config user.name` (omitir se vazio) |
+| `author` | `git config user.name` (local → global); vazio nos dois → perguntar o nome ao Creator. Nunca omitir nem gravar vazio |
 | `author_id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
 
 **De onde sai o `project`.** Da linha "Nome do projeto" da tabela `## Identidade` do
@@ -217,5 +217,8 @@ Listar arquivos criados e orientar próximos passos:
 
 - Um recurso por execução.
 - Nome inválido (maiúscula, espaço, hífen inicial/final, hífens consecutivos, > 64 chars) → rejeitar e informar a regra violada.
-- `git config user.name` falhou → omitir `author`, não bloquear.
+- `git config user.name` vazio no local e no global → perguntar o nome do autor ao Creator e carimbar
+  a resposta. Nunca omitir o campo nem gravá-lo vazio: `amflow-author` é obrigatória **com valor** na
+  fonte (R-07), e o agent `reviewer` cobra o mesmo. A tool `me` não serve de saída — devolve só o
+  `user_id`, sem perfil.
 - Nunca sobrescrever recurso existente.

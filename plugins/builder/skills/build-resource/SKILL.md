@@ -142,7 +142,7 @@ sem ele não passa no gate. Não preencher agora é aceitável; criar sem ele, n
 | `created` | `date +%Y-%m-%d` |
 | `project` | "Nome do projeto" da tabela Identidade do `.claude/CLAUDE.md` (ver abaixo) |
 | `source` | `local` |
-| `author` | `git config user.name` (omitir se vazio) |
+| `author` | `git config user.name` (local → global); vazio nos dois → perguntar o nome ao Creator. Nunca omitir nem gravar vazio |
 | `author_id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
 
 **De onde sai o `project`.** Da linha "Nome do projeto" da tabela `## Identidade` do
@@ -169,7 +169,7 @@ não os toca.
 | `name` | `nome` |
 | `description` | `intencao` |
 | `license` | `Proprietary` |
-| `metadata.amflow-author` | `git config user.name` (omitir a chave se vazio) |
+| `metadata.amflow-author` | `git config user.name` (local → global); vazio nos dois → perguntar o nome ao Creator. Nunca omitir a chave nem gravá-la vazia — R-07 a exige **com valor** |
 | `metadata.amflow-author-id` | `<user_id>` obtido na Fase 0 — sempre preenchido (a Fase 0 garante sessão autenticada) |
 | `metadata.amflow-updated` | `date +%Y-%m-%d` |
 | `metadata.amflow-tags` | selecionados, separados por espaço — nunca lista |
@@ -193,5 +193,8 @@ Listar arquivos criados e sugerir próximos passos:
 
 - Um recurso por execução — nunca criar múltiplos em batch sem solicitação explícita.
 - Nome inválido (maiúscula, espaço, hífen inicial/final, hífens consecutivos ou > 64 chars) → rejeitar e informar a regra.
-- `git config user.name` falhou → omitir `author`, não bloquear.
+- `git config user.name` vazio no local e no global → perguntar o nome do autor ao Creator e carimbar
+  a resposta. Nunca omitir o campo nem gravá-lo vazio: `amflow-author` é obrigatória **com valor** na
+  fonte (R-07), e o agent `reviewer` cobra o mesmo — recurso que nasce sem ela reprova na revisão e
+  não publica. A tool `me` não serve de saída: devolve só o `user_id`, sem perfil.
 - Nunca sobrescrever recurso existente sem confirmação explícita.
