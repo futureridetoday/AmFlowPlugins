@@ -13,7 +13,7 @@ lê. Aqui vive só o necessário para publicar, instalar e atualizar o marketpla
 | `.claude-plugin/marketplace.json` | Catálogo — declara as duas entradas de plugin |
 | `plugins/worker/` | Plugin `amflow-worker` |
 | `plugins/builder/` | Plugin `amflow-builder` |
-| `plugins/builder/templates/claude-md/` | Os quatro fragmentos de conduta — fonte das seções deste arquivo |
+| `plugins/builder/templates/claude-md/` | Os três fragmentos de conduta — fonte das seções deste arquivo |
 | `.github/workflows/plugins.yml` | Guard de publicação — valida manifestos e frontmatter |
 | `scripts/check-surface.py` | Guard de publicação — separação de superfícies MCP |
 
@@ -95,7 +95,7 @@ bloco YAML no topo — frontmatter aqui é texto que consome contexto em toda se
 nada. É a mesma regra que o `/amflow-builder:new-project` aplica ao gerar o `CLAUDE.md` de um projeto
 novo.
 
-## Sobre as quatro seções abaixo
+## Sobre as três seções abaixo
 
 São cópia literal dos fragmentos em `plugins/builder/templates/claude-md/`, os mesmos que o
 `/amflow-builder:new-project` injeta no `CLAUDE.md` de todo projeto criado. Ficam inline porque regra
@@ -187,31 +187,3 @@ Quando a tarefa for ambígua ou o escopo não estiver claro:
 ### Sugestões não solicitadas
 
 Apresentar e aguardar aprovação explícita. Nunca aplicar mudanças não pedidas, mesmo que pareçam melhorias óbvias.
----
-
-## Uso de Ferramentas
-
-### Hierarquia de Ferramentas
-
-1. Ferramentas dedicadas têm prioridade sobre Bash (Read, Edit, Write)
-2. Bash apenas para operações exclusivas de shell
-3. Agent para exploração ampla que consumiria mais de 3 queries no contexto principal
-
-### Regras de Arquivo
-
-- Leitura: sempre usar `Read`, nunca `cat` / `head` / `tail`
-- Edição: sempre usar `Edit` para arquivos existentes
-- Criação: usar `Write` apenas para arquivos novos ou reescrita completa
-- Nunca usar `echo >` ou `cat <<EOF` para escrever arquivos
-
-### Paralelismo
-
-- Chamadas independentes de ferramentas devem ser feitas em paralelo na mesma mensagem
-- Chamadas dependentes devem ser sequenciais — nunca usar placeholders ou adivinhar valores intermediários
-
-### Bash
-
-- Sempre usar paths absolutos
-- Caminhos com espaços entre aspas duplas
-- Nunca usar flags interativas (`-i`) em comandos git ou outros
-- Preferir `find .` ao invés de `find /` para evitar varredura completa do sistema
