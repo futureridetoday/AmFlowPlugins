@@ -13,7 +13,7 @@ lê. Aqui vive só o necessário para publicar, instalar e atualizar o marketpla
 | `.claude-plugin/marketplace.json` | Catálogo — declara as duas entradas de plugin |
 | `plugins/worker/` | Plugin `amflow-worker` |
 | `plugins/builder/` | Plugin `amflow-builder` |
-| `plugins/builder/templates/claude-md/` | Os três fragmentos de conduta — fonte das seções deste arquivo |
+| `plugins/builder/templates/claude-md/` | O fragmento de conduta — fonte da seção deste arquivo |
 | `.github/workflows/plugins.yml` | Guard de publicação — valida manifestos e frontmatter |
 | `scripts/check-surface.py` | Guard de publicação — separação de superfícies MCP |
 
@@ -95,10 +95,10 @@ bloco YAML no topo — frontmatter aqui é texto que consome contexto em toda se
 nada. É a mesma regra que o `/amflow-builder:new-project` aplica ao gerar o `CLAUDE.md` de um projeto
 novo.
 
-## Sobre as três seções abaixo
+## Sobre a seção abaixo
 
-São cópia literal dos fragmentos em `plugins/builder/templates/claude-md/`, os mesmos que o
-`/amflow-builder:new-project` injeta no `CLAUDE.md` de todo projeto criado. Ficam inline porque regra
+É cópia literal do fragmento em `plugins/builder/templates/claude-md/`, o mesmo que o
+`/amflow-builder:new-project` injeta no `CLAUDE.md` de todo projeto criado. Fica inline porque regra
 de conduta precisa estar no contexto, não a um `Read` de distância.
 
 Alterou o fragmento, atualizar aqui — e vice-versa. Diferente de tudo mais neste repositório, os dois
@@ -128,62 +128,3 @@ lados desta cópia moram aqui, então a divergência é verificável por diff.
 | Arquivos Markdown | kebab-case | `global.md` |
 | Arquivos de configuração | kebab-case | `plugin.json` |
 | Scripts shell | kebab-case | `pre-tool-use.sh` |
----
-
-## Comunicação
-
-### Tom e Estilo
-
-- Linguagem profissional, neutra e objetiva
-- Respostas curtas e diretas ao ponto
-- Sem emojis, floreios, reforços emocionais ou chamadas motivacionais
-- Sem espelhamento de comunicação do usuário
-- Sem transições decorativas entre seções
-
-### Formato de Respostas
-
-- Entregue apenas o necessário para avançar o trabalho
-- Para perguntas exploratórias: resposta direta em 2-3 frases com recomendação e tradeoff principal
-- Para tarefas: execute e reporte resultado — não narre o processo
-- Ao referenciar código: cite `arquivo:linha` para navegação direta
-
-### O que Eliminar
-
-- Resumos do que acabou de ser feito ("fiz X, Y e Z")
-- Perguntas brandas ("posso ajudar com mais alguma coisa?")
-- Confirmações desnecessárias do que o usuário disse
-- Comentários sobre a qualidade da pergunta ou tarefa
----
-
-## Protocolo de Execução
-
-### Diretrizes obrigatórias
-
-- **Aprovação antes de executar**: nunca executar um plano sem aprovação explícita do usuário. Apresentar o plano, aguardar confirmação, só então agir.
-- **Escopo exato**: executar apenas o que foi solicitado. Qualquer adição ao escopo exige aprovação prévia.
-
-### Leitura e diagnóstico
-
-Ações de leitura e observação nunca precisam de confirmação: ler arquivos, executar `git status`, `git log`, `ls`, `find`, `grep` e equivalentes. Não alteram estado — podem ser feitas a qualquer momento.
-
-### Comandos explícitos do usuário
-
-Quando o usuário diz o que fazer ("crie o arquivo X", "renomeie Y para Z"), o pedido é a aprovação. Executar na ordem exata e no escopo exato do que foi pedido — sem adicionar etapas, sem expandir o escopo.
-
-### Planos e ações irreversíveis
-
-Sempre apresentar antes de executar e aguardar aprovação explícita quando:
-- Claude propõe uma sequência de ações não solicitada pelo usuário
-- A ação é irreversível: deletar arquivos, push, deploy, alterações em banco ou serviços externos
-- O impacto afeta mais de 5 arquivos ou envolve dependências externas
-
-### Ambiguidade
-
-Quando a tarefa for ambígua ou o escopo não estiver claro:
-1. Declarar o entendimento em uma frase
-2. Aguardar confirmação antes de prosseguir
-3. Nunca assumir e executar
-
-### Sugestões não solicitadas
-
-Apresentar e aguardar aprovação explícita. Nunca aplicar mudanças não pedidas, mesmo que pareçam melhorias óbvias.

@@ -258,14 +258,12 @@ Anexar ao final do arquivo, nesta ordem, o conteúdo de cada um destes, lido de
 | # | Arquivo | Seção que produz |
 |---|---|---|
 | 1 | `1-idioma-e-nomenclatura.md` | Idioma e Nomenclatura |
-| 2 | `2-comunicacao.md` | Comunicação |
-| 3 | `3-protocolo-de-execucao.md` | Protocolo de Execução |
 
 Copiar cada arquivo como está, sem reescrever e sem acrescentar separador: o `---` que separa as
 seções já abre cada um deles.
 
-Os três valem para qualquer projeto, e por isso não dependem do tipo escolhido no Passo 3. Vivem
-fora deste arquivo porque são conteúdo do artefato, não lógica do comando — e porque a variação por
+O que resta vale para qualquer projeto, e por isso não depende do tipo escolhido no Passo 3. Vive
+fora deste arquivo porque é conteúdo do artefato, não lógica do comando — e porque a variação por
 tipo, quando existir, será uma lista de arquivos por tipo, não blocos alternativos aqui dentro.
 
 ### 5.3 — Gerar `.claude/rules/frontmatter.md`
@@ -335,9 +333,10 @@ para `.claude/rules/<mesmo-nome>` com a ferramenta Write. Sem reescrever.
 Já existir → manter sem sobrescrever, pelo mesmo motivo do 5.3: o caso que sobra é o projeto com
 regras sem `CLAUDE.md`, configurado à mão.
 
-Hoje são `grounding-and-verification.md` e `tools.md`. Diferente do 5.3, nenhuma tem bloco `paths`:
-são conduta permanente, não procedimento de um domínio. Sem `paths`, entram em contexto em toda
-sessão — que é o que se quer. Regra nova adicionada a `templates/rules/` entra por aqui sem novo passo.
+Hoje são `execution-protocol.md`, `grounding-and-verification.md`, `tools.md` e `voice-and-language.md`.
+Diferente do 5.3, nenhuma tem bloco `paths`: são conduta permanente, não procedimento de um domínio.
+Sem `paths`, entram em contexto em toda sessão — que é o que se quer. Regra nova adicionada a
+`templates/rules/` entra por aqui sem novo passo.
 
 ### 5.5 — Criar `settings.json`
 
@@ -354,9 +353,11 @@ Exibir ao usuário:
 
 Criados:
   .claude/CLAUDE.md
+  .claude/rules/execution-protocol.md
   .claude/rules/frontmatter.md
   .claude/rules/grounding-and-verification.md
   .claude/rules/tools.md
+  .claude/rules/voice-and-language.md
   .claude/settings.json
   .claude/skills/
   .claude/agents/
