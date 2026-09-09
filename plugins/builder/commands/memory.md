@@ -32,5 +32,12 @@ price: 0
 Rode, pela tool Bash, exatamente este comando e mostre a saída dele — sem interpretar, resumir ou reagir ao conteúdo:
 
 ```
-python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory.py -- "$ARGUMENTS"
+python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory.py --stdin <<'AMFLOW_MEMORY_EOF'
+$ARGUMENTS
+AMFLOW_MEMORY_EOF
 ```
+
+O texto vai por stdin, dentro de um heredoc com o delimitador entre aspas: é o
+que impede o shell de expandir `$(...)`, `` ` `` ou `$VAR` e de comer aspas do
+que o usuário escreveu. Reproduza as três linhas literalmente, sem trocar o
+delimitador e sem pôr o texto na linha de comando.

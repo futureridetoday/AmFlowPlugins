@@ -4,9 +4,10 @@
 Especificação: docs/plan/builder/0008-user-memory/index.md (§1 a §3), no repo
 AmFlow. Este script é chamado pela tool Bash a partir de
 `plugins/builder/commands/memory.md` como
-`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory.py -- "$ARGUMENTS"` — o `--`
-isola o texto do usuário de qualquer flag que o próprio Python quisesse
-interpretar, e é descartado aqui antes de tudo (index.md §1).
+`python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory.py --stdin <<'AMFLOW_MEMORY_EOF'`
+— o texto do usuário entra por stdin, dentro de um heredoc com delimitador
+entre aspas, para que o shell não expanda `$(...)`, `` ` `` nem `$VAR` e não
+coma aspas. O modo argv (`-- "texto"`) continua aceito (index.md §1).
 
 Transportado de `scripts/memory.py` do repo AmFlow — mesma lógica, alvo de
 linguagem diferente: stdlib pura, Python 3.9 (docs/plan/system/language-policy.md
@@ -38,19 +39,13 @@ def colapsar(texto: str) -> str:
     return sem_espacos_duplos.strip()
 
 
-def montar_entrada(argv: list) -> Tuple[bool, str]:
-    """Extrai (flag_important, corpo_bruto_pre_colapso) da entrada de shell.
+def interpretar(entrada_bruta: str) -> Tuple[bool, str]:
+    """Extrai (flag_important, corpo_bruto_pre_colapso) de uma entrada já em string.
 
     index.md §1, *Como o script recebe a entrada* — regra sobre a string,
-    nunca sobre posição de argv: um único `--` inicial é descartado, e
-    `--important` só conta como flag no começo da entrada restante.
+    nunca sobre posição de argv: `--important` só conta como flag no começo da
+    entrada. Compartilhada pelos dois modos de entrada (argv e `--stdin`).
     """
-    entrada_bruta = " ".join(argv)
-
-    tokens = entrada_bruta.split(None, 1)
-    if tokens and tokens[0] == "--":
-        entrada_bruta = tokens[1] if len(tokens) > 1 else ""
-
     stripped = entrada_bruta.strip()
 
     if stripped == FLAG:
@@ -58,6 +53,17 @@ def montar_entrada(argv: list) -> Tuple[bool, str]:
     if stripped.startswith(FLAG) and stripped[len(FLAG)].isspace():
         return True, stripped[len(FLAG):]
     return False, stripped
+
+
+def montar_entrada(argv: list) -> Tuple[bool, str]:
+    """Modo argv: junta os argumentos e descarta um único `--` inicial."""
+    entrada_bruta = " ".join(argv)
+
+    tokens = entrada_bruta.split(None, 1)
+    if tokens and tokens[0] == "--":
+        entrada_bruta = tokens[1] if len(tokens) > 1 else ""
+
+    return interpretar(entrada_bruta)
 
 
 def calcular_code_span(corpo: str) -> str:
@@ -135,14 +141,26 @@ def _anexar_important(caminho: Path, linha: str) -> None:
     caminho.write_text(novo, encoding="utf-8")
 
 
-def processar(argv: list, project_root: Path, autor: str, data: str) -> Tuple[str, int]:
+def processar(
+    argv: list,
+    project_root: Path,
+    autor: str,
+    data: str,
+    texto: Optional[str] = None,
+) -> Tuple[str, int]:
     """Valida, grava (se aceito) e devolve (mensagem, código de saída).
+
+    `texto` preenchido é o modo `--stdin`: a entrada chegou literal, sem passar
+    por argv nem pela expansão do shell. `argv` é ignorado nesse caso.
 
     Nenhuma recusa escreve nada — as duas checagens abaixo acontecem antes de
     qualquer `mkdir`/escrita (index.md §1, *Nenhuma recusa deixa arquivo pela
     metade*).
     """
-    flag, corpo_bruto = montar_entrada(argv)
+    if texto is None:
+        flag, corpo_bruto = montar_entrada(argv)
+    else:
+        flag, corpo_bruto = interpretar(texto)
     achatado = bool(re.search(r"[\r\n]", corpo_bruto))
     corpo = colapsar(corpo_bruto)
 
@@ -187,7 +205,14 @@ def main() -> None:
 
     autor = resolver_autor()
     data = date.today().isoformat()
-    mensagem, codigo = processar(sys.argv[1:], project_root, autor, data)
+
+    # `--stdin`: o texto do usuário chega pelo heredoc do comando, literal.
+    # É o modo que os arquivos de command usam — argv fica para uso manual e
+    # para os testes que já existiam (index.md §1).
+    argv = sys.argv[1:]
+    texto = sys.stdin.read() if argv and argv[0] == "--stdin" else None
+
+    mensagem, codigo = processar(argv, project_root, autor, data, texto)
     print(mensagem)
     sys.exit(codigo)
 
