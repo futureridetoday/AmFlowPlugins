@@ -8,12 +8,11 @@ allowed-tools: Bash(python3 ${CLAUDE_PLUGIN_ROOT}/scripts/memory.py *)
 name: memory
 type: command
 project: AmFlow
-tags: [memory, command, claude-md, tooling]
+tags: [memory, command, claude-md, tooling, worker]
 
 # history
 author: Bortoli
-author_id: ""
-created: 2026-09-05
+created: 2026-09-09
 status: draft
 version: 1.0.0
 updated: ""
@@ -23,7 +22,7 @@ scope: project
 auto_load: false
 dependencies: []
 
-# hub — não publicável; tooling interno do plugin Builder
+# hub
 hub_id: ""
 source: ""
 price: 0
