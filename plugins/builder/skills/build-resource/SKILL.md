@@ -131,18 +131,21 @@ Sem survey. Uma pergunta por vez.
 2. **Fonte** — pedir o caminho da pasta do recurso existente. Ler o conteúdo com as ferramentas de arquivo: estrutura, arquivos, e o frontmatter ou manifesto se houver.
 3. **Sanity check de tipo** — se a pasta aparenta ser de outro tipo (ex.: tem `agent.md` e o tipo escolhido é `skill`), avisar e pedir confirmação antes de seguir.
 4. **Template do tipo** — ler o template da tabela da Fase 3, o mesmo que "Passo a passo" usa.
-5. **Plano de adaptação** — redigir um plano curto: quais arquivos do template serão criados, como o conteúdo do recurso importado mapeia em cada um, o que é mantido, descartado ou reescrito para conformar à norma AmFlow sob o novo nome. Incluir `description` e `tags` propostos, derivados do recurso importado, e o frontmatter carimbado pelas regras da Fase 3. O frontmatter da origem nunca é copiado literal.
+5. **Plano de adaptação** — redigir um plano curto: quais arquivos do template serão criados, como o conteúdo do recurso importado mapeia em cada um, o que é mantido, descartado ou reescrito para conformar à norma AmFlow sob o novo nome. Propor a partir do recurso importado: `description`, `tags` e — nos tipos que os carregam no frontmatter (`agent`, `command`, `plugin`) — `d1` / `d2` / `d4`. O frontmatter é carimbado pelas regras da Fase 3; o da origem nunca é copiado literal.
 6. **Revisão** — exibir o plano. Creator responde: **confirmar**, **editar** (volta ao passo 5) ou **cancelar** (encerra sem criar nada).
 7. **Criação** — confirmado, executar a Fase 3 usando o plano como fonte de conteúdo no lugar das respostas do survey.
 
 ### Fase 2 (Usar template) — esqueleto puro
 
-Sem survey. Duas perguntas, para qualquer tipo.
+Sem survey. Perguntas mínimas: nome, `description`, `tags` — e, em um tipo, um parâmetro estrutural que a Fase 3 exige.
 
 1. **Nome** — pedir o nome, exibindo a **Regra de nome do recurso** (Fase 1.5). Validar. Guardar.
 2. **`description` + `tags`** — pedir os dois campos. Sem `d1`, `d2`, `d3`, `d4`, `intencao_revisao`. São o mínimo para o recurso não nascer inválido: em skill, a Fase 3.5 reprova `description` ou `amflow-tags` vazios; nos demais tipos não há gate no `build`, mas o `/amflow-builder:publish` cobra os mesmos campos depois. Coletar sempre mantém o fluxo único. `module` recebe só `description` — não tem `tags` no `module.json`.
+3. **Parâmetro estrutural, só quando o tipo exige:**
+   - `hook` → perguntar o `hook_event` (PreToolUse / PostToolUse / Stop / SubagentStop / SessionStart). É o que a Fase 3 usa para escolher o script; sem ele o hook nasce inerte.
+   - `workflow` → nada a perguntar; `## Definição` e o `.mmd` nascem vazios (só o esqueleto do template), para o Creator preencher depois.
 
-Depois: Fase 3 com os demais valores de survey vazios — copiar o template, substituir os placeholders pelo `nome`, carimbar o frontmatter que não depende de survey, e gravar `description` e `tags` do passo 2 no lugar que o tipo usa (frontmatter, ou `module.json` no módulo).
+Depois: Fase 3 com os demais valores de survey vazios — copiar o template, substituir os placeholders pelo `nome`, carimbar o frontmatter que não depende de survey, e gravar `description` e `tags` do passo 2 no lugar que o tipo usa (frontmatter, ou `module.json` no módulo). `d1` / `d2` / `d4` ficam com o valor vazio do template — o Creator preenche depois, como o resto do conteúdo.
 
 ### Fase 3 — Criar recurso
 
