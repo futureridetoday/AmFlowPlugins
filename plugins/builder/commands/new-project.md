@@ -155,12 +155,17 @@ for d in skills agents hooks commands plugins modules rules; do
   mkdir -p "<pasta>/.claude/$d"
   touch "<pasta>/.claude/$d/.gitkeep"
 done
+mkdir -p "<pasta>/docs"
+touch "<pasta>/docs/.gitkeep"
 ```
 
+`docs/` fica na raiz do projeto, não sob `.claude/`: é onde vive a documentação do projeto,
+endereçada a pessoas, não instrução carregada pelo Claude.
+
 O `.gitkeep` existe porque o git não versiona diretório vazio: sem ele, o Creator faz o primeiro
-commit e as sete pastas somem do repositório — quem clonar recebe só os arquivos, e a estrutura que a
-pós-execução anunciou não é a que o time recebe. Nada quebra em execução, já que o Write recria o
-diretório pai; o que se perde é a estrutura combinada.
+commit e as sete pastas de `.claude/` e a `docs/` somem do repositório — quem clonar recebe só os
+arquivos, e a estrutura que a pós-execução anunciou não é a que o time recebe. Nada quebra em
+execução, já que o Write recria o diretório pai; o que se perde é a estrutura combinada.
 
 Arquivo já existente não é tocado: `touch` num `.gitkeep` que já está lá não muda conteúdo.
 
@@ -366,6 +371,7 @@ Criados:
   .claude/plugins/
   .claude/modules/
   .claude/rules/
+  docs/
 
 Próximos passos:
   /amflow-builder:start   — abrir a sessão neste projeto
