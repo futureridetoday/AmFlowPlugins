@@ -136,7 +136,7 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 4. Validar o `nome` pela **Regra de nome do recurso** (Fase 1.5) — inclui a varredura de namespace `skills/` + `modules/` que `module` exige.
 
 **Workflow:**
-1. `nome` — texto livre, validado pela **Regra de nome do recurso** (Fase 1.5). Define `.claude/agents/<nome>-workflow.md` e `.claude/agents/<nome>-workflow.mmd`.
+1. `nome` — texto livre, validado pela **Regra de nome do recurso** (Fase 1.5). Gera dois arquivos: `<nome>-workflow.md` e `<nome>-workflow.mmd` (destino na tabela da Fase 3).
 2. `visao_geral` — conversa adaptativa: "O que este workflow faz?", "Quais são as etapas? Quem executa cada uma?", "Existem etapas condicionais ou recorrentes?", "O workflow acessa serviços externos?". Extrair `descricao`, `nodes` (id, label, type, agent/skills, output_template) e `integracoes`.
 3. `schedule` — Manual / Diário (`0 8 * * *`) / Dias úteis (`0 9 * * 1-5`) / Semanal (`0 8 * * 1`) / Outro (cron expression).
 4. `tags`.

@@ -185,7 +185,7 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 
 ### Workflow
 
-1. **nome:** texto livre, validado pela **Regra de nome do recurso** (Fase 1.5). Define `.claude/agents/<nome>-workflow.md` e `.claude/agents/<nome>-workflow.mmd`.
+1. **nome:** texto livre, validado pela **Regra de nome do recurso** (Fase 1.5). Gera dois arquivos: `<nome>-workflow.md` e `<nome>-workflow.mmd` (destino na tabela da Fase 3).
 2. **visao_geral:** conversa adaptativa para extrair `descricao`, `nodes` (id, label, type, agent/skills, output_template) e `integracoes`. Perguntas guia: "O que este workflow faz?", "Quais são as etapas e quem executa cada uma?", "Existem etapas condicionais?", "O workflow precisa acessar serviços externos?"
 3. **schedule:** Manual / Diário (`0 8 * * *`) / Dias úteis (`0 9 * * 1-5`) / Semanal (`0 8 * * 1`) / Outro (cron expression livre — validar formato).
 4. **tags:** 3 conjuntos gerados com base em nome+descricao+integracoes.
