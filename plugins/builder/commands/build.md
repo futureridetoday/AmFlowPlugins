@@ -85,7 +85,7 @@ Sem pergunta de método. Enquanto cada tipo não tem seu fluxo dedicado, seguem 
 
 1. **Nome** — perguntar, exibindo o método de nomeação do tipo:
    - os três validam pela **Regra de nome do recurso** (abaixo);
-   - `module` soma a varredura de namespace `skills/` + `modules/` — colisão rejeita;
+   - `module` soma a varredura de namespace da **Regra de nome do recurso** — colisão rejeita;
    - `workflow` grava como `<nome>-workflow.md` + `<nome>-workflow.mmd`.
 2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, `status: draft`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`; `visao_geral` no `workflow`. `workflow`: `## Definição` e o `.mmd` nascem vazios. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
 3. **Fase 3.5 pulada** (não é `skill`). **Fase 4**: o esqueleto é entregue — o Creator preenche o conteúdo, incluindo `description` e `tags`, antes de publicar.
@@ -96,7 +96,7 @@ Cada tipo terá seu fluxo próprio depois; por ora `skill` usa o roteamento acim
 
 ### Regra de nome do recurso
 
-Vale para os três métodos de `skill` e para o caminho mínimo, sempre que o Creator digita o nome: **apenas minúsculas e hífens, sem hífen inicial/final, sem hífens consecutivos, ≤ 64 chars.** Para `module`, além disso: varrer `<projeto>/skills/` e `<projeto>/modules/` — o espaço de nomes é compartilhado, um nome é skill **ou** módulo, nunca ambos; colisão → rejeitar e pedir outro.
+Vale para os três métodos de `skill` e para o caminho mínimo, sempre que o Creator digita o nome: **apenas minúsculas e hífens, sem hífen inicial/final, sem hífens consecutivos, ≤ 64 chars.** Para `module`, além disso: varrer `<projeto>/skills/`, `<projeto>/modules/`, `.claude/skills/` e `.claude/modules/` — recurso em desenvolvimento e já promovido; o espaço de nomes é compartilhado, um nome é skill **ou** módulo, nunca ambos; colisão em qualquer um → rejeitar e pedir outro.
 
 As 3 sugestões automáticas de nome só valem no "Passo a passo" de `skill`, onde há `d1`, `d2` e `intencao` para derivá-las. Em "Importar", "Usar template" e no caminho mínimo o nome é entrada de texto livre, validada pela regra acima.
 
@@ -181,7 +181,7 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 1. **d3 — Descoberta da capacidade:** "Que capacidade este módulo entrega à skill que o adotar?", "Que parte é código determinístico e que parte exige julgamento do agente?", "Ele precisa de configuração diferente por skill?", "Ele persiste algum estado?". Encerrar quando a fronteira código/julgamento estiver clara.
 2. **intencao:** preamble *"Descreva a capacidade como quem vai lê-la é o agente de outra skill, que não conhece este módulo."*
 3. **intencao_revisao**, **tags** — mesmo fluxo de Skill.
-4. **nome:** validar pela **Regra de nome do recurso** (Fase 1.5) — inclui a varredura de namespace `skills/` + `modules/` que `module` exige.
+4. **nome:** validar pela **Regra de nome do recurso** (Fase 1.5) — inclui a varredura de namespace que `module` exige.
 
 ### Workflow
 
