@@ -3,7 +3,7 @@
 name: build
 type: command
 project: AmFlow
-description: Cria um novo recurso (skill, agent, hook, command, plugin, workflow ou module) — por survey guiado, importando um recurso existente, ou a partir do template puro
+description: Cria um novo recurso (skill, agent, workflow ou module) — para skill, por survey guiado, importando um recurso existente, ou a partir do template puro; agent, workflow e module partem do template com o nome
 tags: [build, resource, scaffold, creator, template, module]
 
 # history
@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-builder:build
 
-Cria um novo recurso AmFlow. Escolhido o tipo, o Creator escolhe o método de criação — survey guiado, importar um recurso existente, ou partir do template puro. Tipos suportados: `skill`, `agent`, `hook`, `command`, `plugin`, `workflow`, `module`.
+Cria um novo recurso AmFlow. Tipos suportados: `skill`, `agent`, `workflow`, `module` — redução temporária, até cada tipo ter seu fluxo dedicado (`hook`, `command` e `plugin` saem por ora). Para `skill`, o Creator escolhe o método de criação — survey guiado, importar um recurso existente, ou partir do template puro. `agent`, `workflow` e `module` partem do template com o nome.
 
 ## Fase 0 — Autenticação (obrigatória)
 
@@ -50,17 +50,18 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    |---|---|
    | `skill` | instrução com frontmatter — ativada sob demanda |
    | `agent` | subagente com ferramentas e instruções próprias |
-   | `hook` | script executado em resposta a eventos do Claude Code |
-   | `command` | fluxo de execução invocado por /comando |
-   | `plugin` | pacote de skills, agents, hooks e commands |
    | `workflow` | processo automatizado com múltiplos agents e condições de transição |
    | `module` | capacidade reusável que skills instalam — o usuário nunca a invoca |
+
+   **Redução temporária.** `hook`, `command` e `plugin` saem da lista até cada tipo ganhar seu fluxo dedicado. Restaurar um deles é re-adicionar sua linha aqui e seu roteamento na Fase 1.5.
 
    Fronteira entre `skill` e `module`: **skill é o que o usuário invoca; módulo é o que a skill usa e o usuário nunca vê.** Na dúvida, pergunte quem dispara — se a resposta for "a skill", é módulo.
 
 ## Fase 1.5 — Método de criação
 
-Depois do tipo, perguntar o método:
+### `skill` — escolha de método
+
+Quando o tipo é `skill`, depois do tipo, perguntar o método:
 
 | Método | O que faz |
 |---|---|
@@ -78,17 +79,34 @@ Roteamento:
 
 Só "Passo a passo" entra no survey. Os outros dois pulam a Fase 2 (Survey por tipo).
 
+### `agent`, `workflow`, `module` — caminho mínimo
+
+Sem pergunta de método. Enquanto cada tipo não tem seu fluxo dedicado, seguem direto por nome + template:
+
+1. **Nome** — perguntar, exibindo o método de nomeação do tipo:
+   - os três validam pela **Regra de nome do recurso** (abaixo);
+   - `module` soma a varredura de namespace `skills/` + `modules/` — colisão rejeita;
+   - `workflow` grava como `<nome>-workflow.md` + `<nome>-workflow.mmd`.
+2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, `status: draft`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`; `visao_geral` no `workflow`. `workflow`: `## Definição` e o `.mmd` nascem vazios. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
+3. **Fase 3.5 pulada** (não é `skill`). **Fase 4**: o esqueleto é entregue — o Creator preenche o conteúdo, incluindo `description` e `tags`, antes de publicar.
+
+O caminho mínimo **não coleta** `description`/`tags` — difere do "Usar template" de `skill`, que coleta por causa do gate da Fase 3.5. Fora de `skill` não há gate no `build`; o `/amflow-builder:publish` cobra os campos depois.
+
+Cada tipo terá seu fluxo próprio depois; por ora `skill` usa o roteamento acima e `agent`, `workflow` e `module`, o caminho mínimo.
+
 ### Regra de nome do recurso
 
-Vale para os três métodos, sempre que o Creator digita o nome: **apenas minúsculas e hífens, sem hífen inicial/final, sem hífens consecutivos, ≤ 64 chars.** Para `module`, além disso: varrer `<raiz-de-recursos>/skills/` e `<raiz-de-recursos>/modules/` — o espaço de nomes é compartilhado, um nome é skill **ou** módulo, nunca ambos; colisão → rejeitar e pedir outro.
+Vale para os três métodos de `skill` e para o caminho mínimo, sempre que o Creator digita o nome: **apenas minúsculas e hífens, sem hífen inicial/final, sem hífens consecutivos, ≤ 64 chars.** Para `module`, além disso: varrer `<projeto>/skills/` e `<projeto>/modules/` — o espaço de nomes é compartilhado, um nome é skill **ou** módulo, nunca ambos; colisão → rejeitar e pedir outro.
 
-As 3 sugestões automáticas de nome só valem no "Passo a passo", onde há `d1`, `d2` e `intencao` para derivá-las. Em "Importar" e "Usar template" o nome é entrada de texto livre, validada pela regra acima.
+As 3 sugestões automáticas de nome só valem no "Passo a passo" de `skill`, onde há `d1`, `d2` e `intencao` para derivá-las. Em "Importar", "Usar template" e no caminho mínimo o nome é entrada de texto livre, validada pela regra acima.
 
 ## Fase 2 — Survey por tipo
 
+> **Escopo atual.** Só `skill` via "Passo a passo" chega aqui. As subseções `Agent`, `Hook`, `Plugin`, `Module` e `Workflow` estão sem rota enquanto a redução da Fase 1 vale — `agent`, `workflow` e `module` seguem pelo caminho mínimo da Fase 1.5; `hook`, `command` e `plugin` não são oferecidos. Ficam no arquivo de propósito: restaurar um tipo é re-adicionar sua linha na tabela da Fase 1 e seu roteamento na Fase 1.5.
+
 Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anteriores. Os steps seguem a ordem definida para cada tipo.
 
-### Skill / Command
+### Skill
 
 **d1 — Vertical:** dev / product / design / data / marketing / sales / support / ops / finance / hr / legal / security / logistics
 
@@ -200,13 +218,15 @@ Depois: Fase 3 com os demais valores de survey vazios — copiar o template, sub
 
 | Tipo | Destino | Template |
 |---|---|---|
-| `skill` | `.claude/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/` (copiar diretório inteiro, exceto `GUIDE.md`) |
-| `agent` | `.claude/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
-| `hook` | `.claude/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<script>.sh` → `hook.sh` (chmod 755) |
-| `command` | `.claude/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
-| `plugin` | `.claude/plugins/<nome>.json` | `${CLAUDE_PLUGIN_ROOT}/templates/plugins/plugin.json` |
-| `workflow` | `.claude/agents/<nome>-workflow.md` + `.claude/agents/<nome>-workflow.mmd` | `${CLAUDE_PLUGIN_ROOT}/templates/workflows/workflow-agent.md` |
-| `module` | `.claude/modules/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/modules/default/` (copiar diretório inteiro) |
+| `skill` | `<projeto>/skills/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/skills/skill/` (copiar diretório inteiro, exceto `GUIDE.md`) |
+| `agent` | `<projeto>/agents/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/agents/agent.md` → `<nome>.md`, mais `agent-description.md` do mesmo diretório |
+| `hook` | `<projeto>/hooks/<nome>/` | `hook.json` gerado + `${CLAUDE_PLUGIN_ROOT}/templates/hooks/events/<script>.sh` → `hook.sh` (chmod 755) |
+| `command` | `<projeto>/commands/<nome>.md` | `${CLAUDE_PLUGIN_ROOT}/templates/commands/command.md` |
+| `plugin` | `<projeto>/plugins/<nome>.json` | `${CLAUDE_PLUGIN_ROOT}/templates/plugins/plugin.json` |
+| `workflow` | `<projeto>/workflows/<nome>-workflow.md` + `<projeto>/workflows/<nome>-workflow.mmd` | `${CLAUDE_PLUGIN_ROOT}/templates/workflows/workflow-agent.md` |
+| `module` | `<projeto>/modules/<nome>/` | `${CLAUDE_PLUGIN_ROOT}/templates/modules/default/` (copiar diretório inteiro) |
+
+`<projeto>` é a pasta que contém `.claude/` — a mesma âncora validada na Fase 1. O recurso nasce **fora** de `.claude/`, em pasta irmã: `build` produz recurso **em desenvolvimento**, e `.claude/` fica reservado ao recurso pronto para uso, que é o que o Claude Code carrega. Criar a pasta do tipo se não existir. A promoção para dentro de `.claude/` é da Fase 4.
 
 Mapeamento hook_event → script: PreToolUse → `pre-tool-use.sh` | PostToolUse → `post-tool-use.sh` | Stop → `stop.sh` | SubagentStop → `subagent-stop.sh` | SessionStart → `session-start.sh`.
 
@@ -258,11 +278,11 @@ Substituir placeholders no template (`skill-name`, `agent-name`, `command-name`,
 ## Fase 3.5 — Verificar a skill gerada
 
 **Só para `skill`.** O verificador aplica a norma de frontmatter de skill e nada mais — rodá-lo sobre
-os outros seis tipos devolve `[R-03] SKILL.md não encontrado`, que é ruído, não achado. Nos demais,
+os demais tipos devolve `[R-03] SKILL.md não encontrado`, que é ruído, não achado. Nos demais,
 pular esta fase sem mencioná-la.
 
 ```bash
-python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" <caminho-do-projeto>/.claude/skills/<nome>
+python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" <caminho-do-projeto>/skills/<nome>
 ```
 
 `OK <nome>` e código 0 → Fase 4. `FALHA <nome>` com linhas `[R-XX]` e código 1 → corrigir o campo
@@ -291,7 +311,11 @@ Sempre:
 - Editar o recurso e preencher o conteúdo específico
 - Preencher `evals/eval_queries.json` — em skill. Os prompts que devem ativá-la e os *near-miss* que
   não devem. Exigido na publicação
-- `/amflow-builder:publish` quando o recurso estiver pronto
+- Quando o recurso estiver pronto, movê-lo de `<projeto>/<tipo>/` para dentro de `.claude/`: `skill` →
+  `.claude/skills/<nome>/`, `agent` → `.claude/agents/<nome>/`, `workflow` → `.claude/agents/` (arquivo
+  de agent), `module` → `.claude/modules/<nome>/`. É de lá que o Claude Code carrega skill e agent, e
+  de lá que o `/amflow-builder:publish` lê o recurso
+- `/amflow-builder:publish` quando o recurso estiver pronto, a partir de `.claude/`
 
 ## Restrições
 

@@ -4,10 +4,11 @@ Versão 1.0.0
 
 ## O que é
 
-O criador de recursos do AmFlow: produz a estrutura completa de uma skill, agent, hook, command,
-plugin, workflow ou módulo — já com o cabeçalho preenchido e o documento de descrição ao lado.
-Escolhido o tipo, o Creator escolhe o método: survey guiado, importar um recurso existente e
-adaptá-lo, ou partir do template puro.
+O criador de recursos do AmFlow: produz a estrutura completa de uma skill, agent, workflow ou
+módulo — já com o cabeçalho preenchido e o documento de descrição ao lado. Para skill, o Creator
+escolhe o método: survey guiado, importar um recurso existente e adaptá-lo, ou partir do template
+puro. Agent, workflow e módulo partem do template com o nome. (Redução temporária: hook, command e
+plugin saem até cada tipo ter seu fluxo.)
 
 ## Problema que resolve
 
@@ -29,13 +30,14 @@ Antes de tudo há um passo de autenticação, e ele **encerra o processo se falh
 autorizada, nenhum arquivo é criado. É o que garante que a autoria do recurso fique registrada desde a
 origem.
 
-Depois do tipo vem a escolha do método. **Passo a passo** roda o survey guiado completo. **Importar**
-lê um recurso que já existe, monta um plano de adaptação aos padrões do AmFlow e cria depois da
-confirmação do Creator. **Usar template** pede só nome, descrição e tags, e entrega o esqueleto.
+Depois do tipo, para **skill**, vem a escolha do método. **Passo a passo** roda o survey guiado
+completo. **Importar** lê um recurso que já existe, monta um plano de adaptação aos padrões do AmFlow
+e cria depois da confirmação do Creator. **Usar template** pede só nome, descrição e tags, e entrega
+o esqueleto. **Agent, workflow e módulo** não têm escolha de método enquanto cada um não ganha seu
+fluxo dedicado: pedem o nome e partem do template.
 
-O survey muda conforme o tipo. Para agent, a descrição tem formato obrigatório, porque é o que o Claude
-usa para decidir quando delegar a ele. Para módulo, não há cabeçalho a preencher — a identidade dele
-mora em outro arquivo.
+O survey é o de skill. Para módulo, não há cabeçalho a preencher — a identidade dele mora em outro
+arquivo; agent e workflow partem do template e o Creator preenche o conteúdo depois.
 
 A descrição recebe tratamento próprio: a skill gera três sugestões e oferece rodadas de refinamento até
 o Creator confirmar, com um enquadramento explícito — *escreva como se estivesse briefando um colega sem
@@ -83,7 +85,7 @@ projeto: recurso sem esse documento não passa no gate de publicação, e criá-
 
 ## Base de conhecimento
 
-- Os sete tipos de recurso e o destino de cada um na árvore do projeto
+- Os quatro tipos de recurso (skill, agent, workflow, module) e o destino de cada um, em pasta irmã de `.claude/` no projeto
 - Os templates de cada tipo, incluindo os três de documento de descrição
 - A taxonomia de verticais e funções usada no survey
 - As regras de nome: minúsculas e hífens, sem hífen inicial, final ou consecutivo, até 64 caracteres
