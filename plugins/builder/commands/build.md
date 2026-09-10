@@ -3,7 +3,7 @@
 name: build
 type: command
 project: AmFlow
-description: Cria um novo recurso (skill, agent, hook, command, plugin, workflow ou module) via survey guiado e template
+description: Cria um novo recurso (skill, agent, hook, command, plugin, workflow ou module) — por survey guiado, importando um recurso existente, ou a partir do template puro
 tags: [build, resource, scaffold, creator, template, module]
 
 # history
@@ -11,7 +11,7 @@ author: Bortoli
 created: 2026-06-14
 status: stable
 version: 1.0.0
-updated: ""
+updated: "2026-09-10"
 
 # system
 scope: global
@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-builder:build
 
-Cria um novo recurso AmFlow via survey guiado e template. Tipos suportados: `skill`, `agent`, `hook`, `command`, `plugin`, `workflow`, `module`.
+Cria um novo recurso AmFlow. Escolhido o tipo, o Creator escolhe o método de criação — survey guiado, importar um recurso existente, ou partir do template puro. Tipos suportados: `skill`, `agent`, `hook`, `command`, `plugin`, `workflow`, `module`.
 
 ## Fase 0 — Autenticação (obrigatória)
 
@@ -57,6 +57,32 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | `module` | capacidade reusável que skills instalam — o usuário nunca a invoca |
 
    Fronteira entre `skill` e `module`: **skill é o que o usuário invoca; módulo é o que a skill usa e o usuário nunca vê.** Na dúvida, pergunte quem dispara — se a resposta for "a skill", é módulo.
+
+## Fase 1.5 — Método de criação
+
+Depois do tipo, perguntar o método:
+
+| Método | O que faz |
+|---|---|
+| Passo a passo | O Claude conduz a criação completa do recurso. |
+| Importar | Com ajuda do Claude, um recurso existente é adaptado aos padrões do AmFlow. |
+| Usar template | Cria o recurso a partir do modelo padrão do AmFlow. |
+
+Roteamento:
+
+| Método | Rota |
+|---|---|
+| Passo a passo | Fase 2 (Survey por tipo) → Fase 3 → 3.5 → 4 |
+| Importar | Fase 2 (Importar) → Fase 3 → 3.5 → 4 — sem survey |
+| Usar template | Fase 2 (Usar template) → Fase 3 → 3.5 → 4 — sem survey |
+
+Só "Passo a passo" entra no survey. Os outros dois pulam a Fase 2 (Survey por tipo).
+
+### Regra de nome do recurso
+
+Vale para os três métodos, sempre que o Creator digita o nome: **apenas minúsculas e hífens, sem hífen inicial/final, sem hífens consecutivos, ≤ 64 chars.** Para `module`, além disso: varrer `<raiz-de-recursos>/skills/` e `<raiz-de-recursos>/modules/` — o espaço de nomes é compartilhado, um nome é skill **ou** módulo, nunca ambos; colisão → rejeitar e pedir outro.
+
+As 3 sugestões automáticas de nome só valem no "Passo a passo", onde há `d1`, `d2` e `intencao` para derivá-las. Em "Importar" e "Usar template" o nome é entrada de texto livre, validada pela regra acima.
 
 ## Fase 2 — Survey por tipo
 
@@ -101,7 +127,7 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 2. `d2_slug-keyword` baseado em exemplos+intencao (ex: `frontend-tokens`)
 3. `d1-d2_slug-keyword` (ex: `design-ui-tokens`)
 
-Aceitar "Outro (digitar)". Validar: apenas minúsculas e hífens, sem hífen inicial/final, sem hífens consecutivos, ≤ 64 chars.
+Aceitar "Outro (digitar)". Validar pela **Regra de nome do recurso** (Fase 1.5).
 
 **tags:** 3 conjuntos via checkbox com seleção múltipla. Fontes: d1+d2+d4+recursos instalados (por frequência). Aceitar "Outro (digitar)".
 
@@ -137,14 +163,35 @@ Steps: d3 → intencao → intencao_revisao → nome → tags. Sem d1, d2 e d4 �
 1. **d3 — Descoberta da capacidade:** "Que capacidade este módulo entrega à skill que o adotar?", "Que parte é código determinístico e que parte exige julgamento do agente?", "Ele precisa de configuração diferente por skill?", "Ele persiste algum estado?". Encerrar quando a fronteira código/julgamento estiver clara.
 2. **intencao:** preamble *"Descreva a capacidade como quem vai lê-la é o agente de outra skill, que não conhece este módulo."*
 3. **intencao_revisao**, **tags** — mesmo fluxo de Skill.
-4. **nome:** antes de aceitar, varrer `<raiz-de-recursos>/skills/` e `<raiz-de-recursos>/modules/`. O espaço de nomes é compartilhado — um nome é skill **ou** módulo, nunca ambos. Colisão → rejeitar e pedir outro.
+4. **nome:** validar pela **Regra de nome do recurso** (Fase 1.5) — inclui a varredura de namespace `skills/` + `modules/` que `module` exige.
 
 ### Workflow
 
-1. **nome:** texto livre em kebab-case. Define `.claude/agents/<nome>-workflow.md` e `.claude/agents/<nome>-workflow.mmd`.
+1. **nome:** texto livre, validado pela **Regra de nome do recurso** (Fase 1.5). Define `.claude/agents/<nome>-workflow.md` e `.claude/agents/<nome>-workflow.mmd`.
 2. **visao_geral:** conversa adaptativa para extrair `descricao`, `nodes` (id, label, type, agent/skills, output_template) e `integracoes`. Perguntas guia: "O que este workflow faz?", "Quais são as etapas e quem executa cada uma?", "Existem etapas condicionais?", "O workflow precisa acessar serviços externos?"
 3. **schedule:** Manual / Diário (`0 8 * * *`) / Dias úteis (`0 9 * * 1-5`) / Semanal (`0 8 * * 1`) / Outro (cron expression livre — validar formato).
 4. **tags:** 3 conjuntos gerados com base em nome+descricao+integracoes.
+
+## Fase 2 (Importar) — adaptar um recurso existente
+
+Sem survey. Uma pergunta por vez.
+
+1. **Nome** — pedir o nome do novo recurso, exibindo a **Regra de nome do recurso** (Fase 1.5). Validar. Guardar para os passos seguintes.
+2. **Fonte** — pedir o caminho da pasta do recurso existente. Ler o conteúdo com as ferramentas de arquivo: estrutura, arquivos, e o frontmatter ou manifesto se houver.
+3. **Sanity check de tipo** — se a pasta aparenta ser de outro tipo (ex.: tem `agent.md` e o tipo escolhido é `skill`), avisar e pedir confirmação antes de seguir.
+4. **Template do tipo** — ler o template da tabela da Fase 3, o mesmo que "Passo a passo" usa.
+5. **Plano de adaptação** — redigir um plano curto: quais arquivos do template serão criados, como o conteúdo do recurso importado mapeia em cada um, o que é mantido, descartado ou reescrito para conformar à norma AmFlow sob o novo nome. Incluir `description` e `tags` propostos, derivados do recurso importado, e o frontmatter carimbado pelas regras da Fase 3. O frontmatter da origem nunca é copiado literal.
+6. **Revisão** — exibir o plano. Creator responde: **confirmar**, **editar** (volta ao passo 5) ou **cancelar** (encerra sem criar nada).
+7. **Criação** — confirmado, executar a Fase 3 usando o plano como fonte de conteúdo no lugar das respostas do survey.
+
+## Fase 2 (Usar template) — esqueleto puro
+
+Sem survey. Duas perguntas, para qualquer tipo.
+
+1. **Nome** — pedir o nome, exibindo a **Regra de nome do recurso** (Fase 1.5). Validar. Guardar.
+2. **`description` + `tags`** — pedir os dois campos. Sem `d1`, `d2`, `d3`, `d4`, `intencao_revisao`. São o mínimo para o recurso não nascer inválido: em skill, a Fase 3.5 reprova `description` ou `amflow-tags` vazios; nos demais tipos não há gate no `build`, mas o `/amflow-builder:publish` cobra os mesmos campos depois. Coletar sempre mantém o fluxo único. `module` recebe só `description` — não tem `tags` no `module.json`.
+
+Depois: Fase 3 com os demais valores de survey vazios — copiar o template, substituir os placeholders pelo `nome`, carimbar o frontmatter que não depende de survey, e gravar `description` e `tags` do passo 2 no lugar que o tipo usa (frontmatter, ou `module.json` no módulo).
 
 ## Fase 3 — Criar recurso
 
@@ -231,7 +278,13 @@ Ausência não é aprovação. Sem o verificador, a primeira conferência de fro
 
 ## Fase 4 — Exibir resultado
 
-Listar arquivos criados e orientar próximos passos:
+Listar arquivos criados e orientar próximos passos. Ajustar pelo método:
+- **Passo a passo** e **Usar template** entregam esqueleto — o próximo passo é editar o recurso e
+  preencher o conteúdo específico.
+- **Importar** entrega o recurso já com o conteúdo adaptado do original — o próximo passo é revisar e
+  refinar, não escrever do zero.
+
+Sempre:
 - Editar o recurso e preencher o conteúdo específico
 - Preencher `evals/eval_queries.json` — em skill. Os prompts que devem ativá-la e os *near-miss* que
   não devem. Exigido na publicação
@@ -240,7 +293,7 @@ Listar arquivos criados e orientar próximos passos:
 ## Restrições
 
 - Um recurso por execução.
-- Nome inválido (maiúscula, espaço, hífen inicial/final, hífens consecutivos, > 64 chars) → rejeitar e informar a regra violada.
+- Nome fora da **Regra de nome do recurso** (Fase 1.5) → rejeitar e informar a regra violada.
 - `git config user.name` vazio no local e no global → perguntar o nome do autor ao Creator e carimbar
   a resposta. Nunca omitir o campo nem gravá-lo vazio: `amflow-author` é obrigatória **com valor** na
   fonte (R-07), e o agent `reviewer` cobra o mesmo. A tool `me` não serve de saída — devolve só o

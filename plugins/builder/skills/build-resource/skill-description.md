@@ -4,9 +4,10 @@ Versão 1.0.0
 
 ## O que é
 
-O criador de recursos do AmFlow: conduz uma conversa guiada e produz a estrutura completa de uma skill,
-agent, hook, command, plugin, workflow ou módulo — já com o cabeçalho preenchido e o documento de
-descrição ao lado.
+O criador de recursos do AmFlow: produz a estrutura completa de uma skill, agent, hook, command,
+plugin, workflow ou módulo — já com o cabeçalho preenchido e o documento de descrição ao lado.
+Escolhido o tipo, o Creator escolhe o método: survey guiado, importar um recurso existente e
+adaptá-lo, ou partir do template puro.
 
 ## Problema que resolve
 
@@ -27,6 +28,10 @@ Uma pergunta por vez, adaptando cada pergunta às respostas anteriores.
 Antes de tudo há um passo de autenticação, e ele **encerra o processo se falhar** — sem sessão
 autorizada, nenhum arquivo é criado. É o que garante que a autoria do recurso fique registrada desde a
 origem.
+
+Depois do tipo vem a escolha do método. **Passo a passo** roda o survey guiado completo. **Importar**
+lê um recurso que já existe, monta um plano de adaptação aos padrões do AmFlow e cria depois da
+confirmação do Creator. **Usar template** pede só nome, descrição e tags, e entrega o esqueleto.
 
 O survey muda conforme o tipo. Para agent, a descrição tem formato obrigatório, porque é o que o Claude
 usa para decidir quando delegar a ele. Para módulo, não há cabeçalho a preencher — a identidade dele
