@@ -45,3 +45,25 @@ está no valor que já seria o padrão.
 A norma inteira vive em `skill-frontmatter.md`, no repositório onde o Builder é desenvolvido — e é
 recurso de sistema: não viaja para dentro de skill publicada. Esta referência é a versão que viaja:
 explica o porquê, e delega o "está certo?" ao `check.py` que a acompanha neste mesmo plugin.
+
+## Exceção — o domínio de `amflow-status` entra aqui
+
+As demais chaves do AmFlow ficam de fora desta referência: o `check.py` decide se o valor está
+certo, e o Creator não precisa ler norma nenhuma para saber se acertou a sintaxe. `amflow-status` é
+diferente — o Creator lê e muda esse valor pela skill `/amflow-builder:status`, então o domínio
+precisa estar onde ele consegue lê-lo, não só no repositório onde o Builder é desenvolvido.
+
+| Valor | Significa | Quem escreve |
+|---|---|---|
+| `in_progress` | em andamento | o template, ao criar a skill; o Creator, ao retomar |
+| `paused` | pausado | Creator |
+| `blocked` | bloqueado, com motivo em `amflow-status-reason` | Creator |
+| `review` | revisado e pronto para submeter | Creator |
+| `deprecated` | descontinuado pelo Creator | Creator |
+| `pending_review` | submetido, aguardando o Hub | `/amflow-builder:publish` |
+| `changes_requested` | o Hub pediu mudanças | `/amflow-builder:publish-status` |
+| `rejected` | recusado | `/amflow-builder:publish-status` |
+| `published` | no catálogo | `/amflow-builder:publish-status` |
+
+Skill nova nasce em `in_progress`. Os quatro últimos valores vêm do Hub — `/amflow-builder:status`
+nunca os grava, só os dois comandos de publicação.
