@@ -2,7 +2,7 @@
   "name": "amflow-builder",
   "displayName": "AmFlow Builder",
   "description": "Cria e publica recursos no Hub AmFlow",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "author": {
     "name": "Rafael Bortoli"
   }
