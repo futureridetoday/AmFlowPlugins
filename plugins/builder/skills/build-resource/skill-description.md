@@ -7,8 +7,8 @@ Versão 1.0.0
 O criador de recursos do AmFlow: produz a estrutura completa de uma skill, agent ou
 módulo — já com o cabeçalho preenchido e o documento de descrição ao lado. Para skill, o Creator
 escolhe o método: survey guiado, importar um recurso existente e adaptá-lo, ou partir do template
-puro. Agent e módulo partem do template com o nome. (Redução temporária: hook, command, plugin e
-workflow saem até cada tipo ter seu fluxo.)
+puro. Agent e módulo partem do template com o nome. (Redução temporária: hook, command e plugin
+saem até cada tipo ter seu fluxo. Workflow sai em definitivo — a autoria migra para módulo.)
 
 ## Problema que resolve
 

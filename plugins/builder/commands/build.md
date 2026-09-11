@@ -26,7 +26,7 @@ price: 0
 
 # /amflow-builder:build
 
-Cria um novo recurso AmFlow. Tipos suportados: `skill`, `agent`, `module` — redução temporária, até cada tipo ter seu fluxo dedicado (`hook`, `command`, `plugin` e `workflow` saem por ora). Para `skill`, o Creator escolhe o método de criação — survey guiado, importar um recurso existente, ou partir do template puro. `agent` e `module` partem do template com o nome.
+Cria um novo recurso AmFlow. Tipos suportados: `skill`, `agent`, `module` — redução temporária, até cada tipo ter seu fluxo dedicado (`hook`, `command` e `plugin` saem por ora; `workflow` sai em definitivo — autoria de workflow migra para módulo). Para `skill`, o Creator escolhe o método de criação — survey guiado, importar um recurso existente, ou partir do template puro. `agent` e `module` partem do template com o nome.
 
 ## Fase 0 — Autenticação (obrigatória)
 
@@ -52,7 +52,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | `agent` | subagente com ferramentas e instruções próprias |
    | `module` | capacidade reusável que skills instalam — o usuário nunca a invoca |
 
-   **Redução temporária.** `hook`, `command`, `plugin` e `workflow` saem da lista até cada tipo ganhar seu fluxo dedicado. Restaurar um deles é re-adicionar sua linha aqui e seu roteamento na Fase 1.5.
+   **Redução temporária.** `hook`, `command` e `plugin` saem da lista até cada tipo ganhar seu fluxo dedicado. Restaurar um deles é re-adicionar sua linha aqui e seu roteamento na Fase 1.5. **`workflow` sai em definitivo** — não retorna como tipo de `build`; a autoria de workflow passa a ser via `module`, mecânica ainda em desenho.
 
    Fronteira entre `skill` e `module`: **skill é o que o usuário invoca; módulo é o que a skill usa e o usuário nunca vê.** Na dúvida, pergunte quem dispara — se a resposta for "a skill", é módulo.
 
@@ -100,7 +100,7 @@ As 3 sugestões automáticas de nome só valem no "Passo a passo" de `skill`, on
 
 ## Fase 2 — Survey por tipo
 
-> **Escopo atual.** Só `skill` via "Passo a passo" chega aqui. As subseções `Agent`, `Hook`, `Plugin`, `Module` e `Workflow` estão sem rota enquanto a redução da Fase 1 vale — `agent` e `module` seguem pelo caminho mínimo da Fase 1.5; `hook`, `command`, `plugin` e `workflow` não são oferecidos. Ficam no arquivo de propósito: restaurar um tipo é re-adicionar sua linha na tabela da Fase 1 e seu roteamento na Fase 1.5.
+> **Escopo atual.** Só `skill` via "Passo a passo" chega aqui. As subseções `Agent`, `Hook`, `Plugin`, `Module` e `Workflow` estão sem rota enquanto a redução da Fase 1 vale — `agent` e `module` seguem pelo caminho mínimo da Fase 1.5; `hook`, `command` e `plugin` não são oferecidos, e ficam no arquivo de propósito: restaurar um deles é re-adicionar sua linha na tabela da Fase 1 e seu roteamento na Fase 1.5. `workflow` também não é oferecido, mas não volta por este caminho — a subseção fica só como registro; a autoria de workflow passa a ser via `module`.
 
 Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anteriores. Os steps seguem a ordem definida para cada tipo.
 
