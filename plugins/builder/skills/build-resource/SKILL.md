@@ -1,6 +1,6 @@
 ---
 name: build-resource
-description: Cria um novo recurso (skill, agent, workflow ou module) — para skill, por survey guiado, importando um recurso existente, ou a partir do template puro; agent, workflow e module partem do template com o nome — invocada por /amflow-builder:build ou pelo Claude ao detectar intenção de criação
+description: Cria um novo recurso (skill, agent ou module) — para skill, por survey guiado, importando um recurso existente, ou a partir do template puro; agent e module partem do template com o nome — invocada por /amflow-builder:build ou pelo Claude ao detectar intenção de criação
 license: Proprietary
 metadata:
   amflow-version: "1.0.0"
@@ -14,7 +14,7 @@ metadata:
 
 # Build Resource
 
-Cria um novo recurso AmFlow. Tipos suportados: `skill`, `agent`, `workflow`, `module` — redução temporária, até cada tipo ter seu fluxo dedicado (`hook`, `command` e `plugin` saem por ora). Para `skill`, o Creator escolhe o método — survey guiado, importar um recurso existente, ou partir do template puro; `agent`, `workflow` e `module` partem do template com o nome.
+Cria um novo recurso AmFlow. Tipos suportados: `skill`, `agent`, `module` — redução temporária, até cada tipo ter seu fluxo dedicado (`hook`, `command`, `plugin` e `workflow` saem por ora). Para `skill`, o Creator escolhe o método — survey guiado, importar um recurso existente, ou partir do template puro; `agent` e `module` partem do template com o nome.
 
 ## Quando usar
 
@@ -49,10 +49,9 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    |---|---|
    | `skill` | instrução ativada sob demanda |
    | `agent` | subagente com ferramentas e instruções próprias |
-   | `workflow` | processo automatizado com múltiplos agents |
    | `module` | capacidade reusável que skills instalam — o usuário nunca a invoca |
 
-   **Redução temporária.** `hook`, `command` e `plugin` saem da lista até cada tipo ganhar seu fluxo dedicado. Restaurar um deles é re-adicionar sua linha aqui e seu roteamento na Fase 1.5.
+   **Redução temporária.** `hook`, `command`, `plugin` e `workflow` saem da lista até cada tipo ganhar seu fluxo dedicado. Restaurar um deles é re-adicionar sua linha aqui e seu roteamento na Fase 1.5.
 
    Fronteira entre `skill` e `module`: **skill é o que o usuário invoca; módulo é o que a skill usa e o usuário nunca vê.** Na dúvida, pergunte quem dispara — se a resposta for "a skill", é módulo.
 
@@ -78,20 +77,19 @@ Roteamento:
 
 Só "Passo a passo" entra no survey. Os outros dois pulam a Fase 2 (Survey por tipo).
 
-#### `agent`, `workflow`, `module` — caminho mínimo
+#### `agent`, `module` — caminho mínimo
 
 Sem pergunta de método. Enquanto cada tipo não tem seu fluxo dedicado, seguem direto por nome + template:
 
 1. **Nome** — perguntar, exibindo o método de nomeação do tipo:
-   - os três validam pela **Regra de nome do recurso** (abaixo);
-   - `module` soma a varredura de namespace da **Regra de nome do recurso** — colisão rejeita;
-   - `workflow` grava como `<nome>-workflow.md` + `<nome>-workflow.mmd`.
-2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, `status: draft`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`; `visao_geral` no `workflow`. `workflow`: `## Definição` e o `.mmd` nascem vazios. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
+   - os dois validam pela **Regra de nome do recurso** (abaixo);
+   - `module` soma a varredura de namespace da **Regra de nome do recurso** — colisão rejeita.
+2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, `status: draft`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
 3. **Fase 3.5 pulada** (não é `skill`). **Fase 4**: o esqueleto é entregue — o Creator preenche o conteúdo, incluindo `description` e `tags`, antes de publicar.
 
 O caminho mínimo **não coleta** `description`/`tags` — difere do "Usar template" de `skill`, que coleta por causa do gate da Fase 3.5. Fora de `skill` não há gate no `build`; o `/amflow-builder:publish` cobra os campos depois.
 
-Cada tipo terá seu fluxo próprio depois; por ora `skill` usa o roteamento acima e `agent`, `workflow` e `module`, o caminho mínimo.
+Cada tipo terá seu fluxo próprio depois; por ora `skill` usa o roteamento acima e `agent` e `module`, o caminho mínimo.
 
 #### Regra de nome do recurso
 
@@ -101,7 +99,7 @@ As 3 sugestões automáticas de nome só valem no "Passo a passo" de `skill`, on
 
 ### Fase 2 — Survey por tipo
 
-> **Escopo atual.** Só `skill` via "Passo a passo" chega aqui. As subseções `Agent`, `Hook`, `Plugin`, `Module` e `Workflow` estão sem rota enquanto a redução da Fase 1 vale — `agent`, `workflow` e `module` seguem pelo caminho mínimo da Fase 1.5; `hook`, `command` e `plugin` não são oferecidos. Ficam no arquivo de propósito: restaurar um tipo é re-adicionar sua linha na tabela da Fase 1 e seu roteamento na Fase 1.5.
+> **Escopo atual.** Só `skill` via "Passo a passo" chega aqui. As subseções `Agent`, `Hook`, `Plugin`, `Module` e `Workflow` estão sem rota enquanto a redução da Fase 1 vale — `agent` e `module` seguem pelo caminho mínimo da Fase 1.5; `hook`, `command`, `plugin` e `workflow` não são oferecidos. Ficam no arquivo de propósito: restaurar um tipo é re-adicionar sua linha na tabela da Fase 1 e seu roteamento na Fase 1.5.
 
 Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anteriores.
 
@@ -299,9 +297,8 @@ Sempre:
   que não devem: para uma skill, a `description` é a superfície inteira de ativação, e declarar os
   near-miss é o que expõe uma descrição larga demais. Também é exigido na publicação
 - Quando o recurso estiver pronto, movê-lo de `<projeto>/<tipo>/` para dentro de `.claude/`: `skill` →
-  `.claude/skills/<nome>/`, `agent` → `.claude/agents/<nome>/`, `workflow` → `.claude/agents/` (arquivo
-  de agent), `module` → `.claude/modules/<nome>/`. É de lá que o Claude Code carrega skill e agent, e
-  de lá que o `/amflow-builder:publish` lê o recurso
+  `.claude/skills/<nome>/`, `agent` → `.claude/agents/<nome>/`, `module` → `.claude/modules/<nome>/`. É
+  de lá que o Claude Code carrega skill e agent, e de lá que o `/amflow-builder:publish` lê o recurso
 - `/amflow-builder:publish` quando o recurso estiver pronto, a partir de `.claude/`
 
 ## Restrições
