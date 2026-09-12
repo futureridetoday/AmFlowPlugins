@@ -1,8 +1,11 @@
 ---
 # ── campos nativos do claude code ──────────────────────────────────────────────
+# minúsculas-com-hífen, sem ":" — nome inválido faz o Claude Code ignorar o arquivo em silêncio
 name: agent-name
 # TRIGGER DE INVOCAÇÃO: Claude lê este campo para decidir se o agente é relevante para a tarefa.
 # Responda DUAS perguntas: o que faz + quando usar. Exemplos concretos aumentam precisão de matching.
+# Use a frase "use proactively" quando o agente deve ser invocado sem pedido explícito.
+# Breve: ~100-150 caracteres — a soma das descriptions de todos os agentes carregados não deve passar 15.000 tokens.
 description: |
   <o que faz — uma frase objetiva>
   Use when <situação específica que ativa este agente>.
@@ -19,10 +22,11 @@ description: |
 # + Edit               → + edição de arquivos existentes
 # + Write              → + criação de arquivos
 # + Agent              → + capacidade de invocar subagentes (obrigatório para orquestradores)
+#   Agent(nome1, nome2) → restringe quais subagentes especificamente podem ser invocados
 tools: Read, Grep, Glob, Bash
 # disallowedTools:               # opcional — denylist, alternativo a tools
 
-# model: haiku (rápido) | sonnet (padrão) | opus (raciocínio profundo) | inherit
+# model: haiku (rápido) | sonnet (padrão) | opus (raciocínio profundo) | fable | ID completo (ex: claude-opus-5) | inherit
 model: inherit
 
 # color: blue(análise/review) | green(geração) | red(segurança) | cyan(docs)
@@ -30,11 +34,13 @@ model: inherit
 color: blue
 
 # ── recursos opcionais ──────────────────────────────────────────────────────────
-# permissionMode:                # default | acceptEdits | auto | dontAsk | bypassPermissions | plan
+# permissionMode:                # default | acceptEdits | auto | dontAsk | bypassPermissions | plan | manual
 # maxTurns:                      # máximo de turns antes de parar
 # background:                    # true = sempre roda em background
 # effort:                        # low | medium | high | xhigh | max
 # isolation:                     # worktree = git worktree isolado
+# experimental:                  # opções experimentais
+#   cacheTtl:                    # 5m | 1h — lifetime do cache de prompt
 
 # SKILLS — como o agente escolhe quais skills usar (dois modelos):
 #
@@ -51,17 +57,18 @@ color: blue
 #
 #   PRÉ-CARREGAMENTO (campo abaixo): injeta skills no startup, antes da primeira tarefa.
 #   Use apenas para skills invariavelmente necessárias — aumenta custo de contexto.
+#   Skill com `disable-model-invocation: true` no frontmatter não pode ser pré-carregada aqui.
 # skills:
 #   - skill-name
 
 # memory:                        # user | project | local — persiste entre sessões
 
-# mcpServers:                    # servidores MCP escopados a este agente (mapeamento, não lista)
-#   server-name:                 # referência a servidor já configurado na sessão
-#   my-server:                   # definição inline (conecta no startup, desconecta no fim)
-#     type: stdio
-#     command: npx
-#     args: ["-y", "@org/mcp@latest"]
+# mcpServers:                    # servidores MCP escopados a este agente (lista de itens)
+#   - server-name                # referência a servidor já configurado na sessão
+#   - my-server:                 # definição inline (conecta no startup, desconecta no fim)
+#       type: stdio
+#       command: npx
+#       args: ["-y", "@org/mcp@latest"]
 
 # hooks:                         # hooks de ciclo de vida (só ativos durante este agente)
 #   PreToolUse:
