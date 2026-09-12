@@ -115,18 +115,27 @@ METADATA_OBRIGATORIA_COM_VALOR = (
     "amflow-tags",
 )
 
+# Domínio único do status — congelado em
+# docs/plan/builder/0014-unify-status-field/index.md §1. A escrita é da skill
+# `status` e dos dois comandos de publicação; aqui só se verifica pertencimento.
 STATUS_VALIDOS = frozenset(
     {
-        "draft",
+        "in_progress",
+        "paused",
+        "blocked",
         "review",
+        "deprecated",
         "pending_review",
         "changes_requested",
         "rejected",
         "published",
-        "suspended",
-        "deprecated",
     }
 )
+
+# Aceitos enquanto a varredura de propagação (index.md §5, decisão 11 do
+# plano, L-02) não substitui os valores existentes por um do domínio novo.
+# Fora da união dos dois conjuntos, R-10 reprova.
+STATUS_LEGADO = frozenset({"draft", "stable", "suspended"})
 
 _UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
@@ -377,8 +386,21 @@ def r10_status_valido(fm: Frontmatter) -> list[Violacao]:
     campo = fm.metadata.get("amflow-status")
     if campo is None:
         return []
-    if _sem_aspas(campo.valor_bruto).strip() not in STATUS_VALIDOS:
+    if _sem_aspas(campo.valor_bruto).strip() not in STATUS_VALIDOS | STATUS_LEGADO:
         return [Violacao("R-10", f"amflow-status inválido: {campo.valor_bruto}", campo.linha)]
+    return []
+
+
+def r19_blocked_sem_motivo(fm: Frontmatter) -> list[Violacao]:
+    """`blocked` sem `amflow-status-reason` não se distingue de `paused` (index.md §3)."""
+    campo = fm.metadata.get("amflow-status")
+    if campo is None or _sem_aspas(campo.valor_bruto).strip() != "blocked":
+        return []
+    motivo = fm.metadata.get("amflow-status-reason")
+    if motivo is None or _vazio(motivo.valor_bruto):
+        return [
+            Violacao("R-19", "amflow-status 'blocked' exige amflow-status-reason preenchido", campo.linha)
+        ]
     return []
 
 
@@ -492,6 +514,7 @@ def verificar_skill_md(texto: str) -> list[Violacao]:
     violacoes += r08_version_semver(fm)
     violacoes += r09_updated_data(fm)
     violacoes += r10_status_valido(fm)
+    violacoes += r19_blocked_sem_motivo(fm)
     violacoes += r11_dependencias_formato(fm)
     violacoes += r12_uuid(fm)
     violacoes += r14_r15_r16_tamanho(fm)
