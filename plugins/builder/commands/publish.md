@@ -65,7 +65,10 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    `amflow-tags` (separadas por espaço, nunca lista), `dependencies` → `amflow-dependencies`,
    `hub_id` → `amflow-hub-id`. `source` não existe em nenhum momento na fonte — só na cópia
    instalada, nunca no repositório do Creator. Todo passo abaixo que cite um desses campos para uma
-   skill lê e escreve em `metadata`. Para `agent`, `hook` e `command`, nenhum campo muda de lugar.
+   skill lê e escreve em `metadata`. Para `agent`, `hook` e `command`, nenhum campo muda de lugar —
+   **exceto `status`**, que passa a `metadata.amflow-status` nos quatro tipos (Fase 6, passo 19);
+   domínio e localização completos em `docs/plan/builder/0014-unify-status-field/index.md`, no
+   repositório AmFlow.
 
 ## Fase 2 — Validação e Revisão
 
@@ -215,16 +218,17 @@ Para `skill`, `source` não entra no critério — nunca existe na fonte, public
     | `hub_id` | uuid retornado — gravar apenas na primeira submissão; se já existia, manter sem alteração |
     | `version` | versão submetida (após bump) |
     | `source` | `hub/<tipo>/<nome>@<versão>` |
-    | `status` | `pending_review` em `skill`; `published` nos demais tipos |
+    | `metadata.amflow-status` | `pending_review`, nos quatro tipos |
 
-    Para `skill`, os três primeiros vivem em `metadata` (`amflow-hub-id`, `amflow-version`,
+    Para `skill`, os quatro vivem em `metadata` (`amflow-hub-id`, `amflow-version`,
     `amflow-status`) — **`source` fica de fora**: a norma reserva `amflow-source` só pra cópia
-    instalada, nunca escrever na fonte. Nos demais tipos, os quatro seguem no topo, sem mudança.
+    instalada, nunca escrever na fonte. Nos demais tipos, `hub_id`, `version` e `source` seguem no
+    topo, sem mudança — só `amflow-status` entra em `metadata`.
 
-    **`pending_review`, não `published`, em `skill`.** Submeter não publica: a submissão entra na fila
-    do Manager. Na norma, `published` é escrito pelo `/amflow-builder:publish-status`, quando o Hub
-    aprova — e é ele quem move o estado dali em diante. Os demais tipos mantêm `published`: o domínio
-    de `status` deles não tem `pending_review`.
+    **`pending_review` nos quatro tipos, não mais `published` em agent/hook/command no ato da
+    submissão.** Submeter não publica: a submissão entra na fila do Manager, igualmente nos quatro
+    tipos. É o `/amflow-builder:publish-status` quem grava `published`, quando o Hub aprova — e é ele
+    quem move o estado dali em diante.
 
     Arquivo por tipo: `skill` → `SKILL.md` | `agent` → `<nome>.md` | `hook` → `hook.json` | `command` → `command.md`
 

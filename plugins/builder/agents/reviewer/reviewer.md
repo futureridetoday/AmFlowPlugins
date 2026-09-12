@@ -110,9 +110,9 @@ Quando invocado:
    **Ausência do verificador nunca é aprovação.** Sem ele a checagem fica parcial, e o relatório
    precisa dizê-lo: quem lê `APROVADO` sem ressalva entende que as dezessete regras passaram.
 
-   **`agent`, `command` e `hook`** — campos no topo, sempre por esta tabela: o `check.py` verifica
-   skill e não alcança os outros três, que seguem sem verificação executável. Em hook, verificados em
-   `hook.json`.
+   **`agent`, `command` e `hook`** — campos no topo por esta tabela, com uma exceção: o `check.py`
+   verifica skill e não alcança os outros três, que seguem sem verificação executável. Em hook,
+   verificados em `hook.json`.
 
    | Campo | Nível | Bloqueante |
    |---|---|---|
@@ -120,10 +120,13 @@ Quando invocado:
    | `type` | obrigatório | ✓ |
    | `version` | obrigatório | ✓ |
    | `description` | obrigatório | ✓ |
-   | `status` | obrigatório | ✓ |
+   | `metadata.amflow-status` | obrigatório | ✓ |
    | `author` | recomendado | — |
    | `tags` | recomendado | — |
    | `created` | recomendado | — |
+
+   `metadata.amflow-status` é a única exceção a "campos no topo" — domínio e localização em
+   `docs/plan/builder/0014-unify-status-field/index.md`, no repositório AmFlow.
 
    **`skill` — tabela de fallback, só quando o verificador não roda.** Segue a especificação Agent
    Skills. No topo vivem só os campos da spec; todo dado do AmFlow vive em `metadata`, com prefixo

@@ -48,11 +48,22 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 1. Verificar `.claude/CLAUDE.md` no diretório atual — encerrar com erro se ausente.
 
-2. Escanear o projeto em busca de recursos **com identificador do Hub preenchido**:
-   - `skill` → `SKILL.md` em `.claude/skills/*/`
-   - `agent` → `.claude/agents/*.md` (excluir `*-workflow.md`)
-   - `hook` → `.claude/hooks/*/hook.json`
-   - `command` → `.claude/commands/*.md`
+2. Escanear o projeto em busca de recursos **com identificador do Hub preenchido**. Enquanto a
+   promoção para `.claude/` existir (`.claude/CLAUDE.md`, *Placement de Recursos*), a varredura cobre
+   as duas raízes — a pasta de desenvolvimento (`<tipo>/`) e `.claude/<tipo>/`:
+   - `skill` → `SKILL.md` em `skills/*/` e em `.claude/skills/*/`. **Pular a cópia com
+     `metadata.amflow-source` preenchido** — é a cópia instalada de uma skill de outro Creator, não a
+     fonte autorada
+   - `agent` → nos dois layouts, nas duas raízes: `agents/*/*.md` e `agents/*.md` (arquivo solto,
+     anterior ao layout de pasta), mais `.claude/agents/*/*.md` e `.claude/agents/*.md`. Excluir
+     `*-workflow.md` e `*-description.md` nos quatro casos
+   - `hook` → `hook.json` em `hooks/*/` e em `.claude/hooks/*/`
+   - `command` → `commands/*.md` e `.claude/commands/*.md`
+
+   **Limite conhecido em agent, command e hook** (`L-04` do plano `0014-unify-status-field`, no
+   repositório AmFlow): a cópia instalada não se distingue da fonte autorada, porque `publish` grava
+   `source: hub/...` no próprio arquivo do Creator. Um recurso desses tipos instalado de outro
+   Creator pode aparecer na varredura como se fosse autoria própria.
 
    **Onde cada dado mora, por tipo.** `skill` segue norma própria — o porquê está em
    `builder-resource-standards`: o dado do AmFlow vive no bloco `metadata`, com prefixo `amflow-`.
@@ -61,8 +72,10 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | Dado | `skill` | `agent`, `hook`, `command` |
    |---|---|---|
    | versão | `metadata.amflow-version` | `version` |
-   | estado | `metadata.amflow-status` | `status` |
    | identificador no Hub | `metadata.amflow-hub-id` | `hub_id` |
+
+   `estado` mora em `metadata.amflow-status` nos quatro tipos — não diverge mais por tipo; domínio em
+   `docs/plan/builder/0014-unify-status-field/index.md`, no repositório AmFlow.
 
    `name` está no topo nos quatro tipos; `type` vem da pasta em que o arquivo foi encontrado, não do
    frontmatter.
@@ -100,9 +113,8 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 ### Fase 4 — Sincronizar status local
 
 6. Para cada recurso em que o status Hub difere do arquivo local, atualizar com a ferramenta Edit.
-   **O mapeamento difere por tipo, porque os domínios de estado são diferentes.**
-
-   `skill` — o domínio da norma tem os quatro estados do Hub, e o mapeamento é direto:
+   **Um mapeamento só, sobre `metadata.amflow-status`, nos quatro tipos** — desde a unidade
+   `0014-04` os domínios deixaram de divergir:
 
    | Status Hub | `metadata.amflow-status` |
    |---|---|
@@ -111,38 +123,27 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | `changes_requested` | `changes_requested` |
    | `rejected` | `rejected` |
 
-   `agent`, `hook` e `command` — domínio do `.claude/CLAUDE.md`, sem `pending_review` nem
-   `changes_requested`, então a recusa e o pedido de ajuste colapsam em `draft`:
+   Arquivo a atualizar por tipo — `metadata.amflow-status`, dentro de `metadata`, nos quatro:
+   - `skill` → `SKILL.md`
+   - `agent` → `<nome>.md`
+   - `hook` → `hook.json`
+   - `command` → `command.md`
 
-   | Status Hub | `status` |
-   |---|---|
-   | `approved` | `stable` |
-   | `rejected` | `draft` |
-   | `changes_requested` | `draft` |
-   | `pending_review` | `published` (sem alteração) |
-
-   Arquivo a atualizar por tipo:
-   - `skill` → `SKILL.md` (`amflow-status`, dentro de `metadata`)
-   - `agent` → `<nome>.md` (campo `status` no frontmatter)
-   - `hook` → `hook.json` (campo `status` na raiz)
-   - `command` → `command.md` (campo `status` no frontmatter)
-
-   **Este comando é o único que move uma skill para `published`.** O `/amflow-builder:publish` grava
-   `pending_review` ao submeter; sem esta sincronização, o estado de toda skill publicada trava ali.
-   É por isso que o mapeamento de `skill` preserva os quatro estados em vez de colapsá-los: a norma
-   atribui `changes_requested`, `rejected`, `published` e `suspended` a este comando, e colapsar em
-   `draft` apagaria a razão da recusa do próprio arquivo.
+   **Este comando é o único que move um recurso para `published`.** O `/amflow-builder:publish` grava
+   `pending_review` ao submeter, nos quatro tipos; sem esta sincronização, o estado trava ali. O
+   mapeamento preserva os quatro estados do Hub em todo tipo — nenhum colapsa: a norma atribui
+   `changes_requested` e `rejected` a este comando, e colapsar apagaria a razão da recusa do próprio
+   arquivo.
 
 7. Exibir o sync realizado:
 
    ```
    Status local sincronizado:
      minha-skill    pending_review → changes_requested  (changes_requested)
-     meu-command    published      → draft              (changes_requested)
+     meu-command    pending_review → changes_requested  (changes_requested)
    ```
 
-   O mesmo status do Hub produz estados locais diferentes: a skill guarda a razão, o command a
-   colapsa em `draft`. É consequência dos dois domínios, não inconsistência.
+   O mesmo status do Hub produz o mesmo estado local, em todo tipo — consequência do domínio único.
 
 ### Fase 5 — Próximos passos
 
@@ -158,5 +159,5 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 ## Restrições
 
 - Nunca exibir tokens ao usuário.
-- Usar a ferramenta Edit para alterar `status` — nunca sobrescrever o arquivo inteiro.
-- Sincronizar apenas o campo `status` — nunca alterar outros campos sem solicitação.
+- Usar a ferramenta Edit para alterar `metadata.amflow-status` — nunca sobrescrever o arquivo inteiro.
+- Sincronizar apenas `metadata.amflow-status` — nunca alterar outros campos sem solicitação.

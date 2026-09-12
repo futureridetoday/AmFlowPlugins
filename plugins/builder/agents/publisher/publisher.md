@@ -125,10 +125,13 @@ outros três seguem a tabela do `.claude/CLAUDE.md`, com os campos no topo.
 | Dado | `skill` | `agent`, `hook`, `command` |
 |---|---|---|
 | versão | `metadata.amflow-version` | `version` |
-| estado | `metadata.amflow-status` | `status` |
 | tags | `metadata.amflow-tags` — string separada por espaço | `tags` — lista YAML |
 | identificador no Hub | `metadata.amflow-hub-id` | `hub_id` |
 | origem | — não existe na fonte | `source` |
+
+`estado` mora em `metadata.amflow-status` nos quatro tipos — único dado que não diverge por tipo
+desde a unidade `0014-04`; domínio em `docs/plan/builder/0014-unify-status-field/index.md`, no
+repositório AmFlow.
 
 **O que separa os cenários é o identificador do Hub.**
 
@@ -231,16 +234,17 @@ Após sucesso, atualizar o arquivo local com a ferramenta Edit (apenas os campos
 |---|---|---|---|
 | identificador no Hub | uuid retornado — apenas na primeira submissão; nas seguintes, manter sem alteração | `metadata.amflow-hub-id` | `hub_id` |
 | versão | versão submetida (após bump, se aplicável) | `metadata.amflow-version` | `version` |
-| estado | `pending_review` em `skill`; `published` nos outros três | `metadata.amflow-status` | `status` |
+| estado | `pending_review`, nos quatro tipos | `metadata.amflow-status` | `metadata.amflow-status` |
 | origem | `hub/<type>/<name>@<version>` | **não grava** | `source` |
 
 **Gravar no lugar certo é o que mantém o recurso dentro da norma.** Em `skill` os quatro dados vivem
 em `metadata`; escrevê-los no topo cria campo órfão e faz o verificador
 (`scripts/frontmatter/check.py`, no AmFlow) reprovar o arquivo que este agent acabou de tocar.
 
-**`pending_review`, não `published`, em `skill`.** Submeter não publica: a submissão entra na fila do
-Manager, e é o `/amflow-builder:publish-status` que move para `published` quando o Hub aprova. Os
-outros três tipos mantêm `published` — o domínio de `status` deles não tem `pending_review`.
+**`pending_review` nos quatro tipos, não mais `published` em agent/hook/command no ato da
+submissão.** Submeter não publica: a submissão entra na fila do Manager, igualmente nos quatro
+tipos. É o `/amflow-builder:publish-status` quem grava `published`, quando o Hub aprova — e é ele
+quem move o estado dali em diante.
 
 **`source` não é gravado em `skill`.** A norma reserva `amflow-source` à cópia instalada; na fonte a
 chave não existe. Nos outros três tipos, `source` continua recebendo `hub/<type>/<name>@<version>`.
