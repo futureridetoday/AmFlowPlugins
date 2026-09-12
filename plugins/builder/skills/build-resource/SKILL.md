@@ -84,7 +84,7 @@ Sem pergunta de método. Enquanto cada tipo não tem seu fluxo dedicado, seguem 
 1. **Nome** — perguntar, exibindo o método de nomeação do tipo:
    - os dois validam pela **Regra de nome do recurso** (abaixo);
    - `module` soma a varredura de namespace da **Regra de nome do recurso** — colisão rejeita.
-2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, `status: draft`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
+2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
 3. **Fase 3.5 roda** — revisão estrutural, sem script (não é `skill`). **Fase 4**: o esqueleto é entregue — o Creator preenche o conteúdo, incluindo `description` e `tags`, antes de publicar.
 
 O caminho mínimo **não coleta** `description`/`tags` — difere do "Usar template" de `skill`, que coleta por causa do gate da Fase 3.5. Fora de `skill` não há gate no `build`; o `/amflow-builder:publish` cobra os campos depois.
@@ -298,16 +298,6 @@ seguida do link markdown clicável para o arquivo principal do recurso — `SKIL
 agent, `MODULE.md` do módulo. O Creator só começa a editar depois desta mensagem, e o `build` termina
 aqui: desenvolver o conteúdo é do Creator, fora do escopo desta skill.
 
-Sempre:
-- Editar o recurso (preencher o conteúdo específico)
-- Preencher o `[tipo]-description.md` — em skill, agent e módulo. Sem ele preenchido a publicação é
-  recusada, e é o texto que a página do Hub exibe a quem considera comprar
-- Preencher `evals/eval_queries.json` — em skill. São os prompts que devem ativá-la e os *near-miss*
-  que não devem: para uma skill, a `description` é a superfície inteira de ativação, e declarar os
-  near-miss é o que expõe uma descrição larga demais. Também é exigido na publicação
-- `/amflow-builder:publish` quando o recurso estiver pronto, a partir de `<projeto>/<tipo>/` — uma
-  fonte só, mesmo depois de publicado; `.claude/` guarda só o que o Creator instalou para usar
-
 **`skill` via Importar** — diff e aprovação, no lugar da mensagem acima:
 
 1. Mostrar o **diff** do que mudou no recurso importado para ficar compatível com o template e o
@@ -323,6 +313,16 @@ Sempre:
      ao passo 2. Repete até aprovar ou reprovar.
    - **Reprovar** → confirmar ("tem certeza?"). Confirmado, apagar `<projeto>/skills/<nome>/` — o
      skill importado inteiro. Sem confirmação, volta ao passo 2.
+
+Sempre, nos dois ramos:
+- Editar o recurso (preencher o conteúdo específico)
+- Preencher o `[tipo]-description.md` — em skill, agent e módulo. Sem ele preenchido a publicação é
+  recusada, e é o texto que a página do Hub exibe a quem considera comprar
+- Preencher `evals/eval_queries.json` — em skill. São os prompts que devem ativá-la e os *near-miss*
+  que não devem: para uma skill, a `description` é a superfície inteira de ativação, e declarar os
+  near-miss é o que expõe uma descrição larga demais. Também é exigido na publicação
+- `/amflow-builder:publish` quando o recurso estiver pronto, a partir de `<projeto>/<tipo>/` — uma
+  fonte só, mesmo depois de publicado; `.claude/` guarda só o que o Creator instalou para usar
 
 ## Restrições
 
