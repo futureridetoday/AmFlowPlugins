@@ -32,8 +32,10 @@ origem.
 
 Depois do tipo, para **skill**, vem a escolha do método. **Passo a passo** roda o survey guiado
 completo. **Importar** lê um recurso que já existe, monta um plano de adaptação aos padrões do AmFlow
-e cria depois da confirmação do Creator. **Usar template** pede só nome, descrição e tags, e entrega
-o esqueleto. **Agent e módulo** não têm escolha de método enquanto cada um não ganha seu
+e cria depois da confirmação do Creator. São dois momentos de confirmação distintos: o plano de
+adaptação é confirmado antes de qualquer arquivo existir, e o resultado — mostrado como diff — é
+aprovado, editado ou reprovado depois de criado. **Usar template** pede só nome, descrição e tags, e
+entrega o esqueleto. **Agent e módulo** não têm escolha de método enquanto cada um não ganha seu
 fluxo dedicado: pedem o nome e partem do template.
 
 O survey é o de skill. Para módulo, não há cabeçalho a preencher — a identidade dele mora em outro

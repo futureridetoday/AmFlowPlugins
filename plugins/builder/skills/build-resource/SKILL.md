@@ -7,7 +7,7 @@ metadata:
   amflow-status: review
   amflow-author: Bortoli
   amflow-author-id: 985920db-502d-4cb3-9ca1-c145719a9307
-  amflow-updated: "2026-09-10"
+  amflow-updated: "2026-09-12"
   amflow-tags: build resource scaffold creator template module
   amflow-dependencies: ""
 ---
@@ -85,7 +85,7 @@ Sem pergunta de método. Enquanto cada tipo não tem seu fluxo dedicado, seguem 
    - os dois validam pela **Regra de nome do recurso** (abaixo);
    - `module` soma a varredura de namespace da **Regra de nome do recurso** — colisão rejeita.
 2. **Fase 3 direto** — copiar o template do tipo (tabela da Fase 3), substituir os placeholders pelo nome, carimbar só o frontmatter que não depende de survey: `name`, `created`, `project`, `source`, `author`, `author_id`, `status: draft`, e `type` no `agent`. Os campos de survey ficam com o placeholder do template — `description`, `tags`, e `d1`/`d2`/`d4` no `agent`. `module`: o `module.json` recebe `name` + `version: 1.0.0`; `description` fica com o placeholder.
-3. **Fase 3.5 pulada** (não é `skill`). **Fase 4**: o esqueleto é entregue — o Creator preenche o conteúdo, incluindo `description` e `tags`, antes de publicar.
+3. **Fase 3.5 roda** — revisão estrutural, sem script (não é `skill`). **Fase 4**: o esqueleto é entregue — o Creator preenche o conteúdo, incluindo `description` e `tags`, antes de publicar.
 
 O caminho mínimo **não coleta** `description`/`tags` — difere do "Usar template" de `skill`, que coleta por causa do gate da Fase 3.5. Fora de `skill` não há gate no `build`; o `/amflow-builder:publish` cobra os campos depois.
 
@@ -204,7 +204,6 @@ sem ele não passa no gate. Não preencher agora é aceitável; criar sem ele, n
 | `type` | tipo escolhido |
 | `description` | `intencao` |
 | `tags` | selecionados |
-| `status` | `draft` |
 | `d1` / `d2` | coletados (ausentes em hook, workflow e module) |
 | `d4` | coletado ou `action` para hook (ausente em plugin, workflow e module) |
 | `created` | `date +%Y-%m-%d` |
@@ -246,11 +245,11 @@ não os toca.
 
 **Workflow extra:** preencher `## Definição` com nodes e edges extraídos de `visao_geral`. Gerar `<nome>-workflow.mmd` como `flowchart TD` — nós `type: human` com prefixo `👤`, back-edges com sufixo `↻` na label.
 
-### Fase 3.5 — Verificar a skill gerada
+### Fase 3.5 — Revisão do recurso criado
 
-**Só para `skill`.** O verificador aplica a norma de frontmatter de skill e nada mais — rodá-lo sobre
-os demais tipos devolve `[R-03] SKILL.md não encontrado`, que é ruído, não achado. Nos demais, pular
-esta fase sem mencioná-la.
+Roda para os três tipos oferecidos.
+
+**`skill`:** o verificador aplica a norma de frontmatter de skill e nada mais.
 
 ```bash
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/check.py" <caminho-do-projeto>/skills/<nome>
@@ -281,13 +280,23 @@ silenciar isso entrega como verificada uma skill que ninguém verificou. Sem o v
 conferência de frontmatter passa a ser a de `/amflow-builder:publish` — a skill continua publicável,
 e o custo é o erro aparecer mais tarde.
 
+**`agent`, `module`:** sem script — confirma que os arquivos do template da Fase 3 existem no destino
+e que os placeholders foram substituídos pelo `nome`. Mesma regra de `skill`: revisão que falha é
+defeito do Builder, corrigir antes da Fase 4, nunca entregar sabendo que falhou. Evolui quando a
+criação de qualquer tipo ganhar fluxo guiado próprio — por ora é conferência, não gate automatizado.
+
 ### Fase 4 — Exibir resultado
 
-Listar arquivos criados e sugerir próximos passos. Ajustar pelo método:
-- **Passo a passo** e **Usar template** entregam esqueleto — o próximo passo é editar o recurso e
-  preencher o conteúdo específico.
-- **Importar** entrega o recurso já com o conteúdo adaptado do original — o próximo passo é revisar e
-  refinar, não escrever do zero.
+Listar arquivos criados.
+
+**`agent`, `module`, e `skill` via Passo a passo ou Usar template** — a Fase 3 entrega esqueleto.
+Terminar com:
+
+> O starter kit para criação do `<tipo>` `<nome>` está pronto para uso.
+
+seguida do link markdown clicável para o arquivo principal do recurso — `SKILL.md`, `<nome>.md` do
+agent, `MODULE.md` do módulo. O Creator só começa a editar depois desta mensagem, e o `build` termina
+aqui: desenvolver o conteúdo é do Creator, fora do escopo desta skill.
 
 Sempre:
 - Editar o recurso (preencher o conteúdo específico)
@@ -296,10 +305,24 @@ Sempre:
 - Preencher `evals/eval_queries.json` — em skill. São os prompts que devem ativá-la e os *near-miss*
   que não devem: para uma skill, a `description` é a superfície inteira de ativação, e declarar os
   near-miss é o que expõe uma descrição larga demais. Também é exigido na publicação
-- Quando o recurso estiver pronto, movê-lo de `<projeto>/<tipo>/` para dentro de `.claude/`: `skill` →
-  `.claude/skills/<nome>/`, `agent` → `.claude/agents/<nome>/`, `module` → `.claude/modules/<nome>/`. É
-  de lá que o Claude Code carrega skill e agent, e de lá que o `/amflow-builder:publish` lê o recurso
-- `/amflow-builder:publish` quando o recurso estiver pronto, a partir de `.claude/`
+- `/amflow-builder:publish` quando o recurso estiver pronto, a partir de `<projeto>/<tipo>/` — uma
+  fonte só, mesmo depois de publicado; `.claude/` guarda só o que o Creator instalou para usar
+
+**`skill` via Importar** — diff e aprovação, no lugar da mensagem acima:
+
+1. Mostrar o **diff** do que mudou no recurso importado para ficar compatível com o template e o
+   padrão AmFlow.
+2. Perguntar: **aprovar**, **editar** ou **reprovar**.
+   - **Aprovar** → gravar o status de verdade primeiro:
+     ```bash
+     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" set <projeto> skill/<nome> in_progress
+     ```
+     e então informar que a importação de `<nome>` foi concluída, que o Creator pode publicar ou
+     seguir editando, e que o status do skill é `In Progress`.
+   - **Editar** → uma pergunta por vez: o que editar → Creator responde → edita → ao terminar, volta
+     ao passo 2. Repete até aprovar ou reprovar.
+   - **Reprovar** → confirmar ("tem certeza?"). Confirmado, apagar `<projeto>/skills/<nome>/` — o
+     skill importado inteiro. Sem confirmação, volta ao passo 2.
 
 ## Restrições
 
@@ -309,6 +332,8 @@ Sempre:
   a resposta. Nunca omitir o campo nem gravá-lo vazio: `amflow-author` é obrigatória **com valor** na
   fonte (R-07), e o agent `reviewer` cobra o mesmo — recurso que nasce sem ela reprova na revisão e
   não publica. A tool `me` não serve de saída: devolve só o `user_id`, sem perfil.
-- Nunca sobrescrever recurso existente sem confirmação explícita.
+- Nunca sobrescrever recurso existente.
+- Apagar o skill importado reprovado (Fase 4, Importar) exige confirmação explícita — sem ela, volta
+  para aprovar/editar/reprovar.
 - Verificador ausente ou não executável não é aprovação — relatar que não rodou. Skill entregue como
   verificada sem `OK` na saída é a falha mais cara desta skill: o Creator descobre na publicação.
