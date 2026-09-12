@@ -22,7 +22,13 @@ description: |
 # + Edit               → + edição de arquivos existentes
 # + Write              → + criação de arquivos
 # + Agent              → + capacidade de invocar subagentes (obrigatório para orquestradores)
-#   Agent(nome1, nome2) → restringe quais subagentes especificamente podem ser invocados
+#   Agent(nome1, nome2) → restringe o spawn só quando ESTE arquivo roda como sessão principal
+#                          (`claude --agent <nome>`) — dentro de um subagente normal, os
+#                          parênteses são ignorados; `Agent` sozinho já libera spawn (limitado
+#                          pela profundidade máxima de nesting)
+# Independente do que for concedido aqui, todo subagente sempre perde: AskUserQuestion,
+# EnterPlanMode, ScheduleWakeup e outras ferramentas de orquestração de sessão — declarar
+# qualquer uma delas não tem efeito, sem aviso.
 tools: Read, Grep, Glob, Bash
 # disallowedTools:               # opcional — denylist, alternativo a tools
 
@@ -84,15 +90,6 @@ color: blue
 
 # initialPrompt:                 # turn automático quando roda como sessão principal via --agent
 
-# ── amflow — hard memory ───────────────────────────────────────────────────────
-# Persiste contexto entre sessões em arquivo de texto lido/escrito pelo agent.
-# Requer skill `hard-memory` instalada (incluída no plugin AmFlow base).
-# hard_memory:
-#   enabled: true
-#   scope: project              # project (.claude/hard-memory/) | global (~/.claude/hard-memory/)
-#   strategy: rewrite           # rewrite (estado consolidado) | append (histórico completo)
-#   compaction_threshold: 80    # linhas — acima disso, compactar antes de escrever
-
 # ── amflow — rastreabilidade ───────────────────────────────────────────────────
 type: agent
 project: ""
@@ -121,6 +118,13 @@ price: 0                   # centavos — usado na publicação; 0 = gratuito (d
 
 <!-- Identidade: "You are a [role] specializing in [domain]."
      Uma frase. Define papel e especialização. -->
+
+## Princípio
+
+<!-- Uma tese central que orienta toda decisão ambígua — não lista de tarefas, o critério
+     que resolve o caso que a lista abaixo não previu. -->
+
+<frase memorável que funciona como critério de desempate>
 
 ## Responsabilidades
 
@@ -163,7 +167,9 @@ Quando invocado:
 ## Decide Sozinho
 
 <!-- Decisões que o agente toma sem consultar o usuário.
-     Liste apenas o que pode ser ambíguo — o óbvio não precisa estar aqui. -->
+     Liste apenas o que pode ser ambíguo — o óbvio não precisa estar aqui.
+     Se as decisões têm ordem natural de custo ou reversibilidade, estruture como escada
+     numerada e exija que o agente declare em qual degrau parou e por quê. -->
 
 - <decisão autônoma>
 
@@ -175,6 +181,13 @@ Quando invocado:
 
 - <situação>: <o que apresentar>
 
+## Postura
+
+<!-- Como este agente argumenta, não só o que decide.
+     Default: uma recomendação com custo explícito, não um menu de opções confortáveis. -->
+
+- <postura declarada — ex: concorda por padrão, ou testa a ideia antes de construir>
+
 ## Padrões de Qualidade
 
 <!-- Critérios que o output precisa satisfazer.
@@ -183,11 +196,21 @@ Quando invocado:
 - Verificar via output de ferramenta — nunca assumir que uma ação teve efeito sem confirmar o resultado
 - <critério específico do agente>
 
+## Verificação
+
+<!-- Três perguntas que todo output deste agente responde antes de ser entregue.
+     Sem resposta a uma delas, o trabalho está incompleto — mesmo pronto. -->
+
+- Como sei que [a condição de ativação] correspondeu?
+- Como sei que o resultado está correto?
+- Como sei que quebrou?
+
 ## Output
 
 <!-- Formato exato do que o agente retorna — uma única mensagem.
      Defina estrutura, seções e exemplo quando necessário.
-     Nunca retornar mais de uma mensagem. Nunca pedir confirmação. -->
+     Nunca retornar mais de uma mensagem. Nunca pedir confirmação. Sem preâmbulo, sem
+     resumo do pedido. -->
 
 ```
 [template do output]
