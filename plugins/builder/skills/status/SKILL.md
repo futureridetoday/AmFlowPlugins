@@ -83,15 +83,18 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
 
    | Saída | O que fazer |
    |---|---|
-   | `list`, código 0 | Exibir as linhas tal como vieram, mais o total e o rodapé, se houver |
-   | `list`, código 1 | Alguma linha começa com `ERRO` — um arquivo não parseou. Exibir o erro junto da lista; não escondê-lo |
+   | `list`, código 0 | Reproduzir a tabela markdown tal como veio — cabeçalho e linhas —, mais o total e o rodapé, se houver |
+   | `list`, código 1 | Alguma linha começa com `ERRO` — um arquivo não parseou. Exibir o erro junto da tabela; não escondê-lo |
    | `set`, código 0 | Exibir a mensagem de sucesso do script — ela já diz `de → para (arquivo)` |
    | `set`, código 1 | Exibir a mensagem de recusa tal como veio — nunca reformular. Cobre: valor do Hub, valor fora do domínio, `blocked` sem motivo, recurso não encontrado |
 
-   Cada linha de `list` já vem pronta: `tipo | nome | local | status[, anotações] | rótulo`.
+   `list` já sai como tabela markdown — cabeçalho `| Tipo | Nome | Local | Status | Atualizado |
+   Rótulo |` sempre que há ao menos um recurso visível; lista vazia sai sem tabela, sem cabeçalho.
+   Cada linha: `| tipo | nome | [local](local) | status[, anotações] | atualizado | rótulo |`. A
+   coluna de local já vem em link — colar a tabela tal como veio, sem reescrever texto nem link.
    `[Hub]` marca valor vindo do Hub; `[legado]` marca o recurso ainda no lugar antigo (`status` no
-   topo, fora de `metadata`); `[fora do domínio]` marca valor que nenhuma das duas listas reconhece.
-   Nenhuma dessas marcas se omite ao exibir.
+   topo, fora de `metadata`); `[fora do domínio]` marca valor que nenhuma das duas listas reconhece;
+   `(sem data)` marca recurso sem `amflow-updated`. Nenhuma dessas marcas se omite ao exibir.
 
 5. **O rodapé, quando presente** — reproduzir literalmente:
    - `[Hub] reflete a última execução do /amflow-builder:publish-status — rode-o de novo para

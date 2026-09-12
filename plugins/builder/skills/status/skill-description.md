@@ -27,6 +27,10 @@ Não há chamada de rede. O estado do Hub que aparece na lista é o que a últim
 `/amflow-builder:publish-status` gravou — a skill mostra isso junto do resultado, nunca finge saber
 mais do que o arquivo diz.
 
+A lista sai como tabela, com o nome de cada recurso em link — clicar abre o arquivo direto —, e uma
+coluna com a data da última edição. A ordem agrupa por tipo de recurso e, dentro do tipo, pelo que
+precisa de ação primeiro, com o mais recente no topo.
+
 ## Como usar
 
 Por linguagem natural, sem comando fixo — a descrição da skill é a própria superfície de ativação:
@@ -41,9 +45,10 @@ Por linguagem natural, sem comando fixo — a descrição da skill é a própria
 
 ## Exemplos de uso
 
-**Retomando um projeto depois de semanas.** O Creator pergunta o que está pendente. A skill lista os
-recursos ordenados pelo que precisa de ação primeiro — o que o Hub pediu ajuste, o que está pronto
-para publicar, o que está em andamento — e ele decide por onde continuar sem abrir arquivo nenhum.
+**Retomando um projeto depois de semanas.** O Creator pergunta o que está pendente. A skill devolve
+uma tabela agrupada por tipo de recurso e, dentro de cada tipo, pelo que precisa de ação primeiro —
+o que o Hub pediu ajuste, o que está pronto para publicar, o que está em andamento —, mais recente
+no topo; ele decide por onde continuar clicando direto no link de cada um.
 
 **Pausando por dependência externa.** Um agent depende de uma API que ainda não existe. O Creator
 pede para marcá-lo como bloqueado, com o motivo; a skill exige o motivo antes de gravar, porque
