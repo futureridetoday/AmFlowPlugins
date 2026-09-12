@@ -69,16 +69,24 @@ organização — não afetam o identificador.
 
 ## Ferramentas
 
-- **Sempre removidas de todo subagente**: `Agent`, `AskUserQuestion`, `EndConversation`,
-  `EnterPlanMode`, `ExitPlanMode` (exceto `permissionMode: plan`), `ScheduleWakeup`, `TaskOutput`,
-  `WaitForMcpServers`, `Workflow`.
+- **Sempre removidas de todo subagente**: `AskUserQuestion`, `EndConversation` (só encerra a
+  conversa principal), `EnterPlanMode`, `ExitPlanMode` (exceto `permissionMode: plan`),
+  `ScheduleWakeup`, `TaskOutput`, `WaitForMcpServers`, `Workflow`.
+- **`Agent` é caso à parte**: só é removida quando o subagente já está no limite de profundidade
+  de nesting (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, default 3); num fork, a ferramenta continua
+  listada mas retorna erro em vez de spawnar. Fora dessa condição, `Agent` funciona normalmente
+  dentro de um subagente.
 - **Removidas só em background**: tudo exceto `Read, Grep, Glob, Bash, PowerShell, Edit, Write,
   NotebookEdit, WebFetch, WebSearch, TodoWrite, Skill, ToolSearch, EnterWorktree, ExitWorktree,
   Monitor, TaskStop, SendMessage, Artifact`.
 - **Padrões MCP**: `mcp__<server>` (servidor inteiro), `mcp__<server>__*` (ferramentas específicas),
   `mcp__*` (só em `disallowedTools`, remove todo MCP).
-- **Restringir quais subagentes um orquestrador pode invocar**:
-  `tools: Agent(worker, researcher), Read, Bash` — omitir `Agent` bloqueia spawning por completo.
+- **`Agent(agent_type, ...)` — restringir spawn por tipo**: a sintaxe com parênteses só tem efeito
+  quando o arquivo roda como **sessão principal** via `claude --agent <nome>`. Dentro de uma
+  definição de subagente comum, `Agent` na lista de `tools` já libera spawn (limitado pela
+  profundidade máxima) e qualquer lista entre parênteses é **ignorada**. `Agent` sem parênteses =
+  spawn sem restrição de tipo; omitir `Agent` = agente não pode spawnar. Para bloquear tipos
+  específicos permitindo os demais, usar `permissions.deny` em vez desta sintaxe.
 
 ## Modos de permissão
 
