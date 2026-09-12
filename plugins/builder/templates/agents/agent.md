@@ -92,7 +92,8 @@ project: ""
 author: ""
 author_id: ""              # uuid do usuário autenticado (tool me) — atribuição (L0), preenchido pelo Builder na Fase 0; não é âncora de confiança
 created: ""                # YYYY-MM-DD
-status: stable             # draft | review | stable | deprecated
+metadata:
+  amflow-status: in_progress # in_progress | paused | blocked | review | deprecated — gerido por /amflow-builder:status
 version: 1.0.0
 updated: ""
 scope: project             # global | project

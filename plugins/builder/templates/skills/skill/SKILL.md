@@ -45,7 +45,7 @@ license: ""                # ex: MIT | Apache-2.0 | Proprietary — obrigatório
 # cópia instalada, nunca no repositório do Creator.
 metadata:
   amflow-version: "1.0.0"
-  amflow-status: draft
+  amflow-status: in_progress
   amflow-author: ""          # git config user.name — preenchido pelo Builder na Fase 0
   amflow-author-id: ""       # uuid do usuário autenticado (tool me) — preenchido pelo Builder na Fase 0
   amflow-updated: ""         # YYYY-MM-DD

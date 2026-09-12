@@ -6,7 +6,9 @@
   "tags": [],
   "author": "",
   "created": "",
-  "status": "stable",
+  "metadata": {
+    "amflow-status": "in_progress"
+  },
   "version": "1.0.0",
   "updated": "",
   "scope": "project",
