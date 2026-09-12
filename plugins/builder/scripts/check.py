@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Verificador de frontmatter de skill do AmFlow.
+"""Verificador de frontmatter de skill e do manifesto JSON de module/hook do AmFlow.
 
 Aplica as dezessete regras verificáveis de scripts/frontmatter/skill-frontmatter.md
-§5. A norma é recurso de sistema e não viaja (skill-frontmatter.md:28); este
+§5 ao SKILL.md, e a R-20 — metadata.amflow-updated em module.json/hook.json,
+docs/plan/builder/0014-unify-status-field/index.md §2 — aos dois tipos que não
+têm SKILL.md. A norma de skill é recurso de sistema e não viaja (skill-frontmatter.md:28); este
 script viaja. `vendor.py` o copia verbatim para `plugins/builder/scripts/` do
 AmFlowPlugins, onde o Builder o executa — a aplicação da norma alcança o Creator
 sem que o arquivo da norma saia daqui. A cópia é gerada, nunca editada do outro
@@ -32,6 +34,7 @@ Sai com 0 se todas as skills passam, 1 se alguma reprova.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from dataclasses import dataclass, field
@@ -404,6 +407,34 @@ def r19_blocked_sem_motivo(fm: Frontmatter) -> list[Violacao]:
     return []
 
 
+def r20_manifesto_amflow_updated(dados: dict) -> list[Violacao]:
+    """`module.json`/`hook.json` não têm SKILL.md — R-20 é a única regra que os alcança
+    (index.md §2, unidade 0014-07). `linha=None`: sem parser de linha para JSON."""
+    metadata = dados.get("metadata")
+    valor = metadata.get("amflow-updated") if isinstance(metadata, dict) else None
+    if not isinstance(valor, str) or not valor.strip():
+        return [Violacao("R-20", "metadata.amflow-updated obrigatória e ausente ou vazia")]
+    if not _DATA_RE.match(valor.strip()):
+        return [Violacao("R-20", f"metadata.amflow-updated não é YYYY-MM-DD: {valor}")]
+    return []
+
+
+def verificar_manifesto(caminho: Path) -> dict[str, list[Violacao]]:
+    """R-20 sobre module.json/hook.json — lê e parseia o manifesto, e devolve R-20 com a
+    mensagem do `json.JSONDecodeError` quando o arquivo não parseia."""
+    nome = caminho.name
+    try:
+        texto = caminho.read_text(encoding="utf-8")
+    except OSError as exc:
+        return {nome: [Violacao("R-20", str(exc))]}
+    try:
+        dados = json.loads(texto)
+    except json.JSONDecodeError as exc:
+        return {nome: [Violacao("R-20", f"JSON inválido: {exc}")]}
+    violacoes = r20_manifesto_amflow_updated(dados)
+    return {nome: violacoes} if violacoes else {}
+
+
 def r11_dependencias_formato(fm: Frontmatter) -> list[Violacao]:
     # amflow-tags não tem estrutura própria além de "separada por espaço" —
     # qualquer string satisfaz isso. Só amflow-dependencies tem forma a checar.
@@ -523,9 +554,18 @@ def verificar_skill_md(texto: str) -> list[Violacao]:
 
 
 def verificar_skill(diretorio: Path) -> dict[str, list[Violacao]]:
-    """Um relatório por arquivo reprovado — SKILL.md (R-02 a R-18) e arquivo interno (R-01)."""
+    """Um relatório por arquivo reprovado — SKILL.md (R-02 a R-18) e arquivo interno (R-01).
+
+    Diretório sem SKILL.md mas com module.json ou hook.json vai para `verificar_manifesto`
+    (R-20) em vez de reprovar com "SKILL.md não encontrado" — os dois tipos sem SKILL.md,
+    index.md §2.
+    """
     skill_md = diretorio / "SKILL.md"
     if not skill_md.is_file():
+        for nome_manifesto in ("module.json", "hook.json"):
+            manifesto = diretorio / nome_manifesto
+            if manifesto.is_file():
+                return verificar_manifesto(manifesto)
         return {"SKILL.md": [Violacao("R-03", "SKILL.md não encontrado no diretório")]}
 
     relatorio: dict[str, list[Violacao]] = {}

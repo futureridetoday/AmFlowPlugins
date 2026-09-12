@@ -70,6 +70,7 @@ DOMINIO = STATUS_VALIDOS | STATUS_LEGADO
 
 CHAVE_STATUS = "amflow-status"
 CHAVE_MOTIVO = "amflow-status-reason"
+CHAVE_ATUALIZADO = "amflow-updated"
 
 # index.md §1 — "Gravados pela publicação a partir do Hub". Só os dois comandos de
 # publicação gravam estes quatro; `set` sempre os recusa (Contrato, linha Erro).
@@ -118,6 +119,7 @@ class Recurso:
     status: str | None  # valor efetivo — metadata.amflow-status se presente, senão o legado
     lugar_legado: bool  # o campo antigo (status no topo/raiz) está presente no arquivo
     motivo: str | None = None
+    atualizado: str | None = None  # metadata.amflow-updated; vazio ou não-string vira None
 
 
 @dataclass
@@ -133,6 +135,7 @@ class ResultadoListagem:
     invalidos: list[ArquivoInvalido]
     total: int
     rodape: list[str]
+    cabecalho: list[str]  # fora de linhas para total == len(linhas) continuar valendo
 
 
 @dataclass
@@ -190,12 +193,17 @@ def _recurso_yaml(
     campo_novo = fm.metadata.get(CHAVE_STATUS)
     campo_legado = fm.topo.get(chave_legado) if chave_legado else None
     campo_motivo = fm.metadata.get(CHAVE_MOTIVO)
+    campo_atualizado = fm.metadata.get(CHAVE_ATUALIZADO)
     status, lugar_legado = _resolver_status(
         campo_novo.texto if campo_novo else None,
         campo_legado.texto if campo_legado else None,
     )
     motivo = campo_motivo.texto if campo_motivo else None
-    return Recurso(tipo, nome, local, caminho, "yaml", _lugar(local), status, lugar_legado, motivo), None
+    atualizado = campo_atualizado.texto if campo_atualizado and campo_atualizado.texto else None
+    return (
+        Recurso(tipo, nome, local, caminho, "yaml", _lugar(local), status, lugar_legado, motivo, atualizado),
+        None,
+    )
 
 
 def _recurso_json(
@@ -212,7 +220,12 @@ def _recurso_json(
         dados.get("status") if tem_legado else None,
     )
     motivo = metadata.get(CHAVE_MOTIVO)
-    return Recurso(tipo, nome, local, caminho, "json", _lugar(local), status, lugar_legado, motivo), None
+    valor_atualizado = metadata.get(CHAVE_ATUALIZADO)
+    atualizado = valor_atualizado if isinstance(valor_atualizado, str) and valor_atualizado else None
+    return (
+        Recurso(tipo, nome, local, caminho, "json", _lugar(local), status, lugar_legado, motivo, atualizado),
+        None,
+    )
 
 
 def _lugar(local: str) -> str:
@@ -282,6 +295,15 @@ def _acumular(
 
 # ── list ───────────────────────────────────────────────────────────────────
 
+# Formato da saída (0014-07) — cabeçalho fora de ResultadoListagem.linhas, para que
+# total == len(linhas) continue valendo.
+_CABECALHO = (
+    "| Tipo | Nome | Local | Status | Atualizado | Rótulo |",
+    "|---|---|---|---|---|---|",
+)
+
+_DATA_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
 
 def _formatar_linha(recurso: Recurso) -> str:
     anotacoes = []
@@ -295,7 +317,11 @@ def _formatar_linha(recurso: Recurso) -> str:
     if anotacoes:
         status_txt = f"{status_txt} [{', '.join(anotacoes)}]"
     rotulo = ROTULOS.get(recurso.status, "—")
-    return f"{recurso.tipo} | {recurso.nome} | {recurso.local} | {status_txt} | {rotulo}"
+    atualizado = recurso.atualizado or "(sem data)"
+    return (
+        f"| {recurso.tipo} | {recurso.nome} | [{recurso.local}]({recurso.local}) "
+        f"| {status_txt} | {atualizado} | {rotulo} |"
+    )
 
 
 def _rodape(recursos: list[Recurso]) -> list[str]:
@@ -310,12 +336,22 @@ def _rodape(recursos: list[Recurso]) -> list[str]:
     return linhas
 
 
-def _chave_ordem(recurso: Recurso) -> tuple[int, str, str]:
+def _chave_data(atualizado: str | None) -> float:
+    """Decrescente — mais recente primeiro; ausente, vazia ou fora de YYYY-MM-DD é o pior
+    caso, por último dentro do mesmo tipo+status. Dígitos zero-padded ordenam como a data
+    (20260912 > 20260101), então negar o inteiro basta — sem precisar validar calendário."""
+    if not atualizado or not _DATA_RE.match(atualizado):
+        return float("inf")
+    return -int(atualizado.replace("-", ""))
+
+
+def _chave_ordem(recurso: Recurso) -> tuple[str, int, float, str]:
+    """`(tipo, posição em ORDEM_SAIDA, chave_data, nome)` — index.md §4 e formato da saída."""
     try:
         posicao = ORDEM_SAIDA.index(recurso.status)
     except ValueError:
         posicao = len(ORDEM_SAIDA)
-    return (posicao, recurso.tipo, recurso.nome)
+    return (recurso.tipo, posicao, _chave_data(recurso.atualizado), recurso.nome)
 
 
 def listar(projeto: Path, filtro_status: str | None = None) -> ResultadoListagem:
@@ -327,6 +363,7 @@ def listar(projeto: Path, filtro_status: str | None = None) -> ResultadoListagem
         invalidos=invalidos,
         total=len(visiveis),
         rodape=_rodape(todos),
+        cabecalho=list(_CABECALHO) if visiveis else [],
     )
 
 
@@ -477,6 +514,8 @@ def main(argv: list[str] | None = None) -> int:
         resultado = listar(projeto, args.status)
         for inv in resultado.invalidos:
             print(f"ERRO {inv.tipo} {inv.local}: {inv.erro}")
+        for linha in resultado.cabecalho:
+            print(linha)
         for linha in resultado.linhas:
             print(linha)
         print()

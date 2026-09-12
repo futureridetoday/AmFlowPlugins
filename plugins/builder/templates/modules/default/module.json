@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Uma frase, terminada em ponto, que a instalação copia literalmente para a região `modules` da skill que adotar este módulo.",
   "metadata": {
-    "amflow-status": "in_progress"
+    "amflow-status": "in_progress",
+    "amflow-updated": "2026-09-12"
   }
 }
