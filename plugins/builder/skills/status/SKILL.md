@@ -28,7 +28,7 @@ command, hook e módulo. Todo determinismo — varredura, leitura, validação, 
 - "o que eu tenho pendente para terminar neste projeto?"
 - "quais recursos estão prontos para publicar?"
 - "marca a skill deep-research como bloqueada, esperando a API de licenças"
-- "retoma o agent reviewer" / "pausa o command publish-status"
+- "retoma o agent resource-reviewer" / "pausa o command publish-status"
 
 ## Quando não usar
 
@@ -77,7 +77,7 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" set <projeto> <tipo>/<nome> <valor> [--motivo <texto>]
    ```
 
-   `<tipo>/<nome>` — ex.: `skill/deep-research`, `agent/reviewer`.
+   `<tipo>/<nome>` — ex.: `skill/deep-research`, `agent/resource-reviewer`.
 
 4. **Ler a saída, nunca reformular o julgamento do script**:
 

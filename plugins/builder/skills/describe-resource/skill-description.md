@@ -43,7 +43,7 @@ Pelo comando, que é o caminho confiável:
 
 > `/amflow-builder:describe como usar a skill primal-branding`
 
-> `/amflow-builder:describe o agent reviewer decide sozinho ou pede confirmação?`
+> `/amflow-builder:describe o agent resource-reviewer decide sozinho ou pede confirmação?`
 
 > `/amflow-builder:describe quais são os limites do módulo task-flow`
 

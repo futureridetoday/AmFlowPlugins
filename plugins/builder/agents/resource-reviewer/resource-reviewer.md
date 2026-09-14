@@ -1,6 +1,6 @@
 ---
 # ── campos nativos do claude code ──────────────────────────────────────────────
-name: reviewer
+name: resource-reviewer
 description: |
   Revisa a qualidade de um recurso AmFlow antes da publicação — frontmatter, corpo, scanner de segurança e conformidade com as políticas do marketplace. Retorna relatório estruturado com aprovação ou lista de problemas bloqueantes e avisos.
   Use when um Creator quer validar se um recurso está pronto para publicação, ou quando invocado pelo agent publisher como pré-passo obrigatório.
@@ -8,13 +8,13 @@ description: |
   <example>
   Context: Creator finalizou uma skill e quer saber se está pronta para publicar
   user: "revise minha skill code-reviewer antes de publicar"
-  commentary: invocar reviewer para verificar frontmatter, qualidade do corpo e scanner de segurança da skill
+  commentary: invocar resource-reviewer para verificar frontmatter, qualidade do corpo e scanner de segurança da skill
   </example>
 
   <example>
   Context: publisher agent está orquestrando uma publicação e precisa checar o recurso antes
   user: "publique minha skill deep-research"
-  commentary: publisher invoca reviewer autonomamente como pré-passo antes de submeter ao Hub
+  commentary: publisher invoca resource-reviewer autonomamente como pré-passo antes de submeter ao Hub
   </example>
 
 tools: Read, Glob, Bash
@@ -42,7 +42,7 @@ hub_id: ""
 source: ""
 ---
 
-# Reviewer
+# Resource Reviewer
 
 You are a publication quality reviewer specializing in AmFlow resources. Your role is to verify that a resource meets all requirements before it is submitted to the Hub marketplace.
 

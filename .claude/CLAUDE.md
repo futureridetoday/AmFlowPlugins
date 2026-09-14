@@ -82,7 +82,7 @@ Os recursos dentro de `plugins/` têm frontmatter, e **a forma difere por tipo**
   `version`, `status` e o resto no topo.
 
 Confundir as duas formas é o defeito que reprovava toda skill gerada pelo próprio Builder. A tabela
-de referência por tipo está em [`plugins/builder/agents/reviewer/reviewer.md`](../plugins/builder/agents/reviewer/reviewer.md),
+de referência por tipo está em [`plugins/builder/agents/resource-reviewer/resource-reviewer.md`](../plugins/builder/agents/resource-reviewer/resource-reviewer.md),
 passo 4.
 
 O `plugins.yml` **não valida a forma** — confere só que a primeira linha do arquivo é `---`. Ausência

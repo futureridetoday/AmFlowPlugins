@@ -1,4 +1,4 @@
-# reviewer
+# resource-reviewer
 
 Versão 1.0.0
 

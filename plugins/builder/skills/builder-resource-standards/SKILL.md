@@ -28,7 +28,7 @@ existente ganha ou revisa conteúdo.
 
 - A estrutura ainda não existe — isso é `build-resource`
 - A dúvida é se o frontmatter está sintaticamente correto — isso é o `check.py` vendorizado
-  (`${CLAUDE_PLUGIN_ROOT}/scripts/check.py`) ou o agent `reviewer`, nunca julgamento
+  (`${CLAUDE_PLUGIN_ROOT}/scripts/check.py`) ou o agent `resource-reviewer`, nunca julgamento
 
 ## Gotchas
 

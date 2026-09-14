@@ -330,8 +330,8 @@ Sempre, nos dois ramos:
 - Nome fora da **Regra de nome do recurso** (Fase 1.5) → rejeitar e informar a regra.
 - `git config user.name` vazio no local e no global → perguntar o nome do autor ao Creator e carimbar
   a resposta. Nunca omitir o campo nem gravá-lo vazio: `amflow-author` é obrigatória **com valor** na
-  fonte (R-07), e o agent `reviewer` cobra o mesmo — recurso que nasce sem ela reprova na revisão e
-  não publica. A tool `me` não serve de saída: devolve só o `user_id`, sem perfil.
+  fonte (R-07), e o agent `resource-reviewer` cobra o mesmo — recurso que nasce sem ela reprova na
+  revisão e não publica. A tool `me` não serve de saída: devolve só o `user_id`, sem perfil.
 - Nunca sobrescrever recurso existente.
 - Apagar o skill importado reprovado (Fase 4, Importar) exige confirmação explícita — sem ela, volta
   para aprovar/editar/reprovar.

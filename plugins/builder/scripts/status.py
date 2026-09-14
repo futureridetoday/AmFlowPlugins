@@ -22,7 +22,7 @@ Uso:
   status.py list <projeto> [--status <valor>]
   status.py set <projeto> <recurso> <valor> [--motivo <texto>]
 
-`<recurso>` é `<tipo>/<nome>` — ex.: `skill/deep-research`, `agent/reviewer`.
+`<recurso>` é `<tipo>/<nome>` — ex.: `skill/deep-research`, `agent/resource-reviewer`.
 
 Sai com 0 em sucesso; 1 se `list` encontrou arquivo que não parseia, ou se `set` foi recusado.
 """

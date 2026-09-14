@@ -27,7 +27,7 @@ escolher entre os quatro arquétipos de skill e seus cinco padrões de instruç�
 
 Automática, pela `description`, no momento de escrever ou revisar o corpo de uma skill — não para
 criar a estrutura inicial, isso é `build-resource`, nem para validar formato, isso é o `check.py`
-vendorizado ou o agent `reviewer`.
+vendorizado ou o agent `resource-reviewer`.
 
 ## Exemplos de uso
 
