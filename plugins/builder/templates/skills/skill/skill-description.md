@@ -48,18 +48,17 @@ Versão 1.0.0
 
 ## Fundamentação
 
-<!-- Opcional. O método, a teoria, a norma ou o padrão que sustenta o rigor da skill, e por que
-     ele foi escolhido. Se a skill não se apoia em nada além do bom senso, remova a seção
-     inteira: seção forçada produz texto de enchimento, que é pior que a ausência. -->
+<!-- Opcional. Só nomes — o método, a teoria, a norma ou o padrão —, numa linha, sem explicação.
+     Sem nome a citar, remova a seção inteira: seção forçada produz texto de enchimento, que é
+     pior que a ausência. -->
 
 ## Base de conhecimento
 
-<!-- Opcional. O que a skill carrega consigo e de onde veio — referências, tabelas, critérios,
-     dados embutidos. Diga também o que ela NÃO carrega: se não consulta a internet nem depende
-     de serviço externo, isso é informação de valor para quem avalia. -->
+<!-- Opcional. Só quando a pasta do recurso tem `references/` ou `assets/` com arquivos de dados.
+     Sem isso, remova a seção inteira — ausência não se declara. -->
 
 ## Limites
 
-<!-- O que a skill não faz, e quando não usá-la. É a informação que nenhum autor oferece
-     espontaneamente e a que mais evita compra errada e avaliação ruim.
-     Inclua a fronteira com recursos vizinhos: o que fica de fora e quem resolve. -->
+<!-- Lista de até cinco itens, uma frase curta cada (≈ 80 caracteres): o que o autor não oferece
+     espontaneamente e quem resolve o que fica de fora. É a informação que mais evita compra
+     errada e avaliação ruim. -->

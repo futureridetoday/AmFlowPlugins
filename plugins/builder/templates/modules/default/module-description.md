@@ -57,16 +57,17 @@ Versão 1.0.0
 
 ## Fundamentação
 
-<!-- Opcional. O método ou o princípio que sustenta o desenho do módulo. Se ele apenas agrupa
-     código repetido, remova a seção inteira. -->
+<!-- Opcional. Só nomes — o método, a teoria, a norma ou o padrão —, numa linha, sem explicação.
+     Sem nome a citar, remova a seção inteira: seção forçada produz texto de enchimento, que é
+     pior que a ausência. -->
 
 ## Base de conhecimento
 
-<!-- Opcional. O que o módulo carrega consigo: referências, templates, dados, suíte de testes.
-     Se tem testes, diga como rodá-los — o runner é do módulo, não do projeto que o adota. -->
+<!-- Opcional. Só quando a pasta do recurso tem `references/` ou `assets/` com arquivos de dados.
+     Sem isso, remova a seção inteira — ausência não se declara. -->
 
 ## Limites
 
-<!-- O que fica a cargo de quem adota, o que o módulo não resolve, e quando não vale instalá-lo.
-     Inclua a fronteira com módulos e capacidades vizinhas, para o Creator não instalar dois que
-     fazem a mesma coisa. -->
+<!-- Lista de até cinco itens, uma frase curta cada (≈ 80 caracteres): o que o autor não oferece
+     espontaneamente e quem resolve o que fica de fora. É a informação que mais evita compra
+     errada e avaliação ruim. -->

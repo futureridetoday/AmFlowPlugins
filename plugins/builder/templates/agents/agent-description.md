@@ -55,17 +55,17 @@ Versão 1.0.0
 
 ## Fundamentação
 
-<!-- Opcional. O método ou o critério que sustenta o julgamento do agent — a checklist que ele
-     aplica, a norma que segue, o padrão contra o qual avalia. Se ele apenas encapsula uma
-     sequência de chamadas, remova a seção inteira. -->
+<!-- Opcional. Só nomes — o método, a teoria, a norma ou o padrão —, numa linha, sem explicação.
+     Sem nome a citar, remova a seção inteira: seção forçada produz texto de enchimento, que é
+     pior que a ausência. -->
 
 ## Base de conhecimento
 
-<!-- Opcional. O que ele carrega consigo e de onde veio; que skills ou referências consulta.
-     Diga também o que NÃO tem acesso — sem internet, sem banco, sem estado entre invocações,
-     conforme o caso. -->
+<!-- Opcional. Só quando a pasta do recurso tem `references/` ou `assets/` com arquivos de dados.
+     Sem isso, remova a seção inteira — ausência não se declara. -->
 
 ## Limites
 
-<!-- O que ele não decide sem confirmação, o que está fora do escopo dele, e em que situação
-     usá-lo é pior que não usar. Inclua a fronteira com agents e skills vizinhos. -->
+<!-- Lista de até cinco itens, uma frase curta cada (≈ 80 caracteres): o que o autor não oferece
+     espontaneamente e quem resolve o que fica de fora. É a informação que mais evita compra
+     errada e avaliação ruim. -->

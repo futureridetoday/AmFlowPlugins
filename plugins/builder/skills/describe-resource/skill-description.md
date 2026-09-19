@@ -1,6 +1,6 @@
 # describe-resource
 
-Versão 1.0.0
+Versão 1.1.0
 
 ## O que é
 
@@ -26,16 +26,19 @@ O AmFlow padroniza um documento por recurso, num nome derivado do tipo e sempre 
 que problema resolve, como funciona, como usar, exemplos, em que se fundamenta, que base carrega e
 quais são os limites.
 
-Como o lugar e os títulos são conhecidos de antemão, a resposta é uma leitura direta: a skill deriva o
-caminho a partir do tipo e do nome, lê o documento e responde a partir da seção que corresponde à
-pergunta — a de uso quando se pergunta como usar, a de limites quando se pergunta se dá para usar em
-determinado caso.
+Como o lugar e os títulos são conhecidos de antemão, a resposta é uma leitura direta: a skill pede ao
+Builder a lista de recursos do projeto — a pasta de desenvolvimento e `.claude/` —, acha o recurso, lê o
+documento na pasta dele e responde a partir da seção que corresponde à pergunta — a de uso quando se
+pergunta como usar, a de limites quando se pergunta se dá para usar em determinado caso. A resposta traz
+também o estado do recurso — em andamento, publicado, descontinuado — e avisa quando a versão que o
+documento declara não é a do recurso.
 
 Nada sai da máquina. Não há chamada de rede, autenticação nem consulta ao catálogo.
 
 A regra que mais importa é negativa: quando o documento não responde, a resposta é *"o documento não
 diz"*. Uma resposta plausível e inventada seria pior que a ausência, porque o Creator não teria como
-distinguir uma da outra.
+distinguir uma da outra. Seção opcional que falta é outra coisa: significa que o recurso não declara
+aquilo.
 
 ## Como usar
 
@@ -47,8 +50,9 @@ Pelo comando, que é o caminho confiável:
 
 > `/amflow-builder:describe quais são os limites do módulo task-flow`
 
-Não é preciso dizer o tipo — sem ele, a skill procura nos três e pergunta qual é, se houver ambiguidade.
-Sem argumento, ela lista os recursos do projeto e pergunta sobre qual você quer saber.
+Não é preciso dizer o tipo nem onde o recurso está — a skill procura na pasta de desenvolvimento e em
+`.claude/`, e pergunta qual é se houver ambiguidade. Sem argumento, ela lista os recursos do projeto e
+pergunta sobre qual você quer saber.
 
 Perguntar em linguagem natural, sem o comando, **costuma não acionar esta skill** — o Claude tende a
 responder lendo o arquivo de instrução do recurso, que responde outra coisa. Ver *Limites*.
@@ -69,34 +73,12 @@ partir do template — lembrando que ele é obrigatório para publicar no Hub.
 
 ## Fundamentação
 
-O documento lido é o `[tipo]-description.md`, padrão definido na norma de descrição de recurso do
-AmFlow. É essa norma que torna a leitura possível sem adivinhação: nome derivado do tipo, lugar fixo na
-raiz do recurso, títulos de seção exatos e ordem estável.
-
-A divisão de responsabilidade também vem dela. O arquivo de instrução de um recurso — `SKILL.md`,
-`MODULE.md`, o `.md` do agent — é escrito para o agente executar, e responde *como fazer*. O documento
-de descrição é escrito para uma pessoa decidir, e responde *o que é e quando cabe*. Esta skill lê o
-segundo, nunca o primeiro, e é isso que a impede de devolver procedimento quando se pediu explicação.
-
-## Base de conhecimento
-
-Nenhuma embutida. Tudo o que a skill responde vem do documento que o próprio Creator escreveu, lido do
-disco no momento da pergunta.
-
-Ela conhece apenas o mapa entre tipo e caminho, e a lista de seções do padrão — o suficiente para achar
-o arquivo e escolher de onde tirar a resposta.
+Norma de descrição de recurso do AmFlow.
 
 ## Limites
 
-- **Só recurso de autoria própria.** Para recurso de terceiro, do catálogo, a fonte é a página no Hub
-  ou a tool `get_resource` — a mesma documentação, servida pelo lado do servidor.
-- **Não explica implementação.** Como o recurso faz o que faz está no arquivo de instrução dele, não
-  aqui.
-- **Não cobre `command` nem `hook`.** Esses dois tipos ainda não entraram na norma; a pergunta é
-  respondida a partir do próprio arquivo, com o aviso de que não vem de documento de descrição.
-- **Não inventa o que falta.** Seção ausente ou vazia é reportada como tal.
-- **Não edita nada.** Criar ou corrigir um documento é ação separada, e só acontece se o Creator pedir.
-- **Não é acionada de forma confiável por pergunta solta.** Medido em 2026-08-20, em duas rodadas: com
-  a pergunta *"como usar a skill X?"* sem o comando, o Claude respondeu a partir do `SKILL.md` do
-  recurso, não daqui. A causa provável é que ele já tem o arquivo à mão e responder direto parece
-  bastar. **Use o comando** quando quiser a resposta do documento.
+- Só recurso do próprio projeto; recurso de terceiro está no Hub.
+- Não explica implementação — isso é do arquivo de instrução do recurso.
+- `command` e `hook` não têm documento; a resposta sai do arquivo, com aviso.
+- Não edita nem inventa: seção que falta é reportada como falta.
+- Pergunta solta, sem o comando, costuma não acionar a skill — use o comando.
