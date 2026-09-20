@@ -63,8 +63,9 @@ Versão 1.0.0
 
 ## Base de conhecimento
 
-<!-- Opcional. Só quando a pasta do recurso tem `references/` ou `assets/` com arquivos de dados.
-     Sem isso, remova a seção inteira — ausência não se declara. -->
+<!-- Opcional. Só quando a pasta do recurso tem `references/` ou `assets/` com arquivos de dados dentro —
+     pasta vazia ou só com `.gitkeep` não conta. Sem isso, remova a seção inteira — ausência não se
+     declara. -->
 
 ## Limites
 
