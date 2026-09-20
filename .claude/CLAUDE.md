@@ -78,12 +78,18 @@ Os recursos dentro de `plugins/` têm frontmatter, e **a forma difere por tipo**
   `license` e os campos condicionais da spec. Todo dado do AmFlow vive em `metadata`, com prefixo
   `amflow-` e valor sempre string. **Não existe `type`, `version`, `status` nem `created` no topo de
   uma skill.**
-- **`agent`, `command`, `hook`** — frontmatter YAML comum, com `name`, `type`, `description`,
+- **`agent`** — frontmatter YAML comum, com `name`, `type`, `description` e `version` no topo, e o
+  estado em `metadata.amflow-status`. A forma vem do template
+  [`plugins/builder/templates/agents/agent.md`](../plugins/builder/templates/agents/agent.md), e o que
+  bloqueia, o que só avisa e o formato de cada campo estão na declaração
+  [`plugins/builder/templates/agents/structure.json`](../plugins/builder/templates/agents/structure.json),
+  que a revisão (`plugins/builder/scripts/review.py`) lê.
+- **`command`, `hook`** — frontmatter YAML comum, com `name`, `type`, `description`,
   `version`, `status` e o resto no topo.
 
-Confundir as duas formas é o defeito que reprovava toda skill gerada pelo próprio Builder. A tabela
-de referência por tipo está em [`plugins/builder/agents/resource-reviewer/resource-reviewer.md`](../plugins/builder/agents/resource-reviewer/resource-reviewer.md),
-passo 4.
+Confundir as formas é o defeito que reprovava toda skill gerada pelo próprio Builder. O verificador
+executável de skill é o `plugins/builder/scripts/check.py`, e o de agent é o portão 2 do `review.py`,
+com as regras na declaração acima.
 
 O `plugins.yml` **não valida a forma** — confere só que a primeira linha do arquivo é `---`. Ausência
 de erro no CI não é evidência de frontmatter correto.
