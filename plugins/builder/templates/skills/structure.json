@@ -1,0 +1,6 @@
+{
+  "_nota": "Estrutura mínima que o portão 1 da revisão exige de uma skill. O script scripts/review.py lê este arquivo. Fica ao lado da pasta skill/, e não dentro dela, porque o /amflow-builder:build copia skill/ inteira para todo recurso novo e um arquivo dentro dela iria parar no bundle publicado. `arquivos` são relativos à pasta do recurso. `secoes` são os títulos H2 que o corpo do SKILL.md precisa manter: as únicas presentes nos quatro arquétipos de skill. O documento de descrição não entra aqui: a ausência dele é assunto do portão 4, onde há oferta de criação.",
+  "tipo": "skill",
+  "arquivos": ["SKILL.md", "evals/eval_queries.json"],
+  "secoes": ["Instruções", "Gotchas"]
+}

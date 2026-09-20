@@ -1,87 +1,54 @@
 # resource-reviewer
 
-Versão 1.0.0
+Versão 2.0.0
 
 ## O que é
 
-Um revisor de qualidade para recursos do AmFlow: confere cabeçalho, corpo, segurança e conformidade
-antes da publicação, e devolve um relatório dizendo se está pronto ou o que impede.
+Um revisor que confere, antes da publicação, se uma skill ou um agent do Creator está pronto para ir ao marketplace — e ajuda o Creator a chegar lá.
 
 ## Problema que resolve
 
-O marketplace tem verificação própria, e ela recusa. Descobrir o problema ali custa uma rodada inteira:
-submeter, esperar, ler a recusa, corrigir, submeter de novo.
+O marketplace recusa o que está errado, e descobrir isso ali custa uma rodada inteira: submeter, esperar, ler a recusa, corrigir e submeter de novo. Quase tudo o que ele recusa dá para achar no disco, em segundos.
 
-Boa parte do que causa recusa é detectável em segundos no disco — campo obrigatório ausente, versão que
-não supera a publicada, descrição que ainda é o texto do template.
+Há também o que passa e não deveria: um recurso bem-formado e vazio, ainda com os marcadores do template. Ninguém é avisado, e quem o instala recebe um recurso inútil.
 
-E há uma categoria pior que a recusa: o que **passa** e não deveria. Um recurso publicado com o corpo
-ainda cheio de marcadores de template funciona do ponto de vista do sistema e é inútil para quem o
-instala. Ninguém é notificado disso.
+A revisão roda num agent à parte porque lê o recurso inteiro, os modelos e o relatório do script sem carregar nada disso na conversa do Creator.
 
 ## Como funciona
 
-Quatro verificações sobre o arquivo principal do recurso — o manifesto, não a documentação ao lado.
+A revisão passa por quatro portões, em sequência, e **para no primeiro que reprova**:
 
-**Cabeçalho**: campos obrigatórios e recomendados, com a distinção entre o que bloqueia e o que apenas
-avisa.
+1. **Template** — o recurso mantém a estrutura mínima que o `/amflow-builder:build` entrega para o tipo.
+2. **Frontmatter** — completo pela norma do tipo, e com o que o marketplace exige do nome e da descrição.
+3. **Funcionamento mínimo** — os arquivos citados existem, os scripts compilam, o corpo não tem marcador de template por preencher, e o conjunto de arquivos passa no que o marketplace recusa.
+4. **Descrição** — o documento de descrição existe, tem os blocos do modelo e diz o que o recurso de fato faz.
 
-**Corpo**: a verificação que mais importa e a que um validador comum não faz. Ela procura marcadores de
-template não substituídos e exige substância concreta — passos reais, não estrutura vazia. Uma
-descrição que ainda é o texto padrão do template é reprovada.
+A parte previsível é feita por um script, com o mesmo resultado a cada execução. O agent só decide o que exige leitura: se um arquivo citado é uma falha ou uma referência legítima, e se a descrição promete algo que o recurso não faz.
 
-**Segurança**: os mesmos padrões que o fluxo de publicação aplica.
-
-**Conformidade**: nomenclatura e estrutura de arquivos no lugar esperado.
-
-O relatório é estruturado, separando o que bloqueia do que é aviso — e **o agent nunca edita o
-recurso**. Ele aponta; corrigir é de quem escreveu.
+Ele não fala com o Creator — quem pergunta é o comando `review`. Quando um portão pode ser destravado com ajuda, o agent devolve um resultado pendente, o comando pergunta, e só com o sim do Creator o agent escreve: completa o frontmatter (o que se deriva do disco, mais propostas para o Creator aprovar) ou cria a descrição. Depois da ajuda, a revisão recomeça do primeiro portão.
 
 ## Como usar
 
-Delegue antes de publicar, ou peça a revisão diretamente:
+Pelo comando `/amflow-builder:review`, que lista os recursos em andamento e deixa escolher um. Chamar o agent direto não substitui o comando: sem ele, ninguém faz as perguntas ao Creator.
 
-> Revise minha skill code-reviewer antes de publicar
-
-Ele também é invocado automaticamente pelo agent de publicação, como passo obrigatório anterior à
-submissão.
+Uma revisão é sempre sobre um recurso só, e o caminho do manifesto vem na chamada.
 
 ## Exemplos de uso
 
-**Antes de publicar.** O Creator pede a revisão e recebe a lista de problemas separada por gravidade —
-o que impede a publicação e o que é recomendação.
+**Recurso pronto.** A skill passa nos quatro portões. O relatório traz `APROVADO` e, se houver, os avisos — o que não bloqueia, mas convém saber.
 
-**Como passo de outro fluxo.** O agent de publicação o invoca sozinho. Se a revisão reprovar, a
-publicação para ali.
+**Frontmatter incompleto.** A revisão para no portão 2 com `PENDENTE-FRONTMATTER`. O Creator aceita a ajuda: o agent preenche o que se deriva do disco (nome, projeto, autor, versão) e propõe descrição e tags a partir do corpo. O Creator aprova, e a revisão recomeça.
 
-**Recurso com template não preenchido.** O corpo ainda tem os marcadores do template. A revisão reprova
-— é exatamente o caso que passaria numa verificação apenas de campos e produziria um recurso publicado
-e inútil.
+**Sem descrição, e o Creator recusa criá-la.** A revisão para no portão 4 com `PENDENTE-DESCRICAO`. Como publicar exige o documento, a recusa deixa a revisão `REPROVADO`, e o comando `review` marca o recurso como bloqueado, com o motivo registrado. Ele sai da lista de recursos em andamento até o Creator retomá-lo.
 
 ## Fundamentação
 
-A ideia é a de porta de qualidade antes de um processo caro: verificar barato e localmente o que seria
-verificado caro e remotamente.
-
-A verificação de substância do corpo é o que separa este revisor de um validador de esquema. Esquema
-confere forma; substância confere se há conteúdo. O modo de falha mais silencioso de um marketplace é o
-recurso bem-formado e vazio.
-
-A regra de nunca editar mantém a fronteira entre revisar e escrever: um revisor que corrige não é mais
-revisor, e o autor perde a chance de aprender com o erro.
-
-## Base de conhecimento
-
-- O padrão de cabeçalho do AmFlow, com a distinção entre campo bloqueante e recomendado
-- Os marcadores de template que indicam recurso não preenchido
-- Os padrões do scanner de segurança do fluxo de publicação
-- Os caminhos do arquivo principal por tipo, incluindo o layout de diretório dos agents e o anterior
+Portão de qualidade antes de um processo caro; determinismo em código, julgamento em prosa.
 
 ## Limites
 
-- **Não edita o recurso.** Reporta; corrigir é de quem escreveu.
-- **Não publica.** Avalia se está pronto; publicar é de outro.
-- **Não revisa a documentação de descrição** — o alvo é o manifesto, não o documento ao lado.
-- **Não avalia uso nem avaliações** de um recurso já publicado.
-- **Não substitui a verificação do marketplace.** Passar aqui reduz muito a chance de recusa, mas não a
-  elimina.
+- Não publica, e não consulta no marketplace o estado do recurso.
+- Não revisa hook, command nem módulo: só skill e agent.
+- Não julga a qualidade do texto: confere estrutura e coerência.
+- Só escreve depois do sim do Creator, e só o frontmatter e a descrição.
+- Passar aqui reduz a chance de recusa, mas não substitui o marketplace.

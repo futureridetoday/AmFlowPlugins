@@ -1,0 +1,23 @@
+{
+  "_nota": "Estrutura mínima e regras de frontmatter que a revisão exige de um agent. O script scripts/review.py lê este arquivo: o portão 1 confere `arquivos` e `secoes`, o portão 2 confere `frontmatter`. `<name>` é o nome da pasta do recurso. A forma dos campos vem de agent.md, ao lado. Em `frontmatter`, cada campo leva uma regex que o valor inteiro precisa casar, ou null quando só a presença importa. `bloqueiam` reprovam o portão 2 e abrem a oferta de ajuda; `avisam` só entram como aviso. O `name` igual ao diretório e o domínio de `metadata.amflow-status` são regras do script, e não passam por aqui. Um `status` no topo do frontmatter é legado e vira aviso.",
+  "tipo": "agent",
+  "arquivos": ["<name>.md"],
+  "secoes": ["Responsabilidades", "Fora do Escopo", "Processo", "Output"],
+  "frontmatter": {
+    "bloqueiam": {
+      "name": "[a-z0-9]+(-[a-z0-9]+)*",
+      "type": "agent",
+      "description": null,
+      "version": "\\d+\\.\\d+\\.\\d+",
+      "metadata.amflow-status": null
+    },
+    "avisam": {
+      "author": null,
+      "author_id": "[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}",
+      "created": "\\d{4}-\\d{2}-\\d{2}",
+      "updated": "\\d{4}-\\d{2}-\\d{2}",
+      "tags": null,
+      "project": null
+    }
+  }
+}
