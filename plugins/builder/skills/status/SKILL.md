@@ -3,7 +3,7 @@ name: status
 description: |
   Lista e atualiza o status dos recursos do projeto do Creator: mostra o que está em andamento,
   pausado, bloqueado, pronto para publicar, em revisão, com ajustes pedidos, recusado ou publicado,
-  filtra por status e marca um recurso como pausado, bloqueado, retomado, pronto ou descontinuado. Use
+  filtra por status e marca um recurso como pausado, bloqueado, retomado ou descontinuado. Use
   when o Creator quer saber o que está pendente para concluir, buscar recursos por status ou mudar o
   status de um recurso.
 license: Proprietary
@@ -45,7 +45,7 @@ command, hook e módulo. Todo determinismo — varredura, leitura, validação, 
 | `in_progress` | Em andamento | template na criação; Creator, ao retomar |
 | `paused` | Pausado | Creator |
 | `blocked` | Bloqueado, com motivo | Creator |
-| `review` | Pronto para publicar | Creator |
+| `reviewed` | Revisado | `/amflow-builder:review`, quando a revisão passa |
 | `deprecated` | Descontinuado | Creator |
 | `pending_review` | Em revisão | `/amflow-builder:publish` |
 | `changes_requested` | Ajustes pedidos | `/amflow-builder:publish-status` |
@@ -62,8 +62,10 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
      pt-BR (ou a intenção do Creator) para o valor exato antes de filtrar — o script compara a string
      exata, e um valor errado devolve lista vazia em silêncio, não erro
    - **Atualizar**: o Creator nomeia um recurso e uma intenção — "pausa", "bloqueia", "retoma",
-     "marca como pronto", "descontinua". Mapear a intenção para o valor exato da tabela; `blocked`
-     sempre pede o motivo — perguntar se ele não veio junto do pedido
+     "descontinua". Mapear a intenção para o valor exato da tabela; `blocked` sempre pede o motivo —
+     perguntar se ele não veio junto do pedido. "Marca como pronto" ou "marca como revisado" não é
+     atualização: `reviewed` só o `/amflow-builder:review` grava, então encaminhar o Creator a ele,
+     sem chamar `set`
    - **Ambíguo**: recurso não identificado → listar os recursos do projeto e perguntar qual; valor
      não reconhecido → mostrar o domínio e perguntar de novo. Nunca adivinhar
 

@@ -76,15 +76,20 @@ CHAVE_ATUALIZADO = "amflow-updated"
 # publicação gravam estes quatro; `set` sempre os recusa (Contrato, linha Erro).
 VALORES_HUB = frozenset({"pending_review", "changes_requested", "rejected", "published"})
 
+# index.md §1 — gravado só pela revisão (plano 0019): registra que a revisão passou, e o
+# Creator não o declara. `set` o recusa; quem grava é `registrar_revisado`, que o
+# `review.py --registrar` chama depois de um `REVISADO`.
+VALORES_REVISAO = frozenset({"reviewed"})
+
 # index.md §1 — "Declarados pelo Creator". É o único subconjunto que `set` aceita gravar.
-VALORES_CREATOR = STATUS_VALIDOS - VALORES_HUB
+VALORES_CREATOR = STATUS_VALIDOS - VALORES_HUB - VALORES_REVISAO
 
 # index.md §1, coluna Rótulo.
 ROTULOS = {
     "in_progress": "Em andamento",
     "paused": "Pausado",
     "blocked": "Bloqueado",
-    "review": "Pronto para publicar",
+    "reviewed": "Revisado",
     "deprecated": "Descontinuado",
     "pending_review": "Em revisão",
     "changes_requested": "Ajustes pedidos",
@@ -96,7 +101,7 @@ ROTULOS = {
 ORDEM_SAIDA = (
     "changes_requested",
     "rejected",
-    "review",
+    "reviewed",
     "in_progress",
     "blocked",
     "pending_review",
@@ -446,6 +451,21 @@ def _escrever_json(recurso: Recurso, valor: str, motivo: str | None) -> None:
     recurso.caminho.write_text(novo_texto, encoding="utf-8")
 
 
+def _gravar(alvo: Recurso, valor: str, motivo: str | None) -> ResultadoSet:
+    """Escreve `valor` no recurso — o passo que `atualizar` e `registrar_revisado` compartilham."""
+    status_antigo = alvo.status or "(sem status)"
+
+    try:
+        if alvo.formato == "yaml":
+            _escrever_yaml(alvo, valor, motivo)
+        else:
+            _escrever_json(alvo, valor, motivo)
+    except OSError as exc:
+        return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
+
+    return ResultadoSet(True, f"{alvo.tipo}/{alvo.nome}: {status_antigo} → {valor} ({alvo.local})")
+
+
 def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = None) -> ResultadoSet:
     m = _RECURSO_RE.match(recurso_id)
     if not m:
@@ -457,6 +477,10 @@ def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = N
     if valor in VALORES_HUB:
         return ResultadoSet(
             False, f"recusado: '{valor}' é gravado pela publicação (Hub) — não por esta ferramenta"
+        )
+    if valor in VALORES_REVISAO:
+        return ResultadoSet(
+            False, f"recusado: '{valor}' é gravado pela revisão — rode /amflow-builder:review"
         )
     if valor not in VALORES_CREATOR:
         return ResultadoSet(
@@ -474,17 +498,33 @@ def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = N
         return ResultadoSet(False, f"recusado: recurso não encontrado — {recurso_id}")
 
     alvo = next((r for r in candidatos if r.lugar == "dev"), candidatos[0])
-    status_antigo = alvo.status or "(sem status)"
+    return _gravar(alvo, valor, motivo)
 
-    try:
-        if alvo.formato == "yaml":
-            _escrever_yaml(alvo, valor, motivo)
-        else:
-            _escrever_json(alvo, valor, motivo)
-    except OSError as exc:
-        return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
 
-    return ResultadoSet(True, f"{tipo}/{nome}: {status_antigo} → {valor} ({alvo.local})")
+def registrar_revisado(projeto: Path, manifesto: Path) -> ResultadoSet:
+    """Grava `reviewed` no recurso cujo manifesto é `manifesto` (plano 0019).
+
+    Só o `review.py --registrar` chama isto, depois de um `REVISADO`; `atualizar` recusa o valor. O
+    recurso é achado pelo caminho do manifesto, e não por `tipo/nome` como em `atualizar`: quando
+    existem a cópia em desenvolvimento e a promovida em `.claude/`, gravar na que a revisão não leu
+    marcaria como revisado um arquivo que ninguém revisou.
+
+    Só grava a partir de `in_progress`, o que o `build` deixa: a revisão vem depois dele. Qualquer
+    outro status é recusado, em vez de sobrescrito — sobretudo os que o Hub grava, que a revisão
+    apagaria (`published → reviewed`). Uma lista permitida de um valor só não precisa mudar quando
+    entram valores novos.
+    """
+    todos, _ = varrer(projeto)
+    alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
+    if alvo is None:
+        return ResultadoSet(False, f"recusado: recurso não encontrado — {manifesto}")
+    if alvo.status != "in_progress":
+        return ResultadoSet(
+            False,
+            f"recusado: 'reviewed' só é gravado a partir de 'in_progress' — "
+            f"o recurso está em '{alvo.status or 'sem status'}'",
+        )
+    return _gravar(alvo, "reviewed", None)
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────

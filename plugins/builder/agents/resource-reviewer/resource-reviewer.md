@@ -33,8 +33,8 @@ author_id: 985920db-502d-4cb3-9ca1-c145719a9307
 created: 2026-06-19
 metadata:
   amflow-status: review
-version: 2.0.0
-updated: 2026-09-20
+version: 2.1.0
+updated: 2026-09-21
 scope: global
 auto_load: false
 tags: [review, quality, publish, creator]
@@ -93,19 +93,19 @@ O script de revisão é sempre o primeiro passo, e o `RESULTADO` dele é a fonte
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" "<Projeto>" "<Local>"
 ```
 
-O script sai com 0 quando o resultado provisório é `APROVADO`, com 1 nos demais casos, e com 2 quando a chamada não é válida — com a mensagem em stderr. `python3` ausente, script ausente ou saída 2 não são aprovação: devolva `RESULTADO: ERRO` com a mensagem.
+O script sai com 0 quando o resultado provisório é `REVISADO`, com 1 nos demais casos, e com 2 quando a chamada não é válida — com a mensagem em stderr. `python3` ausente, script ausente ou saída 2 não são aprovação: devolva `RESULTADO: ERRO` com a mensagem.
 
 ### Modo `revisar`
 
 1. Rodar o script e ler a saída: `RESULTADO`, `PORTAO`, `RECURSO`, `MOTIVO`, `PROBLEMAS`, `AVISOS`, `CANDIDATOS` e, em skill, `PROPOSTA-DESCRIPTION`. O script para no primeiro portão que reprova.
 2. **`REPROVADO`, em qualquer portão, e `PENDENTE-FRONTMATTER` são finais.** Vá ao passo 5 e repasse o relatório do script tal como veio: não releia o recurso, não rode outro comando, e não reclassifique nenhum problema. O que o script aponta como falha é falha mesmo quando parece inofensivo — um comando perigoso numa frase que manda evitá-lo, um trecho de exemplo, uma citação —, porque o Hub aplica as mesmas regras ao texto inteiro de cada arquivo, prosa incluída. O resultado do script é um piso: você pode agravá-lo pelos passos 3 e 4, nunca abrandá-lo.
-3. **Candidatos do portão 3.** Só quando o resultado é `APROVADO` ou `PENDENTE-DESCRICAO` — o script passou pelo portão 3. Sem `CANDIDATOS`, vá ao passo 4. Com eles, o script achou algo que só um leitor decide. Leia com `Read` o trecho do manifesto que cada um cita e classifique:
+3. **Candidatos do portão 3.** Só quando o resultado é `REVISADO` ou `PENDENTE-DESCRICAO` — o script passou pelo portão 3. Sem `CANDIDATOS`, vá ao passo 4. Com eles, o script achou algo que só um leitor decide. Leia com `Read` o trecho do manifesto que cada um cita e classifique:
    - `[arquivo-citado]` que **não existe**: falha, salvo se o corpo diz que a própria skill ou agent cria o arquivo, ou se o trecho é um exemplo de comando
    - `[arquivo-citado]` **fora da pasta do recurso**: legítimo quando é arquivo do projeto de quem vai usar o recurso — `.claude/CLAUDE.md`, por exemplo. Falha quando é arquivo do repositório de quem escreveu — `docs/`, planos, código-fonte —, porque o comprador recebe a referência quebrada
    - `[arquivo-citado]` que **o bundle omite**: falha, o comprador não o recebe
    - `[ferramenta-citada]`: falha quando o agent realmente usa a ferramenta e ela não está em `tools`. Não é falha quando a menção é prosa sobre outra coisa
    Candidato confirmado como falha entra em `PROBLEMAS` com a linha e a razão, e o resultado passa a `REPROVADO` no portão 3 — o resultado provisório do portão 4 é descartado, porque a revisão para no primeiro portão que reprova. Candidato que não é falha sai da lista, sem aviso.
-4. **Informações da descrição (portão 4).** Só se o resultado é `APROVADO`: o script chegou ao portão 4 sem erro de bloco. Leia o manifesto e o `[tipo]-description.md`, e confira o que a descrição afirma contra o que o corpo do manifesto faz: o que o recurso faz, os gatilhos e comandos que ela cita, e os limites. Divergência **objetiva** — a descrição promete algo que o manifesto não faz, ou cita um comando que não existe — vira `PENDENTE-DESCRICAO` com `MOTIVO: com-erros` e um item em `PROBLEMAS` por divergência, com o trecho dos dois lados. Não julgue estilo nem qualidade do texto: a revisão confere estrutura e coerência.
+4. **Informações da descrição (portão 4).** Só se o resultado é `REVISADO`: o script chegou ao portão 4 sem erro de bloco. Leia o manifesto e o `[tipo]-description.md`, e confira o que a descrição afirma contra o que o corpo do manifesto faz: o que o recurso faz, os gatilhos e comandos que ela cita, e os limites. Divergência **objetiva** — a descrição promete algo que o manifesto não faz, ou cita um comando que não existe — vira `PENDENTE-DESCRICAO` com `MOTIVO: com-erros` e um item em `PROBLEMAS` por divergência, com o trecho dos dois lados. Não julgue estilo nem qualidade do texto: a revisão confere estrutura e coerência.
 5. Sem falha nos passos 3 e 4, o `RESULTADO` é o que o script devolveu. Devolver o relatório no formato do `Output`, com os `PROBLEMAS` e os `AVISOS` do script tal como vieram.
 
 ### Modo `completar-frontmatter`
@@ -181,7 +181,7 @@ Uma única mensagem, sem pedir confirmação: só o bloco do formato, sem nada a
 Modo `revisar`:
 
 ```
-RESULTADO: APROVADO | REPROVADO | PENDENTE-FRONTMATTER | PENDENTE-DESCRICAO | ERRO
+RESULTADO: REVISADO | REPROVADO | PENDENTE-FRONTMATTER | PENDENTE-DESCRICAO | ERRO
 PORTAO: <1 a 4>
 RECURSO: <tipo>/<nome> v<versão>
 MOTIVO: ausente | com-erros            (só em PENDENTE-DESCRICAO)

@@ -17,8 +17,8 @@ mão, sem verificação nenhuma de que o valor fazia sentido.
 
 ## Como funciona
 
-Um único campo, `metadata.amflow-status`, com nove valores possíveis — cinco que o Creator declara,
-quatro que a publicação grava a partir do retorno do Hub. A skill nunca decide sozinha: ela interpreta
+Um único campo, `metadata.amflow-status`, com nove valores possíveis — quatro que o Creator declara,
+um que só a revisão grava e quatro que a publicação grava a partir do retorno do Hub. A skill nunca decide sozinha: ela interpreta
 o pedido do Creator — listar tudo, filtrar por um estado, ou mudar o estado de um recurso — e chama o
 `status.py`, que varre o projeto, valida o valor contra o domínio e grava preservando o resto do
 arquivo.
@@ -54,7 +54,7 @@ no topo; ele decide por onde continuar clicando direto no link de cada um.
 pede para marcá-lo como bloqueado, com o motivo; a skill exige o motivo antes de gravar, porque
 bloqueado sem motivo não se distingue de pausado.
 
-**Antes de publicar.** O Creator pergunta quais recursos estão prontos. A skill filtra por `review` e
+**Antes de publicar.** O Creator pergunta quais recursos estão prontos. A skill filtra por `reviewed` e
 devolve só esses — sem precisar abrir cada frontmatter para conferir.
 
 ## Fundamentação
@@ -73,8 +73,8 @@ pedido, sobre os arquivos reais do projeto.
 
 - **Não consulta o Hub.** O estado de publicação que aparece é o da última sincronização por
   `/amflow-builder:publish-status` — pode estar desatualizado, e a skill avisa isso no rodapé
-- **Não publica nem revisa.** Marcar como `review` é o Creator dizendo que terminou; publicar de
-  fato é `/amflow-builder:publish`
+- **Não publica nem revisa.** `reviewed` só o `/amflow-builder:review` grava, e publicar de fato é
+  `/amflow-builder:publish`
 - **Não grava os quatro valores do Hub.** `pending_review`, `changes_requested`, `rejected` e
   `published` só entram pelos comandos de publicação
 - **Cobre só skill, agent, command, hook e módulo** — os cinco tipos que o Builder cria

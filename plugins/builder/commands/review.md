@@ -10,8 +10,8 @@ tags: [review, quality, resource-reviewer, creator]
 author: Bortoli
 created: 2026-09-13
 status: draft
-version: 2.0.0
-updated: "2026-09-20"
+version: 2.1.0
+updated: "2026-09-21"
 
 # system
 scope: global
@@ -114,7 +114,7 @@ pendente. Nunca publica.
 
    | `RESULTADO` | O que fazer |
    |---|---|
-   | `APROVADO` | Dizer que a revisão terminou e o recurso passou nos quatro portões. Publicar é `/amflow-builder:publish` |
+   | `REVISADO` | Registrar a revisão (abaixo), dizer que o recurso passou nos quatro portões e ficou `reviewed`. Publicar é `/amflow-builder:publish` |
    | `REPROVADO`, `PORTAO: 1` | Dizer que é preciso usar o padrão do AmFlow (`/amflow-builder:build`) para produzir qualquer recurso, e que a revisão foi concluída |
    | `REPROVADO`, `PORTAO: 2` | O nome do recurso começa por número. Dizer que o Hub o recusa e que renomear é decisão do Creator — a pasta, o `name`, o título da descrição e as referências no corpo. Sem oferta de ajuda, sem `blocked` |
    | `REPROVADO`, `PORTAO: 3` | Dizer o erro e que é preciso corrigir e refazer a revisão |
@@ -123,6 +123,23 @@ pendente. Nunca publica.
    | `ERRO` | Exibir a mensagem e encerrar |
 
    Dois `REPROVADO` do mesmo relatório não são o mesmo caso: o portão está na linha `PORTAO:`.
+
+   **Registrar a revisão.** No `REVISADO` do agent, e só nele, rodar o script. Ele refaz a revisão
+   determinística e só grava `reviewed` se o resultado ainda for `REVISADO` e o recurso estiver em
+   `in_progress`, que é o status da lista da Fase 1:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --registrar
+   ```
+
+   `<local>` é o caminho do manifesto do passo 7. O script imprime o relatório de novo: não repeti-lo,
+   só ler o código de saída e a linha `REGISTRADO:`.
+
+   | Saída | O que fazer |
+   |---|---|
+   | Código 0, com `REGISTRADO:` | Reproduzir essa linha e dizer que o recurso ficou `reviewed` |
+   | Código 1 | O script não confirmou o `REVISADO` do agent, e é ele que decide o piso. Reproduzir o `RESULTADO` do script, dizer que nada foi gravado e que é preciso corrigir e refazer a revisão |
+   | Código 2 | Exibir a linha `erro:`, dizer que o recurso passou na revisão mas o status não foi gravado, e nunca editar o arquivo à mão. Se o `erro:` disser que o recurso não está em `in_progress`, o status mudou depois da listagem: para revisar, o Creator o retoma com `/amflow-builder:status` |
 
 #### Ramo A — frontmatter incompleto
 
@@ -177,8 +194,11 @@ pendente. Nunca publica.
 ## Restrições
 
 - Nunca editar o recurso aqui. Só o agent escreve, e só nos modos `completar-frontmatter` e
-  `escrever-descricao`, depois do "sim" do Creator. A única escrita deste comando é a do status pelo
-  `status.py set`.
+  `escrever-descricao`, depois do "sim" do Creator. As únicas escritas deste comando são as do status:
+  `status.py set`, para os valores do Creator, e `review.py --registrar`, para o `reviewed`.
+- Nunca gravar `reviewed` por outro caminho que o `review.py --registrar`, e só depois do `REVISADO` do
+  agent. O `status.py set` recusa o valor: `reviewed` registra que a revisão passou, e o Creator não o
+  declara.
 - Nunca publicar, e nunca chamar `publish`, `get_resource` ou `submission_status`. A revisão não consulta
   o estado do recurso no Hub; a única chamada de rede é a tool `me` do servidor MCP `amflow-builder`, que
   o agent faz em `completar-frontmatter` para ler o id do autor.

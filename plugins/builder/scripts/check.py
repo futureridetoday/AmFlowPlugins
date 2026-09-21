@@ -120,13 +120,14 @@ METADATA_OBRIGATORIA_COM_VALOR = (
 
 # Domínio único do status — congelado em
 # docs/plan/builder/0014-unify-status-field/index.md §1. A escrita é da skill
-# `status` e dos dois comandos de publicação; aqui só se verifica pertencimento.
+# `status`, do comando `review` e dos dois comandos de publicação; aqui só se
+# verifica pertencimento.
 STATUS_VALIDOS = frozenset(
     {
         "in_progress",
         "paused",
         "blocked",
-        "review",
+        "reviewed",
         "deprecated",
         "pending_review",
         "changes_requested",
@@ -138,7 +139,7 @@ STATUS_VALIDOS = frozenset(
 # Aceitos enquanto a varredura de propagação (index.md §5, decisão 11 do
 # plano, L-02) não substitui os valores existentes por um do domínio novo.
 # Fora da união dos dois conjuntos, R-10 reprova.
-STATUS_LEGADO = frozenset({"draft", "stable", "suspended"})
+STATUS_LEGADO = frozenset({"draft", "stable", "suspended", "review"})
 
 _UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"

@@ -17,13 +17,21 @@ Os portões, em sequência. A revisão **para no primeiro que reprova**, e essa 
                     Hub recusa (tamanho e padrões de conteúdo).
   4. Descrição    — `[tipo]-description.md` tem os blocos do template e informações coerentes.
 
-Saída: uma linha `RESULTADO:` — `APROVADO`, `REPROVADO`, `PENDENTE-FRONTMATTER` ou
+Saída: uma linha `RESULTADO:` — `REVISADO`, `REPROVADO`, `PENDENTE-FRONTMATTER` ou
 `PENDENTE-DESCRICAO` —, seguida de `PORTAO:`, `RECURSO:`, `MOTIVO:` (só na descrição: `ausente` ou
 `com-erros`), `PROBLEMAS:` (bloqueiam), `AVISOS:`, `CANDIDATOS:` (o agent decide) e, em skill com
 `description` em várias linhas, `PROPOSTA-DESCRIPTION:`. Seção vazia é omitida.
 
-`PENDENTE-*` é o ponto em que o Creator decide se aceita ajuda. O script não pergunta e não escreve:
-aponta o que falta, e quem pergunta é o comando `review`.
+`PENDENTE-*` é o ponto em que o Creator decide se aceita ajuda. O script não pergunta e só escreve
+com `--registrar`, e só o `reviewed`: aponta o que falta, e quem pergunta é o comando `review`.
+
+`--registrar` grava `reviewed` no recurso, com o escritor do `status.py`, e só se o resultado é
+`REVISADO` e o recurso está em `in_progress` — nos demais o arquivo fica intacto (plano 0019). Fora
+de `in_progress` a gravação é recusada, com saída 2. O script refaz a revisão antes de gravar:
+o comando o chama depois do `REVISADO` do agent, mas o piso determinístico vale mesmo para quem o
+chamar direto. O que o script não refaz é o julgamento do agent — candidatos do portão 3, coerência
+do portão 4 —, então quem o chama sem o comando grava `reviewed` num recurso que o agent poderia
+reprovar (L-01 do plano). Ao gravar, acrescenta à saída uma linha `REGISTRADO:`.
 
 Cross-repo: nasce aqui, em `scripts/`, e desce a `plugins/builder/scripts/review.py` do
 AmFlowPlugins por `vendor.py` — mesmo mecanismo do `check.py` e do `status.py`. A cópia é gerada,
@@ -32,12 +40,13 @@ pelo próprio caminho (`../templates`): a variável `CLAUDE_PLUGIN_ROOT` não ex
 Bash, nem no de um subagente — só é substituída inline no texto do agent.
 
 Uso:
-  review.py <projeto> <local> [--templates <diretório>]
+  review.py <projeto> <local> [--templates <diretório>] [--registrar]
 
 `<local>` é o caminho do manifesto relativo ao projeto, o mesmo que `status.py list` imprime na
 coluna Local — ex.: `skills/deep-research/SKILL.md`, `agents/reviewer/reviewer.md`.
 
-Sai com 0 se o resultado provisório é `APROVADO`, 1 nos demais casos, 2 se a chamada não é válida.
+Sai com 0 se o resultado provisório é `REVISADO`, 1 nos demais casos, 2 se a chamada não é válida
+ou, com `--registrar`, se a gravação foi recusada.
 """
 
 from __future__ import annotations
@@ -74,6 +83,23 @@ def _carregar_check():
 
 
 check = _carregar_check()
+
+
+def _carregar_status():
+    """Carrega `status.py`, irmão deste arquivo — o `--registrar` usa o escritor dele.
+
+    Só sob demanda: quem não registra não paga a carga. Mesmo desenho do `_carregar_check`, com nome
+    próprio em `sys.modules`, registrado antes do `exec_module` por causa do `@dataclass`.
+    """
+    caminho = Path(__file__).resolve().parent / "status.py"
+    if not caminho.is_file():
+        raise RuntimeError("status.py não encontrado ao lado de review.py")
+    spec = importlib.util.spec_from_file_location("builder_status", caminho)
+    modulo = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = modulo
+    spec.loader.exec_module(modulo)
+    return modulo
+
 
 # ── constantes ────────────────────────────────────────────────────────────────
 
@@ -233,7 +259,7 @@ class Relatorio:
     nome: str
     local: str
     versao: str | None = None
-    resultado: str = "APROVADO"
+    resultado: str = "REVISADO"
     portao: int = 4
     motivo: str | None = None
     problemas: list[str] = field(default_factory=list)
@@ -882,7 +908,16 @@ def revisar(projeto: Path, local: str, templates: Path) -> Relatorio:
     if motivo:
         rel.problemas = erros
         return rel.parar("PENDENTE-DESCRICAO", 4, motivo)
-    return rel.parar("APROVADO", 4)
+    return rel.parar("REVISADO", 4)
+
+
+def registrar(projeto: Path, local: str):
+    """Grava `reviewed` no recurso de `local`, com o escritor do `status.py` (plano 0019).
+
+    Devolve o `ResultadoSet` do escritor. Quem chama só o faz sobre um relatório `REVISADO`.
+    """
+    manifesto = identificar(projeto, local).manifesto
+    return _carregar_status().registrar_revisado(projeto, manifesto)
 
 
 def formatar(rel: Relatorio) -> str:
@@ -914,6 +949,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("projeto", type=Path)
     parser.add_argument("local", help="caminho do manifesto relativo ao projeto — ex.: skills/deep-research/SKILL.md")
     parser.add_argument("--templates", type=Path, default=Path(__file__).resolve().parent.parent / "templates")
+    parser.add_argument(
+        "--registrar",
+        action="store_true",
+        help="grava `reviewed` no recurso, só se o resultado é REVISADO",
+    )
     args = parser.parse_args(argv)
 
     projeto = args.projeto.expanduser().resolve()
@@ -926,7 +966,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"erro: {exc}", file=sys.stderr)
         return 2
     print(formatar(relatorio))
-    return 0 if relatorio.resultado == "APROVADO" else 1
+    if args.registrar and relatorio.resultado == "REVISADO":
+        gravado = registrar(projeto, args.local)
+        if not gravado.ok:
+            print(f"erro: {gravado.mensagem}", file=sys.stderr)
+            return 2
+        print(f"REGISTRADO: {gravado.mensagem}")
+    return 0 if relatorio.resultado == "REVISADO" else 1
 
 
 if __name__ == "__main__":

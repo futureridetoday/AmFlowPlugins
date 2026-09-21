@@ -58,7 +58,7 @@ precisa estar onde ele consegue lê-lo, não só no repositório onde o Builder 
 | `in_progress` | em andamento | o template, ao criar a skill; o Creator, ao retomar |
 | `paused` | pausado | Creator |
 | `blocked` | bloqueado, com motivo em `amflow-status-reason` | Creator |
-| `review` | revisado e pronto para submeter | Creator |
+| `reviewed` | revisado, a revisão passou | `/amflow-builder:review`, quando o `RESULTADO` é `REVISADO` |
 | `deprecated` | descontinuado pelo Creator | Creator |
 | `pending_review` | submetido, aguardando o Hub | `/amflow-builder:publish` |
 | `changes_requested` | o Hub pediu mudanças | `/amflow-builder:publish-status` |

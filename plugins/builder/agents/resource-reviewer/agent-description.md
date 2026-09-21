@@ -35,7 +35,7 @@ Uma revisão é sempre sobre um recurso só, e o caminho do manifesto vem na cha
 
 ## Exemplos de uso
 
-**Recurso pronto.** A skill passa nos quatro portões. O relatório traz `APROVADO` e, se houver, os avisos — o que não bloqueia, mas convém saber.
+**Recurso pronto.** A skill passa nos quatro portões. O relatório traz `REVISADO` e, se houver, os avisos — o que não bloqueia, mas convém saber.
 
 **Frontmatter incompleto.** A revisão para no portão 2 com `PENDENTE-FRONTMATTER`. O Creator aceita a ajuda: o agent preenche o que se deriva do disco (nome, projeto, autor, versão) e propõe descrição e tags a partir do corpo. O Creator aprova, e a revisão recomeça.
 

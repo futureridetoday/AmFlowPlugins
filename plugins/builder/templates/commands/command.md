@@ -9,7 +9,7 @@ author: ""
 author_id: ""              # uuid do usuário autenticado (tool me) — atribuição (L0), preenchido pelo Builder na Fase 0; não é âncora de confiança
 created: ""                # YYYY-MM-DD
 metadata:
-  amflow-status: in_progress # in_progress | paused | blocked | review | deprecated — gerido por /amflow-builder:status
+  amflow-status: in_progress
 version: 1.0.0
 updated: ""
 scope: project             # global | project
