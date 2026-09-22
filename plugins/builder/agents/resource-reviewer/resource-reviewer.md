@@ -68,7 +68,8 @@ O script decide o que é regra, e você decide só o que exige julgamento. O res
 - Publicar no Hub, ou consultar o estado do recurso lá — as tools `publish`, `get_resource` e `submission_status` do servidor MCP `amflow-builder` estão removidas deste agent
 - Perguntar ao Creator — a plataforma remove `AskUserQuestion` de todo subagente. Quem pergunta é o comando `/amflow-builder:review`, e você devolve `PENDENTE-*` para ele perguntar
 - Localizar o recurso: quem o identificou foi o comando, e o caminho do manifesto vem na chamada
-- Gravar `metadata.amflow-status`, ou bloquear um recurso — o comando grava pelo `status.py`
+- Gravar `metadata.amflow-status`, ou bloquear um recurso — o comando grava pelo `status.py` e pelo
+  `review.py --bloquear`, nunca este agent
 - Rodar o scanner de segurança do fluxo de publicação
 - Revisar `hook`, `command` ou `module`: a revisão cobre só `skill` e `agent`
 - Escrever fora dos dois modos de ajuda, ou sem o modo explícito na chamada
@@ -93,7 +94,7 @@ O script de revisão é sempre o primeiro passo, e o `RESULTADO` dele é a fonte
 python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" "<Projeto>" "<Local>"
 ```
 
-O script sai com 0 quando o resultado provisório é `REVISADO`, com 1 nos demais casos, e com 2 quando a chamada não é válida — com a mensagem em stderr. `python3` ausente, script ausente ou saída 2 não são aprovação: devolva `RESULTADO: ERRO` com a mensagem.
+O script sai com 0 quando o resultado provisório é `REVISADO`, com 1 nos demais casos, e com 2 quando a chamada não é válida (mensagem em stderr) ou quando uma exceção interrompe um portão — nesse caso a saída é `RESULTADO: ERRO` com `PORTAO`, `RECURSO` e `MOTIVO`, no mesmo formato de relatório dos outros resultados, em stdout (add-blocked-gate-id). `python3` ausente, script ausente ou saída 2 sem `RESULTADO:` nenhum não são aprovação: devolva `RESULTADO: ERRO` com a mensagem.
 
 ### Modo `revisar`
 

@@ -26,10 +26,10 @@ price: 0
 
 # /amflow-builder:review
 
-Lista os recursos do Creator com status `in_progress`, deixa escolher um, e o revisa em quatro portões
-pelo agent `resource-reviewer`. É o único chamador do agent: o subagente não pergunta ao usuário, então
-toda pergunta — aceitar ajuda, aprovar uma proposta — é feita aqui, e o agent só devolve o que ficou
-pendente. Nunca publica.
+Lista os recursos do Creator com status `in_progress` ou `blocked-RG*` (bloqueado numa revisão
+anterior), deixa escolher um, e o revisa em quatro portões pelo agent `resource-reviewer`. É o único
+chamador do agent: o subagente não pergunta ao usuário, então toda pergunta — aceitar ajuda, aprovar
+uma proposta — é feita aqui, e o agent só devolve o que ficou pendente. Nunca publica.
 
 ## Quando usar
 
@@ -54,7 +54,7 @@ pendente. Nunca publica.
 2. Chamar o script, nunca reimplementar a varredura:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> --status in_progress
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> --status in_progress --status 'blocked-RG*'
    ```
 
 3. Ler a saída, nunca reformular o julgamento do script:
@@ -115,18 +115,18 @@ pendente. Nunca publica.
    | `RESULTADO` | O que fazer |
    |---|---|
    | `REVISADO` | Registrar a revisão (abaixo), dizer que o recurso passou nos quatro portões e ficou `reviewed`. Publicar é `/amflow-builder:publish` |
-   | `REPROVADO`, `PORTAO: 1` | Dizer que é preciso usar o padrão do AmFlow (`/amflow-builder:build`) para produzir qualquer recurso, e que a revisão foi concluída |
-   | `REPROVADO`, `PORTAO: 2` | O nome do recurso começa por número. Dizer que o Hub o recusa e que renomear é decisão do Creator — a pasta, o `name`, o título da descrição e as referências no corpo. Sem oferta de ajuda, sem `blocked` |
-   | `REPROVADO`, `PORTAO: 3` | Dizer o erro e que é preciso corrigir e refazer a revisão |
+   | `REPROVADO`, `PORTAO: 1` | Dizer que é preciso usar o padrão do AmFlow (`/amflow-builder:build`) para produzir qualquer recurso. Registrar o bloqueio (abaixo) no gate 1 |
+   | `REPROVADO`, `PORTAO: 2` | O nome do recurso começa por número. Dizer que o Hub o recusa e que renomear é decisão do Creator — a pasta, o `name`, o título da descrição e as referências no corpo. Sem oferta de ajuda. Registrar o bloqueio no gate 2 |
+   | `REPROVADO`, `PORTAO: 3` | Dizer o erro. Registrar o bloqueio no gate 3 |
    | `PENDENTE-FRONTMATTER` | Ramo A |
    | `PENDENTE-DESCRICAO` | Ramo B |
-   | `ERRO` | Exibir a mensagem e encerrar |
+   | `ERRO` | Exibir a mensagem. Registrar o bloqueio no `PORTAO` do relatório |
 
    Dois `REPROVADO` do mesmo relatório não são o mesmo caso: o portão está na linha `PORTAO:`.
 
    **Registrar a revisão.** No `REVISADO` do agent, e só nele, rodar o script. Ele refaz a revisão
    determinística e só grava `reviewed` se o resultado ainda for `REVISADO` e o recurso estiver em
-   `in_progress`, que é o status da lista da Fase 1:
+   `in_progress` ou `blocked-RG*`, as duas origens da lista da Fase 1:
 
    ```bash
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --registrar
@@ -139,23 +139,40 @@ pendente. Nunca publica.
    |---|---|
    | Código 0, com `REGISTRADO:` | Reproduzir essa linha e dizer que o recurso ficou `reviewed` |
    | Código 1 | O script não confirmou o `REVISADO` do agent, e é ele que decide o piso. Reproduzir o `RESULTADO` do script, dizer que nada foi gravado e que é preciso corrigir e refazer a revisão |
-   | Código 2 | Exibir a linha `erro:`, dizer que o recurso passou na revisão mas o status não foi gravado, e nunca editar o arquivo à mão. Se o `erro:` disser que o recurso não está em `in_progress`, o status mudou depois da listagem: para revisar, o Creator o retoma com `/amflow-builder:status` |
+   | Código 2 | Exibir a linha `erro:`, dizer que o recurso passou na revisão mas o status não foi gravado, e nunca editar o arquivo à mão. Se o `erro:` disser que o recurso não está numa das duas origens, o status mudou depois da listagem: para revisar, o Creator o retoma com `/amflow-builder:status` |
+
+   **Registrar o bloqueio.** Em todo ramo que não é `REVISADO` — os três `REPROVADO`, o `ERRO`, e a
+   recusa da ajuda nos Ramos A e B (passos 11 e 15) —, gravar onde a revisão parou. Não refaz a
+   revisão: registra o que este relatório já mostrou.
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --bloquear <gate> --motivo "<texto>"
+   ```
+
+   `<gate>` é o `PORTAO:` do relatório. `<texto>` é o problema do `REPROVADO`, a mensagem do `ERRO`, ou
+   o motivo que o Creator deu ao recusar a ajuda — sem a data: o script já a prefixa. `--registrar` e
+   `--bloquear` são exclusivos na mesma chamada do script.
+
+   | Saída | O que fazer |
+   |---|---|
+   | Código 0 | Dizer que o recurso ficou `blocked-RG<gate>`, com o motivo registrado |
+   | Código 2 | Exibir a linha `erro:` e dizer que o recurso passou pela revisão mas o bloqueio não foi gravado, e nunca editar o arquivo à mão |
 
 #### Ramo A — frontmatter incompleto
 
 10. Mostrar os problemas do portão 2 e, se o relatório trouxe `PROPOSTA-DESCRIPTION`, a proposta. Perguntar
     ao Creator se quer ajuda para completar o frontmatter.
 
-11. **Recusou.** Gravar `blocked` com o motivo e informar `REPROVADO`:
+11. **Recusou.** Registrar o bloqueio (passo 9) no gate 2, com o motivo:
 
     ```bash
-    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" set <projeto> <tipo>/<nome> blocked --motivo "<motivo>"
+    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --bloquear 2 --motivo "<motivo>"
     ```
 
-    O motivo é uma linha: o que faltava e que o Creator recusou a ajuda, com a data de hoje. O `status.py`
-    é o único caminho de escrita do status — nunca editar o arquivo à mão. Dizer também que o recurso
-    saiu da lista de recursos em andamento, e que para revisá-lo de novo o Creator o retoma com
-    `/amflow-builder:status`.
+    O motivo é uma linha: o que faltava e que o Creator recusou a ajuda — sem a data, o script já a
+    prefixa. `review.py` é o único caminho de escrita desta família — nunca editar o arquivo à mão.
+    Dizer também que o recurso ficou `blocked-RG02`, e que para revisá-lo de novo basta rodar
+    `/amflow-builder:review` outra vez — a lista da Fase 1 já o traz.
 
 12. **Aceitou.** Invocar o agent com `Modo: completar-frontmatter` (mesmo formato do passo 8). Ele
     escreve o que se deriva do disco e devolve `PROPOSTAS` para o que é conteúdo do Creator:
@@ -171,8 +188,8 @@ pendente. Nunca publica.
 
 13. Reinvocar `Modo: revisar` — a revisão **recomeça pelo portão 1**. A ajuda de frontmatter é oferecida
     **uma vez por execução**: se o relatório voltar `PENDENTE-FRONTMATTER` outra vez, tratar como
-    `REPROVADO`, mostrar o que sobrou como correção manual, e **não** gravar `blocked` — o Creator não
-    recusou nada.
+    `REPROVADO` e registrar o bloqueio no gate 2 (passo 9) — o Creator não recusou nada desta vez, mas
+    o frontmatter continua incompleto, e o id precisa dizer onde a revisão parou.
 
 #### Ramo B — descrição ausente ou com erros
 
@@ -183,24 +200,27 @@ pendente. Nunca publica.
     | `ausente` | O documento de descrição é obrigatório: publicar no Hub exige `<tipo>-description.md`, que é o texto da página de detalhe do recurso. Oferecer criá-lo |
     | `com-erros` | Mostrar os erros do portão 4 e oferecer a correção |
 
-15. **Recusou.** Gravar `blocked` com o motivo (passo 11), informar `REPROVADO` e repetir que publicar no
-    Hub exige o documento de descrição.
+15. **Recusou.** Registrar o bloqueio (passo 9) no gate 4, mesmo formato do passo 11 — e repetir que
+    publicar no Hub exige o documento de descrição.
 
 16. **Aceitou.** Invocar o agent com `Modo: escrever-descricao`, mais um bloco `Erros:` com os itens do
     portão 4 quando o motivo é `com-erros`. Em seguida reinvocar `Modo: revisar`, do portão 1. A ajuda de
     descrição também é oferecida **uma vez por execução**: `PENDENTE-DESCRICAO` de novo vira `REPROVADO`
-    com os erros que sobraram, sem `blocked`.
+    com os erros que sobraram, e registra o bloqueio no gate 4 (passo 9) — o Creator não recusou nada
+    desta vez, mas a descrição continua com erro.
 
 ## Restrições
 
 - Nunca editar o recurso aqui. Só o agent escreve, e só nos modos `completar-frontmatter` e
   `escrever-descricao`, depois do "sim" do Creator. As únicas escritas deste comando são as do status:
-  `status.py set`, para os valores do Creator, e `review.py --registrar`, para o `reviewed`.
+  `status.py set`, para os valores do Creator, `review.py --registrar`, para o `reviewed`, e
+  `review.py --bloquear`, para a família `blocked-RG<nn>`.
 - Nunca gravar `reviewed` por outro caminho que o `review.py --registrar`, e só depois do `REVISADO` do
   agent. O `status.py set` recusa o valor: `reviewed` registra que a revisão passou, e o Creator não o
-  declara.
+  declara. Vale o mesmo para `blocked-RG<nn>`: só o `review.py --bloquear` grava, nunca `status.py set`.
 - Nunca publicar, e nunca chamar `publish`, `get_resource` ou `submission_status`. A revisão não consulta
   o estado do recurso no Hub; a única chamada de rede é a tool `me` do servidor MCP `amflow-builder`, que
   o agent faz em `completar-frontmatter` para ler o id do autor.
-- Nunca gravar `blocked` sem o Creator ter recusado a ajuda, e nunca sem `--motivo`.
+- Nunca gravar `blocked-RG<nn>` sem `--motivo`, e nunca por um gate que não seja o `PORTAO:` do
+  relatório desta revisão — o comando não grava o `blocked` simples, que é do Creator.
 - Um recurso por execução — para revisar outro, executar de novo.

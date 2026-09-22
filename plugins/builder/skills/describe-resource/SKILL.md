@@ -96,8 +96,9 @@ pasta do recurso. É leitura de disco: sem rede e sem autenticação. Quem local
      ser; se a linha `Versão` difere da versão do manifesto — `metadata.amflow-version` no `SKILL.md`,
      `version` no `<nome>.md` do agent e no `module.json` —, avisar: recurso em andamento deriva sem
      ninguém conferir.
-   - O `Rótulo` do status, da tabela — "Em andamento", "Publicado". Status `deprecated` ou `blocked`
-     pede aviso explícito, porque quem pergunta está prestes a adotar o recurso.
+   - O `Rótulo` do status, da tabela — "Em andamento", "Publicado". Status `deprecated`, `blocked` ou
+     da família `blocked-RG<nn>` pede aviso explícito, porque quem pergunta está prestes a adotar o
+     recurso.
 
 ## Quando o documento não existe
 

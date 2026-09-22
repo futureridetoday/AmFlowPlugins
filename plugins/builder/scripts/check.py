@@ -141,6 +141,12 @@ STATUS_VALIDOS = frozenset(
 # Fora da união dos dois conjuntos, R-10 reprova.
 STATUS_LEGADO = frozenset({"draft", "stable", "suspended", "review"})
 
+# Família de bloqueio da revisão — plano add-blocked-gate-id (0020), index.md
+# §1. `nn` é o gate onde a revisão parou, dois dígitos, de 01 a 99 (00 não
+# existe). Fonte única do domínio: status.py e review.py a reusam, como já
+# reusam STATUS_VALIDOS.
+BLOQUEIO_REVISAO_RE = re.compile(r"^blocked-RG(0[1-9]|[1-9][0-9])$")
+
 _UUID_RE = re.compile(
     r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
 )
@@ -157,7 +163,9 @@ _BOOL_RE = re.compile(r"^(true|false)$")
 _NUM_RE = re.compile(r"^-?\d+(\.\d+)?$")
 
 _CHAVE_RE = re.compile(r"^(?P<indent>[ \t]*)(?P<chave>[A-Za-z][A-Za-z0-9_.-]*):\s*(?P<valor>.*?)\s*$")
-_BLOCO_RE = re.compile(r"^[|>][-+]?\d*$")
+# Pública (sem underscore) porque status.py a reusa para saber se um valor é block scalar antes de
+# apagar uma linha (guarda do L-04, add-blocked-gate-id) — mesmo padrão de BLOQUEIO_REVISAO_RE.
+BLOCO_RE = re.compile(r"^[|>][-+]?\d*$")
 
 
 @dataclass
@@ -268,7 +276,7 @@ def parsear(texto: str) -> Frontmatter | None:
         valor = m.group("valor")
         num_linha = offset + 2  # linha 1 é o '---' de abertura
 
-        if _BLOCO_RE.match(valor):
+        if BLOCO_RE.match(valor):
             texto, pular_ate = _corpo_do_bloco(linhas, offset, indent)
         else:
             texto = _sem_aspas(valor).strip()
@@ -390,20 +398,29 @@ def r10_status_valido(fm: Frontmatter) -> list[Violacao]:
     campo = fm.metadata.get("amflow-status")
     if campo is None:
         return []
-    if _sem_aspas(campo.valor_bruto).strip() not in STATUS_VALIDOS | STATUS_LEGADO:
+    valor = _sem_aspas(campo.valor_bruto).strip()
+    if valor not in STATUS_VALIDOS | STATUS_LEGADO and not BLOQUEIO_REVISAO_RE.match(valor):
         return [Violacao("R-10", f"amflow-status inválido: {campo.valor_bruto}", campo.linha)]
     return []
 
 
 def r19_blocked_sem_motivo(fm: Frontmatter) -> list[Violacao]:
-    """`blocked` sem `amflow-status-reason` não se distingue de `paused` (index.md §3)."""
+    """`blocked` e a família `blocked-RG<nn>` sem `amflow-status-reason` não se distinguem de
+    `paused` (index.md §3) nem dizem onde a revisão parou."""
     campo = fm.metadata.get("amflow-status")
-    if campo is None or _sem_aspas(campo.valor_bruto).strip() != "blocked":
+    if campo is None:
+        return []
+    valor = _sem_aspas(campo.valor_bruto).strip()
+    if valor != "blocked" and not BLOQUEIO_REVISAO_RE.match(valor):
         return []
     motivo = fm.metadata.get("amflow-status-reason")
     if motivo is None or _vazio(motivo.valor_bruto):
         return [
-            Violacao("R-19", "amflow-status 'blocked' exige amflow-status-reason preenchido", campo.linha)
+            Violacao(
+                "R-19",
+                f"amflow-status '{valor}' exige amflow-status-reason preenchido",
+                campo.linha,
+            )
         ]
     return []
 

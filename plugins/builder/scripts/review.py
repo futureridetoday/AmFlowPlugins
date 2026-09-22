@@ -17,21 +17,31 @@ Os portões, em sequência. A revisão **para no primeiro que reprova**, e essa 
                     Hub recusa (tamanho e padrões de conteúdo).
   4. Descrição    — `[tipo]-description.md` tem os blocos do template e informações coerentes.
 
-Saída: uma linha `RESULTADO:` — `REVISADO`, `REPROVADO`, `PENDENTE-FRONTMATTER` ou
-`PENDENTE-DESCRICAO` —, seguida de `PORTAO:`, `RECURSO:`, `MOTIVO:` (só na descrição: `ausente` ou
-`com-erros`), `PROBLEMAS:` (bloqueiam), `AVISOS:`, `CANDIDATOS:` (o agent decide) e, em skill com
-`description` em várias linhas, `PROPOSTA-DESCRIPTION:`. Seção vazia é omitida.
+Saída: uma linha `RESULTADO:` — `REVISADO`, `REPROVADO`, `PENDENTE-FRONTMATTER`, `PENDENTE-DESCRICAO`
+ou `ERRO` (exceção inesperada dentro de um portão, add-blocked-gate-id) —, seguida de `PORTAO:`,
+`RECURSO:`, `MOTIVO:` (na descrição: `ausente` ou `com-erros`; no `ERRO`, a mensagem da exceção),
+`PROBLEMAS:` (bloqueiam), `AVISOS:`, `CANDIDATOS:` (o agent decide) e, em skill com `description` em
+várias linhas, `PROPOSTA-DESCRIPTION:`. Seção vazia é omitida. `GATES` é a tupla `(1, 2, 3, 4)`,
+hoje — os portões que `--bloquear` aceita.
 
 `PENDENTE-*` é o ponto em que o Creator decide se aceita ajuda. O script não pergunta e só escreve
 com `--registrar`, e só o `reviewed`: aponta o que falta, e quem pergunta é o comando `review`.
 
 `--registrar` grava `reviewed` no recurso, com o escritor do `status.py`, e só se o resultado é
-`REVISADO` e o recurso está em `in_progress` — nos demais o arquivo fica intacto (plano 0019). Fora
-de `in_progress` a gravação é recusada, com saída 2. O script refaz a revisão antes de gravar:
-o comando o chama depois do `REVISADO` do agent, mas o piso determinístico vale mesmo para quem o
-chamar direto. O que o script não refaz é o julgamento do agent — candidatos do portão 3, coerência
-do portão 4 —, então quem o chama sem o comando grava `reviewed` num recurso que o agent poderia
-reprovar (L-01 do plano). Ao gravar, acrescenta à saída uma linha `REGISTRADO:`.
+`REVISADO` e o recurso está em `in_progress` ou em `blocked-RG*` (add-blocked-gate-id, decisão 2) —
+nos demais o arquivo fica intacto (plano 0019). Fora dessas origens a gravação é recusada, com saída
+2. O script refaz a revisão antes de gravar: o comando o chama depois do `REVISADO` do agent, mas o
+piso determinístico vale mesmo para quem o chamar direto. O que o script não refaz é o julgamento do
+agent — candidatos do portão 3, coerência do portão 4 —, então quem o chama sem o comando grava
+`reviewed` num recurso que o agent poderia reprovar (L-01 do plano). Ao gravar, acrescenta à saída
+uma linha `REGISTRADO:`.
+
+`--bloquear <gate> --motivo "<texto>"` grava `blocked-RG<gate>` — toda parada da revisão que não é
+`REVISADO` (add-blocked-gate-id). Exclusivo com `--registrar`: são os dois escritores da mesma
+decisão 7 (quem grava o quê), nunca a mesma chamada. Não roda os quatro portões — registra o que o
+agent e o Creator já observaram, com o mesmo escritor e as mesmas duas origens do `--registrar`. Gate
+fora de `GATES`, motivo vazio ou origem fora de `in_progress`/`blocked-RG*` recusam, saída 2, arquivo
+intacto.
 
 Cross-repo: nasce aqui, em `scripts/`, e desce a `plugins/builder/scripts/review.py` do
 AmFlowPlugins por `vendor.py` — mesmo mecanismo do `check.py` e do `status.py`. A cópia é gerada,
@@ -41,12 +51,14 @@ Bash, nem no de um subagente — só é substituída inline no texto do agent.
 
 Uso:
   review.py <projeto> <local> [--templates <diretório>] [--registrar]
+  review.py <projeto> <local> --bloquear <gate> --motivo "<texto>"
 
 `<local>` é o caminho do manifesto relativo ao projeto, o mesmo que `status.py list` imprime na
 coluna Local — ex.: `skills/deep-research/SKILL.md`, `agents/reviewer/reviewer.md`.
 
-Sai com 0 se o resultado provisório é `REVISADO`, 1 nos demais casos, 2 se a chamada não é válida
-ou, com `--registrar`, se a gravação foi recusada.
+Sai com 0 se o resultado provisório é `REVISADO` (ou, com `--bloquear`, se a gravação foi aceita), 1
+nos demais casos, 2 se a chamada não é válida, se o resultado é `ERRO`, ou se a gravação — por
+`--registrar` ou `--bloquear` — foi recusada.
 """
 
 from __future__ import annotations
@@ -251,6 +263,13 @@ class Bundle:
     selecionados: dict[str, str] = field(default_factory=dict)  # caminho relativo → conteúdo
     tamanhos: dict[str, int] = field(default_factory=dict)  # caminho relativo → bytes em UTF-8
     omitidos: dict[str, str] = field(default_factory=dict)  # caminho relativo → motivo
+
+
+# Os quatro portões de `revisar`, hoje — add-blocked-gate-id (0020). `--bloquear` recusa qualquer
+# gate fora daqui antes de chamar `status.registrar_bloqueio`; a validação mora aqui, e não em
+# status.py, porque status.py não importa review.py (import circular: este arquivo já importa
+# status.py para o `--registrar`).
+GATES = (1, 2, 3, 4)
 
 
 @dataclass
@@ -484,7 +503,7 @@ def _frontmatter_agent(alvo: Alvo, fm, decl: dict) -> tuple[list[str], list[str]
             if _vazio(campo):
                 severidade.append(f"campo {'obrigatório' if severidade is problemas else 'recomendado'} ausente ou vazio: {chave}")
             elif chave == "metadata.amflow-status":
-                if campo.texto not in dominio:
+                if campo.texto not in dominio and not check.BLOQUEIO_REVISAO_RE.match(campo.texto):
                     severidade.append(f"{chave} fora do domínio: '{campo.texto}' — use um de {', '.join(sorted(check.STATUS_VALIDOS))}")
             elif formato and not re.fullmatch(formato, campo.texto):
                 severidade.append(f"{chave} fora do formato: '{campo.texto}'")
@@ -869,20 +888,29 @@ def _versao(fm, tipo: str) -> str | None:
 
 
 def revisar(projeto: Path, local: str, templates: Path) -> Relatorio:
+    """Os quatro portões — `ErroUso` (chamada inválida) só pode acontecer antes daqui, em
+    `identificar`/`carregar_modelo`, e continua subindo para `main` sem gate. Exceção inesperada
+    **dentro** de um portão vira `RESULTADO: ERRO` com o `PORTAO` onde ocorreu (add-blocked-gate-id)
+    — nunca traceback cru, e nunca confundida com `REPROVADO`, que é veredito do próprio portão."""
     alvo = identificar(projeto, local)
     modelo = carregar_modelo(templates, alvo.tipo)
     rel = Relatorio(alvo.tipo, alvo.nome, local)
 
     # 1 — template
-    rel.problemas = portao_template(alvo, modelo.declaracao)
+    try:
+        rel.problemas = portao_template(alvo, modelo.declaracao)
+    except Exception as exc:
+        return rel.parar("ERRO", 1, str(exc))
     if rel.problemas:
         return rel.parar("REPROVADO", 1)
 
-    texto = alvo.manifesto.read_text(encoding="utf-8")
-    fm = check.parsear(texto)
-
     # 2 — frontmatter
-    problemas, definitivos, avisos, proposta = portao_frontmatter(alvo, texto, modelo)
+    try:
+        texto = alvo.manifesto.read_text(encoding="utf-8")
+        fm = check.parsear(texto)
+        problemas, definitivos, avisos, proposta = portao_frontmatter(alvo, texto, modelo)
+    except Exception as exc:
+        return rel.parar("ERRO", 2, str(exc))
     rel.avisos += avisos
     rel.proposta_description = proposta
     if fm is not None:
@@ -895,7 +923,10 @@ def revisar(projeto: Path, local: str, templates: Path) -> Relatorio:
         return rel.parar("PENDENTE-FRONTMATTER", 2)
 
     # 3 — funcionamento mínimo
-    problemas, avisos, candidatos = portao_funcionamento(alvo, texto, modelo, alvo.nome, fm)
+    try:
+        problemas, avisos, candidatos = portao_funcionamento(alvo, texto, modelo, alvo.nome, fm)
+    except Exception as exc:
+        return rel.parar("ERRO", 3, str(exc))
     rel.avisos += avisos
     rel.candidatos = candidatos
     if problemas:
@@ -903,7 +934,10 @@ def revisar(projeto: Path, local: str, templates: Path) -> Relatorio:
         return rel.parar("REPROVADO", 3)
 
     # 4 — descrição
-    motivo, erros, avisos = portao_descricao(alvo, alvo.nome, rel.versao or "", modelo)
+    try:
+        motivo, erros, avisos = portao_descricao(alvo, alvo.nome, rel.versao or "", modelo)
+    except Exception as exc:
+        return rel.parar("ERRO", 4, str(exc))
     rel.avisos += avisos
     if motivo:
         rel.problemas = erros
@@ -949,23 +983,54 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("projeto", type=Path)
     parser.add_argument("local", help="caminho do manifesto relativo ao projeto — ex.: skills/deep-research/SKILL.md")
     parser.add_argument("--templates", type=Path, default=Path(__file__).resolve().parent.parent / "templates")
-    parser.add_argument(
+    grupo = parser.add_mutually_exclusive_group()
+    grupo.add_argument(
         "--registrar",
         action="store_true",
         help="grava `reviewed` no recurso, só se o resultado é REVISADO",
     )
+    grupo.add_argument(
+        "--bloquear",
+        type=int,
+        default=None,
+        metavar="GATE",
+        help="grava `blocked-RG<gate>` no recurso, sem refazer a revisão — exige --motivo",
+    )
+    parser.add_argument("--motivo", default=None, help="motivo do bloqueio — exigido com --bloquear")
     args = parser.parse_args(argv)
 
     projeto = args.projeto.expanduser().resolve()
     if not projeto.is_dir():
         print(f"erro: projeto não encontrado — {projeto}", file=sys.stderr)
         return 2
+
+    if args.bloquear is not None:
+        if args.bloquear not in GATES:
+            print(f"erro: gate desconhecido — use um de {GATES}", file=sys.stderr)
+            return 2
+        if not args.motivo:
+            print("erro: --bloquear exige --motivo", file=sys.stderr)
+            return 2
+        try:
+            manifesto = identificar(projeto, args.local).manifesto
+        except ErroUso as exc:
+            print(f"erro: {exc}", file=sys.stderr)
+            return 2
+        gravado = _carregar_status().registrar_bloqueio(projeto, manifesto, args.bloquear, args.motivo)
+        if not gravado.ok:
+            print(f"erro: {gravado.mensagem}", file=sys.stderr)
+            return 2
+        print(gravado.mensagem)
+        return 0
+
     try:
         relatorio = revisar(projeto, args.local, args.templates.expanduser().resolve())
     except ErroUso as exc:
         print(f"erro: {exc}", file=sys.stderr)
         return 2
     print(formatar(relatorio))
+    if relatorio.resultado == "ERRO":
+        return 2
     if args.registrar and relatorio.resultado == "REVISADO":
         gravado = registrar(projeto, args.local)
         if not gravado.ok:

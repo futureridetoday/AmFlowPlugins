@@ -39,7 +39,7 @@ Uma revisão é sempre sobre um recurso só, e o caminho do manifesto vem na cha
 
 **Frontmatter incompleto.** A revisão para no portão 2 com `PENDENTE-FRONTMATTER`. O Creator aceita a ajuda: o agent preenche o que se deriva do disco (nome, projeto, autor, versão) e propõe descrição e tags a partir do corpo. O Creator aprova, e a revisão recomeça.
 
-**Sem descrição, e o Creator recusa criá-la.** A revisão para no portão 4 com `PENDENTE-DESCRICAO`. Como publicar exige o documento, a recusa deixa a revisão `REPROVADO`, e o comando `review` marca o recurso como bloqueado, com o motivo registrado. Ele sai da lista de recursos em andamento até o Creator retomá-lo.
+**Sem descrição, e o Creator recusa criá-la.** A revisão para no portão 4 com `PENDENTE-DESCRICAO`. Como publicar exige o documento, a recusa deixa a revisão `REPROVADO`, e o comando `review` grava `blocked-RG04`, com o motivo registrado. Ele continua na lista de recursos em andamento — a família `blocked-RG*` é uma das duas origens que a Fase 1 lista — e uma nova revisão recomeça pelo portão 1.
 
 ## Fundamentação
 

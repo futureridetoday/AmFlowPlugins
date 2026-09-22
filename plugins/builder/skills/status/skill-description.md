@@ -17,8 +17,10 @@ mão, sem verificação nenhuma de que o valor fazia sentido.
 
 ## Como funciona
 
-Um único campo, `metadata.amflow-status`, com nove valores possíveis — quatro que o Creator declara,
-um que só a revisão grava e quatro que a publicação grava a partir do retorno do Hub. A skill nunca decide sozinha: ela interpreta
+Um único campo, `metadata.amflow-status`, com nove valores possíveis e uma família — quatro valores
+que o Creator declara, um que só a revisão grava, quatro que a publicação grava a partir do retorno
+do Hub, e a família `blocked-RG<nn>`, que a revisão grava sozinha quando para num gate. A skill nunca
+decide sozinha: ela interpreta
 o pedido do Creator — listar tudo, filtrar por um estado, ou mudar o estado de um recurso — e chama o
 `status.py`, que varre o projeto, valida o valor contra o domínio e grava preservando o resto do
 arquivo.
@@ -77,4 +79,6 @@ pedido, sobre os arquivos reais do projeto.
   `/amflow-builder:publish`
 - **Não grava os quatro valores do Hub.** `pending_review`, `changes_requested`, `rejected` e
   `published` só entram pelos comandos de publicação
+- **Não grava a família `blocked-RG<nn>`.** Só o `/amflow-builder:review` a grava, quando a revisão
+  para num gate — esta skill só a exibe
 - **Cobre só skill, agent, command, hook e módulo** — os cinco tipos que o Builder cria

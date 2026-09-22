@@ -45,12 +45,16 @@ command, hook e módulo. Todo determinismo — varredura, leitura, validação, 
 | `in_progress` | Em andamento | template na criação; Creator, ao retomar |
 | `paused` | Pausado | Creator |
 | `blocked` | Bloqueado, com motivo | Creator |
+| `blocked-RG<nn>` | Bloqueado na revisão (gate `<nn>`), com motivo | `/amflow-builder:review`, quando a revisão para num gate |
 | `reviewed` | Revisado | `/amflow-builder:review`, quando a revisão passa |
 | `deprecated` | Descontinuado | Creator |
 | `pending_review` | Em revisão | `/amflow-builder:publish` |
 | `changes_requested` | Ajustes pedidos | `/amflow-builder:publish-status` |
 | `rejected` | Recusado | `/amflow-builder:publish-status` |
 | `published` | Publicado | `/amflow-builder:publish-status` |
+
+Esta skill nunca grava `blocked-RG<nn>` — é só leitura aqui. Só o `/amflow-builder:review` o grava,
+pelo `review.py --bloquear`.
 
 Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Especificação completa:
 `docs/plan/builder/0014-unify-status-field/index.md`, no repositório onde o Builder é desenvolvido.
@@ -60,12 +64,15 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
 1. **Interpretar o pedido** — três formas:
    - **Listar / buscar por status**: sem alvo, ou com um rótulo da tabela acima. Traduzir o rótulo em
      pt-BR (ou a intenção do Creator) para o valor exato antes de filtrar — o script compara a string
-     exata, e um valor errado devolve lista vazia em silêncio, não erro
+     exata, e um valor errado devolve lista vazia em silêncio, não erro. **"Bloqueados" é dois
+     filtros**: `--status blocked --status 'blocked-RG*'` traz o `blocked` do Creator e toda a
+     família da revisão juntos; pedir só um dos dois exige que o Creator diga qual
    - **Atualizar**: o Creator nomeia um recurso e uma intenção — "pausa", "bloqueia", "retoma",
      "descontinua". Mapear a intenção para o valor exato da tabela; `blocked` sempre pede o motivo —
      perguntar se ele não veio junto do pedido. "Marca como pronto" ou "marca como revisado" não é
      atualização: `reviewed` só o `/amflow-builder:review` grava, então encaminhar o Creator a ele,
-     sem chamar `set`
+     sem chamar `set`. O mesmo vale para `blocked-RG<nn>`: `set` sempre recusa a família, e quem
+     bloqueia nesse formato é a revisão, nunca esta skill
    - **Ambíguo**: recurso não identificado → listar os recursos do projeto e perguntar qual; valor
      não reconhecido → mostrar o domínio e perguntar de novo. Nunca adivinhar
 
@@ -75,9 +82,11 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
 3. **Chamar o script**, nunca reimplementar a lógica:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> [--status <valor>]
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> [--status <valor> ...]
    python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" set <projeto> <tipo>/<nome> <valor> [--motivo <texto>]
    ```
+
+   `--status` é repetível — a união dos filtros — e aceita `*` no fim para prefixo (`'blocked-RG*'`).
 
    `<tipo>/<nome>` — ex.: `skill/deep-research`, `agent/resource-reviewer`.
 
@@ -88,7 +97,7 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
    | `list`, código 0 | Reproduzir a tabela markdown tal como veio — cabeçalho e linhas —, mais o total e o rodapé, se houver |
    | `list`, código 1 | Alguma linha começa com `ERRO` — um arquivo não parseou. Exibir o erro junto da tabela; não escondê-lo |
    | `set`, código 0 | Exibir a mensagem de sucesso do script — ela já diz `de → para (arquivo)` |
-   | `set`, código 1 | Exibir a mensagem de recusa tal como veio — nunca reformular. Cobre: valor do Hub, valor fora do domínio, `blocked` sem motivo, recurso não encontrado |
+   | `set`, código 1 | Exibir a mensagem de recusa tal como veio — nunca reformular. Cobre: valor do Hub, valor da família `blocked-RG<nn>` (só a revisão grava), valor fora do domínio, `blocked` sem motivo, recurso não encontrado |
 
    `list` já sai como tabela markdown — cabeçalho `| Tipo | Nome | Local | Status | Atualizado |
    Rótulo |` sempre que há ao menos um recurso visível; lista vazia sai sem tabela, sem cabeçalho.
@@ -116,4 +125,6 @@ Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Espe
 - **Nunca reescrever em prosa o que o script decide** — domínio, ordem, formato, recusa. Se o
   comportamento parecer errado, o defeito é do script, não desta skill
 - **`blocked` sempre com motivo.** Se o Creator não disser o motivo, perguntar antes de chamar `set`
+- **Nunca gravar `blocked-RG<nn>`.** `set` recusa sozinho, mas a skill não deve nem tentar — é o
+  `/amflow-builder:review` quem grava a família, pelo `review.py --bloquear`
 - **Nunca apontar para o repositório AmFlow.** Ele é privado; o Creator não tem acesso

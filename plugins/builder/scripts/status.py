@@ -19,8 +19,11 @@ mesmo diretório (é onde ele está depois do `vendor.py`, em `plugins/builder/s
 `frontmatter/`, um nível abaixo (é onde ele está na fonte, em `scripts/frontmatter/`).
 
 Uso:
-  status.py list <projeto> [--status <valor>]
+  status.py list <projeto> [--status <valor> ...]
   status.py set <projeto> <recurso> <valor> [--motivo <texto>]
+
+`--status` é repetível; um valor terminado em `*` filtra por prefixo — `--status 'blocked-RG*'`
+pega a família inteira (add-blocked-gate-id), sem pegar o `blocked` simples.
 
 `<recurso>` é `<tipo>/<nome>` — ex.: `skill/deep-research`, `agent/resource-reviewer`.
 
@@ -35,6 +38,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass
+from datetime import date
 from pathlib import Path
 
 
@@ -65,6 +69,7 @@ check = _carregar_check()
 STATUS_VALIDOS = check.STATUS_VALIDOS
 STATUS_LEGADO = check.STATUS_LEGADO
 DOMINIO = STATUS_VALIDOS | STATUS_LEGADO
+BLOQUEIO_REVISAO_RE = check.BLOQUEIO_REVISAO_RE
 
 # ── domínio próprio desta unidade — index.md §1, §3, §4; check.py não o declara ───
 
@@ -109,6 +114,32 @@ ORDEM_SAIDA = (
     "published",
     "deprecated",
 )
+
+
+def _eh_blocked_ou_familia(valor: str) -> bool:
+    """`blocked` e `blocked-RG<nn>` são o mesmo motivo de bloqueio — index.md §3."""
+    return valor == "blocked" or bool(BLOQUEIO_REVISAO_RE.match(valor))
+
+
+def _rotulo(status: str | None) -> str:
+    """ROTULOS cobre os nove valores fixos; a família monta o rótulo a partir do gate no id
+    (add-blocked-gate-id, index.md §1) — "Bloqueado na revisão (gate <nn>)"."""
+    if status is None:
+        return "—"
+    if status in ROTULOS:
+        return ROTULOS[status]
+    m = BLOQUEIO_REVISAO_RE.match(status)
+    return f"Bloqueado na revisão (gate {int(m.group(1))})" if m else "—"
+
+
+def _posicao_ordem(status: str | None) -> int:
+    """A família ocupa a posição de `blocked` (index.md §4, add-blocked-gate-id)."""
+    if status is not None and BLOQUEIO_REVISAO_RE.match(status):
+        status = "blocked"
+    try:
+        return ORDEM_SAIDA.index(status)
+    except ValueError:
+        return len(ORDEM_SAIDA)
 
 TIPOS = ("skill", "agent", "command", "hook", "module")
 
@@ -321,7 +352,7 @@ def _formatar_linha(recurso: Recurso) -> str:
     status_txt = recurso.status or "(sem status)"
     if anotacoes:
         status_txt = f"{status_txt} [{', '.join(anotacoes)}]"
-    rotulo = ROTULOS.get(recurso.status, "—")
+    rotulo = _rotulo(recurso.status)
     atualizado = recurso.atualizado or "(sem data)"
     return (
         f"| {recurso.tipo} | {recurso.nome} | [{recurso.local}]({recurso.local}) "
@@ -352,16 +383,25 @@ def _chave_data(atualizado: str | None) -> float:
 
 def _chave_ordem(recurso: Recurso) -> tuple[str, int, float, str]:
     """`(tipo, posição em ORDEM_SAIDA, chave_data, nome)` — index.md §4 e formato da saída."""
-    try:
-        posicao = ORDEM_SAIDA.index(recurso.status)
-    except ValueError:
-        posicao = len(ORDEM_SAIDA)
-    return (recurso.tipo, posicao, _chave_data(recurso.atualizado), recurso.nome)
+    return (recurso.tipo, _posicao_ordem(recurso.status), _chave_data(recurso.atualizado), recurso.nome)
 
 
-def listar(projeto: Path, filtro_status: str | None = None) -> ResultadoListagem:
+def _bate_filtro(status: str | None, filtro: str) -> bool:
+    """Sem `*` a comparação é exata — `blocked` não pega a família. Com `*` no fim, prefixo:
+    `blocked-RG*` pega toda a família e nada mais (add-blocked-gate-id, *A lista e a origem*)."""
+    if status is None:
+        return False
+    if filtro.endswith("*"):
+        return status.startswith(filtro[:-1])
+    return status == filtro
+
+
+def listar(projeto: Path, filtros_status: tuple[str, ...] | None = None) -> ResultadoListagem:
     todos, invalidos = varrer(projeto)
-    visiveis = [r for r in todos if filtro_status is None or r.status == filtro_status]
+    if filtros_status:
+        visiveis = [r for r in todos if any(_bate_filtro(r.status, f) for f in filtros_status)]
+    else:
+        visiveis = list(todos)
     visiveis.sort(key=_chave_ordem)
     return ResultadoListagem(
         linhas=[_formatar_linha(r) for r in visiveis],
@@ -399,6 +439,9 @@ def _linha_fechamento_frontmatter(linhas: list[str]) -> int:
     raise OSError("frontmatter sem '---' de fechamento")
 
 
+_SENTINELA_REMOCAO = "\x00REMOVER\x00"
+
+
 def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
     texto = recurso.caminho.read_text(encoding="utf-8")
     fm = check.parsear(texto)
@@ -422,6 +465,12 @@ def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
             linhas[campo_motivo.linha - 1] = _substituir_valor(linhas[campo_motivo.linha - 1], _valor_yaml(motivo))
         else:
             novas.append(f"  {CHAVE_MOTIVO}: {_valor_yaml(motivo)}\n")
+    elif campo_motivo is not None and not _eh_blocked_ou_familia(valor):
+        # Fecha blocked → in_progress → reviewed com o motivo antigo preso (medido na revisão do
+        # 0019). L-04: um motivo em bloco (`|`/`>`) ocupa mais de uma linha e não sabemos apagar
+        # essas linhas com segurança por este índice só — a chave fica, em vez de arriscar.
+        if not check.BLOCO_RE.match(campo_motivo.valor_bruto.strip()):
+            linhas[campo_motivo.linha - 1] = _SENTINELA_REMOCAO
 
     if campo_metadata is None:
         ponto = _linha_fechamento_frontmatter(linhas)
@@ -431,6 +480,7 @@ def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
         ponto = max(posicoes) if posicoes else campo_metadata.linha
         linhas[ponto:ponto] = novas
 
+    linhas = [l for l in linhas if l != _SENTINELA_REMOCAO]
     recurso.caminho.write_text("".join(linhas), encoding="utf-8")
 
 
@@ -446,6 +496,9 @@ def _escrever_json(recurso: Recurso, valor: str, motivo: str | None) -> None:
     metadata[CHAVE_STATUS] = valor
     if motivo is not None:
         metadata[CHAVE_MOTIVO] = motivo
+    elif not _eh_blocked_ou_familia(valor):
+        # JSON não tem block scalar — L-04 (a linha acima, em _escrever_yaml) não se aplica aqui.
+        metadata.pop(CHAVE_MOTIVO, None)
     quebra_final = "\n" if texto.endswith("\n") else ""
     novo_texto = json.dumps(dados, indent=2, ensure_ascii=False) + quebra_final
     recurso.caminho.write_text(novo_texto, encoding="utf-8")
@@ -478,7 +531,7 @@ def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = N
         return ResultadoSet(
             False, f"recusado: '{valor}' é gravado pela publicação (Hub) — não por esta ferramenta"
         )
-    if valor in VALORES_REVISAO:
+    if valor in VALORES_REVISAO or BLOQUEIO_REVISAO_RE.match(valor):
         return ResultadoSet(
             False, f"recusado: '{valor}' é gravado pela revisão — rode /amflow-builder:review"
         )
@@ -501,6 +554,12 @@ def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = N
     return _gravar(alvo, valor, motivo)
 
 
+def _origem_valida_da_revisao(status: str | None) -> bool:
+    """`in_progress` (o que o `build` deixa) ou qualquer `blocked-RG*` (uma nova revisão recomeça
+    do bloqueio anterior — add-blocked-gate-id, decisão 2)."""
+    return status == "in_progress" or bool(status and BLOQUEIO_REVISAO_RE.match(status))
+
+
 def registrar_revisado(projeto: Path, manifesto: Path) -> ResultadoSet:
     """Grava `reviewed` no recurso cujo manifesto é `manifesto` (plano 0019).
 
@@ -509,22 +568,60 @@ def registrar_revisado(projeto: Path, manifesto: Path) -> ResultadoSet:
     existem a cópia em desenvolvimento e a promovida em `.claude/`, gravar na que a revisão não leu
     marcaria como revisado um arquivo que ninguém revisou.
 
-    Só grava a partir de `in_progress`, o que o `build` deixa: a revisão vem depois dele. Qualquer
+    Só grava a partir de `in_progress` ou de `blocked-RG*` (add-blocked-gate-id, decisão 2). Qualquer
     outro status é recusado, em vez de sobrescrito — sobretudo os que o Hub grava, que a revisão
-    apagaria (`published → reviewed`). Uma lista permitida de um valor só não precisa mudar quando
-    entram valores novos.
+    apagaria (`published → reviewed`).
     """
     todos, _ = varrer(projeto)
     alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
     if alvo is None:
         return ResultadoSet(False, f"recusado: recurso não encontrado — {manifesto}")
-    if alvo.status != "in_progress":
+    if not _origem_valida_da_revisao(alvo.status):
         return ResultadoSet(
             False,
-            f"recusado: 'reviewed' só é gravado a partir de 'in_progress' — "
+            f"recusado: 'reviewed' só é gravado a partir de 'in_progress' ou de 'blocked-RG*' — "
             f"o recurso está em '{alvo.status or 'sem status'}'",
         )
     return _gravar(alvo, "reviewed", None)
+
+
+def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -> ResultadoSet:
+    """Grava `blocked-RG<gate>` no recurso cujo manifesto é `manifesto` (add-blocked-gate-id).
+
+    Só o `review.py --bloquear` chama isto, em toda parada da revisão que não é `REVISADO`. Não
+    refaz a revisão: registra o gate e o motivo que o agent e o Creator observaram — o script é o
+    piso, e o agent pode piorar o resultado dele nos gates 3 e 4 por julgamento (L-01, mesmo limite
+    do `--registrar` no plano 0019). `review.py` (`GATES`) já recusa gate desconhecido antes de
+    chamar esta função, mas o valor final é conferido aqui também, contra a mesma
+    `BLOQUEIO_REVISAO_RE` que `check.py` usa para aceitar `blocked-RG<nn>` — sem isso, um `gate` fora
+    de 1-99 (ou um chamador direto, fora do `--bloquear`) gravaria um valor que a própria verificação
+    de frontmatter rejeitaria na revisão seguinte.
+
+    Mesmas duas origens do `registrar_revisado` — `in_progress` ou `blocked-RG*` —, porque a mesma
+    decisão 2 rege os dois escritores: uma nova revisão recomeça do bloqueio anterior, sobrescrevendo
+    tanto para `reviewed` quanto para um novo `blocked-RG<nn>`. O motivo vem datado por código
+    (`YYYY-MM-DD — texto`) — D6 pedia a data, e data escrita por código não erra.
+    """
+    if not motivo or not motivo.strip():
+        return ResultadoSet(False, "recusado: '--bloquear' exige --motivo")
+
+    valor = f"blocked-RG{gate:02d}"
+    if not BLOQUEIO_REVISAO_RE.match(valor):
+        return ResultadoSet(False, f"recusado: gate desconhecido — '{gate}' não forma um id válido ({valor})")
+
+    todos, _ = varrer(projeto)
+    alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
+    if alvo is None:
+        return ResultadoSet(False, f"recusado: recurso não encontrado — {manifesto}")
+    if not _origem_valida_da_revisao(alvo.status):
+        return ResultadoSet(
+            False,
+            f"recusado: 'blocked-RG' só é gravado a partir de 'in_progress' ou de 'blocked-RG*' — "
+            f"o recurso está em '{alvo.status or 'sem status'}'",
+        )
+
+    motivo_datado = f"{date.today().isoformat()} — {motivo.strip()}"
+    return _gravar(alvo, valor, motivo_datado)
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────
@@ -536,7 +633,12 @@ def main(argv: list[str] | None = None) -> int:
 
     p_list = sub.add_parser("list", help="lista os recursos do projeto e seus status")
     p_list.add_argument("projeto", type=Path)
-    p_list.add_argument("--status", default=None)
+    p_list.add_argument(
+        "--status",
+        action="append",
+        default=None,
+        help="repetível; termina em '*' para curinga de prefixo — ex.: --status in_progress --status 'blocked-RG*'",
+    )
 
     p_set = sub.add_parser("set", help="atualiza o status de um recurso")
     p_set.add_argument("projeto", type=Path)
@@ -551,7 +653,8 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if args.comando == "list":
-        resultado = listar(projeto, args.status)
+        filtros = tuple(args.status) if args.status else None
+        resultado = listar(projeto, filtros)
         for inv in resultado.invalidos:
             print(f"ERRO {inv.tipo} {inv.local}: {inv.erro}")
         for linha in resultado.cabecalho:
@@ -559,7 +662,7 @@ def main(argv: list[str] | None = None) -> int:
         for linha in resultado.linhas:
             print(linha)
         print()
-        sufixo = f" (status={args.status})" if args.status else ""
+        sufixo = f" (status={','.join(filtros)})" if filtros else ""
         print(f"{resultado.total} recurso(s) encontrado(s){sufixo}")
         for linha in resultado.rodape:
             print(linha)
