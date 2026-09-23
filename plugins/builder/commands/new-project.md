@@ -349,6 +349,20 @@ Criar `<pasta>/.claude/settings.json` com conteúdo `{}`.
 
 Já existir → manter sem sobrescrever.
 
+### 5.6 — Criar `.gitignore`
+
+Copiar o conteúdo verbatim de `${CLAUDE_PLUGIN_ROOT}/templates/gitignore` para `<pasta>/.gitignore`
+com a ferramenta Write. Sem reescrever.
+
+Já existir → manter sem tocar, pelo mesmo motivo do 5.3: o caso que sobra é o projeto configurado
+à mão, cujo `.gitignore` é do Creator. Nesse caso, avisar na pós-execução que o `.gitignore` foi
+mantido e que as variáveis de ambiente e o `.claude/settings.local.json` podem não estar cobertos.
+
+O template não se chama `.gitignore` de propósito: dentro do plugin, esse nome viraria uma regra
+real do repositório do plugin. Fica de fora do que é ignorado, por decisão: `.gitkeep`,
+`.claude/settings.json`, `.claude/memory/`, `<skill>/config/<nome>.json` e as cópias geradas em
+`.claude/skills/<skill>/modules/`.
+
 ## Pós-execução
 
 Exibir ao usuário:
@@ -364,6 +378,7 @@ Criados:
   .claude/rules/tools.md
   .claude/rules/voice-and-language.md
   .claude/settings.json
+  .gitignore
   .claude/skills/
   .claude/agents/
   .claude/hooks/
@@ -373,14 +388,20 @@ Criados:
   .claude/rules/
   docs/
 
+Atenção: .gitignore já existia e foi mantido — confira se cobre .env* e .claude/settings.local.json
+
 Próximos passos:
   /amflow-builder:start   — abrir a sessão neste projeto
   /amflow-builder:build   — criar recursos para o projeto
   /amflow-builder:publish — publicar recursos no Hub
 ```
 
+A linha `Atenção` só aparece quando o `.gitignore` já existia (5.6). Caso contrário, omitir a linha e a
+linha em branco que a precede.
+
 ## Restrições
 
 - Nunca criar `.claude/CLAUDE.md` se já existir.
 - Nunca sobrescrever `.claude/settings.json` nem nenhum arquivo já existente em `.claude/rules/`.
+- Nunca sobrescrever nem alterar um `.gitignore` já existente.
 - O `CLAUDE.md` gerado não tem frontmatter.

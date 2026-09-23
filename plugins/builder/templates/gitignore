@@ -1,0 +1,15 @@
+# Variáveis de ambiente (o .env.example segue versionado)
+.env*
+!.env.example
+
+# Claude Code — preferências pessoais
+.claude/settings.local.json
+CLAUDE.local.md
+.claude/worktrees/
+
+# macOS
+.DS_Store
+
+# Python (scripts de skills)
+__pycache__/
+*.py[cod]
