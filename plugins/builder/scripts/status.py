@@ -89,6 +89,12 @@ VALORES_REVISAO = frozenset({"reviewed"})
 # index.md §1 — "Declarados pelo Creator". É o único subconjunto que `set` aceita gravar.
 VALORES_CREATOR = STATUS_VALIDOS - VALORES_HUB - VALORES_REVISAO
 
+# plano publish-reviewed-only — onde o identificador do Hub mora, por tipo: em `metadata` para
+# skill (só existe depois da 1ª publicação — check.py, comentário de topo), no topo para os
+# demais. Só `registrar_publicado` grava este campo; `set` não o toca (não é `amflow-status`).
+CHAVE_HUB_ID_SKILL = "amflow-hub-id"
+CHAVE_HUB_ID_TOPO = "hub_id"
+
 # index.md §1, coluna Rótulo.
 ROTULOS = {
     "in_progress": "Em andamento",
@@ -442,6 +448,36 @@ def _linha_fechamento_frontmatter(linhas: list[str]) -> int:
 _SENTINELA_REMOCAO = "\x00REMOVER\x00"
 
 
+def _fim_do_campo(linhas: list[str], campo) -> int:
+    """Índice (0-based, dentro de `linhas`) da primeira linha depois de `campo` — a própria linha
+    quando o valor cabe numa linha só; o fim do corpo inteiro quando é block scalar (`|`/`>`),
+    porque `campo.linha` só marca onde ele começa. Mesmo critério de parada de
+    `check._corpo_do_bloco`, reaplicado aqui porque `Campo` não expõe a linha final — inserir
+    logo após `campo.linha` nesse caso split o corpo do block scalar ao meio."""
+    inicio = campo.linha - 1  # 0-based
+    if not check.BLOCO_RE.match(campo.valor_bruto.strip()):
+        return inicio + 1
+    indent_chave = len(linhas[inicio]) - len(linhas[inicio].lstrip())
+    fim = inicio + 1
+    for i in range(inicio + 1, len(linhas)):
+        linha = linhas[i]
+        if linha.strip() and len(linha) - len(linha.lstrip()) <= indent_chave:
+            break
+        fim = i + 1
+    return fim
+
+
+def _ponto_insercao_metadata(fm, campo_metadata, linhas: list[str]) -> int:
+    """Onde inserir uma linha nova dentro do bloco `metadata:` — depois do corpo inteiro do
+    último campo existente, ou logo após a própria chave `metadata:` quando ela ainda não tem
+    nenhum filho. Única fonte deste cálculo: `_escrever_yaml` e `_gravar_hub_id` o compartilham,
+    em vez de cada um recalcular por conta própria."""
+    if not fm.metadata:
+        return campo_metadata.linha
+    ultimo = max(fm.metadata.values(), key=lambda c: c.linha)
+    return _fim_do_campo(linhas, ultimo)
+
+
 def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
     texto = recurso.caminho.read_text(encoding="utf-8")
     fm = check.parsear(texto)
@@ -476,8 +512,7 @@ def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
         ponto = _linha_fechamento_frontmatter(linhas)
         linhas[ponto:ponto] = ["metadata:\n"] + novas
     elif novas:
-        posicoes = [c.linha for c in fm.metadata.values()]
-        ponto = max(posicoes) if posicoes else campo_metadata.linha
+        ponto = _ponto_insercao_metadata(fm, campo_metadata, linhas)
         linhas[ponto:ponto] = novas
 
     linhas = [l for l in linhas if l != _SENTINELA_REMOCAO]
@@ -622,6 +657,93 @@ def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -
 
     motivo_datado = f"{date.today().isoformat()} — {motivo.strip()}"
     return _gravar(alvo, valor, motivo_datado)
+
+
+def _gravar_hub_id(alvo: Recurso, hub_id: str) -> None:
+    """Grava `hub_id`, só quando o recurso ainda não tinha um — a atualização reenvia o mesmo
+    valor, e não há nada a trocar. Escritor à parte de `_gravar`: o campo mora em
+    `metadata.amflow-hub-id` em skill e no topo (`hub_id`) nos demais tipos (plano
+    publish-reviewed-only), lugar diferente de `amflow-status`/`amflow-status-reason`, os dois
+    campos que `_gravar` conhece."""
+    texto = alvo.caminho.read_text(encoding="utf-8")
+    fm = check.parsear(texto)
+    if fm is None:
+        raise OSError("frontmatter ausente ou malformado")
+    linhas = texto.splitlines(keepends=True)
+
+    em_metadata = alvo.tipo == "skill"
+    campo = fm.metadata.get(CHAVE_HUB_ID_SKILL) if em_metadata else fm.topo.get(CHAVE_HUB_ID_TOPO)
+    if campo is not None and campo.texto:
+        return  # já tem valor — atualização, nada a gravar
+
+    valor = _valor_yaml(hub_id)
+    if campo is not None:
+        linhas[campo.linha - 1] = _substituir_valor(linhas[campo.linha - 1], valor)
+    elif em_metadata:
+        campo_metadata = fm.topo.get("metadata")
+        linha_nova = f"  {CHAVE_HUB_ID_SKILL}: {valor}\n"
+        if campo_metadata is None:
+            ponto = _linha_fechamento_frontmatter(linhas)
+            linhas[ponto:ponto] = ["metadata:\n", linha_nova]
+        else:
+            ponto = _ponto_insercao_metadata(fm, campo_metadata, linhas)
+            linhas[ponto:ponto] = [linha_nova]
+    else:
+        ponto = _linha_fechamento_frontmatter(linhas)
+        linhas[ponto:ponto] = [f"{CHAVE_HUB_ID_TOPO}: {valor}\n"]
+
+    alvo.caminho.write_text("".join(linhas), encoding="utf-8")
+
+
+def _gravar_source(alvo: Recurso, versao: str) -> None:
+    """Grava `source: hub/<tipo>/<nome>@<versão>` no topo — todo publish, não só a 1ª submissão,
+    porque a versão muda a cada atualização (diferente de `_gravar_hub_id`, que só grava uma
+    vez). Skill nunca grava: a norma reserva `amflow-source` só à cópia instalada, nunca à fonte.
+    Comportamento restaurado do `publish.md` anterior (Fase 6), que este plano preservou sem
+    listar entre as mudanças."""
+    if alvo.tipo == "skill":
+        return
+    texto = alvo.caminho.read_text(encoding="utf-8")
+    fm = check.parsear(texto)
+    if fm is None:
+        raise OSError("frontmatter ausente ou malformado")
+    linhas = texto.splitlines(keepends=True)
+
+    valor = _valor_yaml(f"hub/{alvo.tipo}/{alvo.nome}@{versao}")
+    campo = fm.topo.get("source")
+    if campo is not None:
+        linhas[campo.linha - 1] = _substituir_valor(linhas[campo.linha - 1], valor)
+    else:
+        ponto = _linha_fechamento_frontmatter(linhas)
+        linhas[ponto:ponto] = [f"source: {valor}\n"]
+
+    alvo.caminho.write_text("".join(linhas), encoding="utf-8")
+
+
+def registrar_publicado(projeto: Path, manifesto: Path, hub_id: str, versao: str) -> ResultadoSet:
+    """Grava depois do aceite do Hub (`publish.py --registrar`, plano publish-reviewed-only):
+    `amflow-status: pending_review` sempre, `source` nos tipos que o levam (todo publish, com a
+    versão atual), e o identificador do Hub só quando ainda não havia um.
+
+    Só o `publish.py --registrar` chama isto, e só depois de uma resposta de aceite do Hub — o
+    script não confirma isso sozinho, é o agent quem decide se chama, e recusado ali é recusado
+    sem gravar nada. Recusa aqui só quando o recurso não é `skill` nem `agent`, fora do escopo da
+    publicação (decisão 3 do plano) — os únicos dois tipos que `publish.py` alcança.
+    """
+    todos, _ = varrer(projeto)
+    alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
+    if alvo is None:
+        return ResultadoSet(False, f"recusado: recurso não encontrado — {manifesto}")
+    if alvo.tipo not in ("skill", "agent"):
+        return ResultadoSet(False, f"recusado: '{alvo.tipo}' está fora do escopo da publicação")
+
+    try:
+        _gravar_hub_id(alvo, hub_id)
+        _gravar_source(alvo, versao)
+    except OSError as exc:
+        return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
+
+    return _gravar(alvo, "pending_review", None)
 
 
 # ── CLI ────────────────────────────────────────────────────────────────────

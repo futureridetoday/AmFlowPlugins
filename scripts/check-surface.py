@@ -201,14 +201,14 @@ def verificar_claude_md_gerado(erros: list[str]) -> None:
     elif not primeira.startswith("# "):
         erros.append(f"{rel}: o CLAUDE.md gerado começa em {primeira!r}, esperado o `#` do título")
 
-    # O nome do projeto é lido por build.md, build-resource/SKILL.md e publisher.md
+    # O nome do projeto é lido por build.md, build-resource/SKILL.md e resource-reviewer.md
     # para preencher `project` no frontmatter de todo recurso. Se o produtor parar
     # de escrever a linha, os três leem um arquivo que não a tem — que foi
     # exatamente a regressão de 2026-08-31, quando o frontmatter saiu daqui.
     if not any(l.startswith("| Nome do projeto |") for l in corpo):
         erros.append(
             f"{rel}: o CLAUDE.md gerado não tem a linha '| Nome do projeto |' na tabela "
-            "Identidade — build.md, build-resource/SKILL.md e publisher.md leem esse "
+            "Identidade — build.md, build-resource/SKILL.md e resource-reviewer.md leem esse "
             "campo para preencher `project` no frontmatter dos recursos"
         )
 
