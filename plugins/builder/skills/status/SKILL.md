@@ -8,11 +8,11 @@ description: |
   status de um recurso.
 license: Proprietary
 metadata:
-  amflow-version: "1.0.0"
+  amflow-version: "1.1.0"
   amflow-status: in_progress
   amflow-author: Bortoli
   amflow-author-id: 985920db-502d-4cb3-9ca1-c145719a9307
-  amflow-updated: "2026-09-12"
+  amflow-updated: "2026-09-24"
   amflow-tags: creator status metadata resource-status builder
   amflow-dependencies: ""
 ---
@@ -52,11 +52,12 @@ command, hook e módulo. Todo determinismo — varredura, leitura, validação, 
 | `changes_requested` | Ajustes pedidos | `/amflow-builder:publish-status` |
 | `rejected` | Recusado | `/amflow-builder:publish-status` |
 | `published` | Publicado | `/amflow-builder:publish-status` |
+| `denied` | Negado | `/amflow-builder:publish`, quando a entry validation do Hub recusa o envio |
 
 Esta skill nunca grava `blocked-RG<nn>` — é só leitura aqui. Só o `/amflow-builder:review` o grava,
 pelo `review.py --bloquear`.
 
-Os quatro últimos vêm do Hub — esta skill nunca os grava, só os exibe. Especificação completa:
+Os cinco últimos vêm do Hub — esta skill nunca os grava, só os exibe. Especificação completa:
 `docs/plan/builder/0014-unify-status-field/index.md`, no repositório onde o Builder é desenvolvido.
 
 ## Processo

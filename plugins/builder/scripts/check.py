@@ -133,6 +133,7 @@ STATUS_VALIDOS = frozenset(
         "changes_requested",
         "rejected",
         "published",
+        "denied",
     }
 )
 

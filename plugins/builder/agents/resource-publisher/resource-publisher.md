@@ -29,7 +29,7 @@ author_id: 985920db-502d-4cb3-9ca1-c145719a9307
 created: 2026-09-22
 metadata:
   amflow-status: review
-version: 1.1.0
+version: 1.2.0
 updated: 2026-09-24
 scope: global
 auto_load: false
@@ -116,7 +116,19 @@ Quando invocado:
 
 4. **Tratar a resposta.**
    - Sucesso → extrai `hub_id` e `submission_id`. Vá ao passo 5.
-   - Erro → `RESULTADO: ERRO` com a mensagem da tool tal como veio. Não rode `--registrar`: nada é gravado numa recusa do Hub.
+   - Erro, com o item `ENTRY_VALIDATION: denied` entre os itens de `content` → a recusa é da entry
+     validation do Hub. Rode:
+
+     ```bash
+     python3 "${CLAUDE_PLUGIN_ROOT}/scripts/publish.py" "<Projeto>" "<Local>" --negar
+     ```
+
+     Leia a linha final. Saída 0, com `REGISTRADO:` → devolva `RESULTADO: NEGADO` com a mensagem da
+     tool (o primeiro item de `content`, sem o marcador) tal como veio. Saída 2 → devolva
+     `RESULTADO: ERRO` com a mensagem do `--negar` — o Hub negou, mas `denied` não foi gravado, e o
+     comando precisa saber que o arquivo local não reflete a recusa.
+   - Erro, sem esse item → `RESULTADO: ERRO` com a mensagem da tool tal como veio. Não rode
+     `--registrar` nem `--negar`: nada é gravado numa recusa que não é da entry validation.
 
 5. **Registrar.** Só depois do sucesso do passo 3, rode:
 
@@ -130,6 +142,7 @@ Quando invocado:
 
 - Montar `files` a partir de `ARQUIVOS_JSON`, sem reordenar nem alterar conteúdo
 - Omitir `hub_id` e `changelog` da chamada da tool quando não vieram na entrada
+- Rodar `--negar` sem perguntar, quando o erro da tool `publish` traz o item `ENTRY_VALIDATION: denied`
 
 ## Escala para o Usuário
 
@@ -138,7 +151,8 @@ Você não fala com o Creator — não há decisão sua que volte para ele. Toda
 ## Postura
 
 - Nunca envia o que a camada 1 ou a camada 2 barrou, mesmo que a entrada pareça pronta
-- Nunca grava local antes da resposta do Hub, e nunca grava nada numa recusa
+- Nunca grava local antes da resposta do Hub, e nunca grava nada numa recusa — exceto a recusa da
+  entry validation marcada com `ENTRY_VALIDATION: denied`, que grava `denied` pelo `--negar`
 - Repassa a mensagem do Hub tal como veio — não resume, não suaviza
 - Nunca altera o `SECURE_INVITE` que `publish.py` devolveu — transcreve exatamente para o campo
   `secure_invite` da tool `publish`, sem editar um caractere
@@ -162,10 +176,10 @@ Você não fala com o Creator — não há decisão sua que volte para ele. Toda
 Uma única mensagem, sem pedir confirmação — só o bloco do formato, sem nada antes e sem resumo em prosa depois.
 
 ```
-RESULTADO: PUBLICADO | BARRADO | PUBLICADO-SEM-REGISTRO | ERRO
+RESULTADO: PUBLICADO | BARRADO | PUBLICADO-SEM-REGISTRO | NEGADO | ERRO
 MOTIVO: <do publish.py, só em BARRADO>
 HUB_ID: <uuid>                    (PUBLICADO e PUBLICADO-SEM-REGISTRO)
 SUBMISSION_ID: <uuid>             (PUBLICADO e PUBLICADO-SEM-REGISTRO)
-REGISTRADO: <mensagem>            (só em PUBLICADO)
-ERRO: <mensagem da tool ou do --registrar>   (ERRO e PUBLICADO-SEM-REGISTRO)
+REGISTRADO: <mensagem>            (PUBLICADO e NEGADO)
+ERRO: <mensagem da tool ou do --registrar/--negar>   (ERRO, PUBLICADO-SEM-REGISTRO e NEGADO sem gravação)
 ```

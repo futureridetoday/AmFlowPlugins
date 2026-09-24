@@ -10,7 +10,7 @@ tags: [publish, submission, hub, creator, mcp, review]
 author: Bortoli
 created: 2026-06-14
 status: stable
-version: 3.1.0
+version: 3.2.0
 updated: 2026-09-24
 
 # system
@@ -221,6 +221,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     | `BARRADO` | A camada 1 ou a camada 2 deixou de bater entre a listagem e o envio (edição concorrente, por exemplo) — a mesma checagem da conferência cedo (Fase 2). Exibir o `MOTIVO` tal como veio, sem reescrever, e orientar a rodar `/amflow-builder:review` de novo — nada foi enviado |
     | `ERRO` | O Hub recusou. Exibir a mensagem tal como veio — nada foi gravado local |
     | `PUBLICADO-SEM-REGISTRO` | O Hub aceitou, mas a gravação local falhou. Exibir a mensagem de erro e avisar: **"O Hub já tem a submissão, mas o arquivo local não foi atualizado. Rode `/amflow-builder:publish-status` antes de tentar publicar de novo — não repita o envio sem conferir."** |
+    | `NEGADO` | O Hub negou a publicação — a entry validation recusou o envio. Exibir a mensagem tal como veio e dizer que o recurso ficou `denied`; é preciso corrigir o que a mensagem aponta e rodar `/amflow-builder:review` de novo antes de tentar publicar |
 
 ## Restrições
 

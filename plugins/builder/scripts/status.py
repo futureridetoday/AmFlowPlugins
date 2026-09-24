@@ -78,8 +78,10 @@ CHAVE_MOTIVO = "amflow-status-reason"
 CHAVE_ATUALIZADO = "amflow-updated"
 
 # index.md §1 — "Gravados pela publicação a partir do Hub". Só os dois comandos de
-# publicação gravam estes quatro; `set` sempre os recusa (Contrato, linha Erro).
-VALORES_HUB = frozenset({"pending_review", "changes_requested", "rejected", "published"})
+# publicação gravam estes cinco; `set` sempre os recusa (Contrato, linha Erro). `denied` entrou
+# com o plano require-secure-invite (decisão 39): `publish.py --negar` o grava a partir de
+# `reviewed`, quando a entry validation do Hub recusa o envio.
+VALORES_HUB = frozenset({"pending_review", "changes_requested", "rejected", "published", "denied"})
 
 # index.md §1 — gravado só pela revisão (plano 0019): registra que a revisão passou, e o
 # Creator não o declara. `set` o recusa; quem grava é `registrar_revisado`, que o
@@ -110,12 +112,14 @@ ROTULOS = {
     "changes_requested": "Ajustes pedidos",
     "rejected": "Recusado",
     "published": "Publicado",
+    "denied": "Negado",
 }
 
 # index.md §4 — ordem congelada, primeiro o que precisa de ação do Creator.
 ORDEM_SAIDA = (
     "changes_requested",
     "rejected",
+    "denied",
     "reviewed",
     "in_progress",
     "blocked",
@@ -630,11 +634,13 @@ def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = N
 
 def _origem_valida_da_revisao(status: str | None) -> bool:
     """`in_progress` (o que o `build` deixa), qualquer `blocked-RG*` (uma nova revisão recomeça do
-    bloqueio anterior — add-blocked-gate-id, decisão 2) ou `reviewed` (plano require-secure-invite,
+    bloqueio anterior — add-blocked-gate-id, decisão 2), `reviewed` (plano require-secure-invite,
     decisão 27: todo `reviewed` é origem — a transição sem reemissão da decisão 25 passa pela
-    revisão completa de novo, com o agent, e não por um atalho que pule o julgamento)."""
+    revisão completa de novo, com o agent, e não por um atalho que pule o julgamento), `published`
+    (atualização de um recurso já publicado) ou `denied` (nova tentativa depois de uma negação da
+    entry validation do Hub) — as duas últimas, decisões 39 e 40 do mesmo plano."""
     return (
-        status in ("in_progress", "reviewed")
+        status in ("in_progress", "reviewed", "published", "denied")
         or bool(status and BLOQUEIO_REVISAO_RE.match(status))
     )
 
@@ -650,9 +656,11 @@ def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> Re
     cópia em desenvolvimento e a promovida em `.claude/`, gravar na que a revisão não leu marcaria
     como revisado um arquivo que ninguém revisou.
 
-    Só grava a partir de `in_progress`, `blocked-RG*` ou `reviewed` (decisão 27). Qualquer outro
-    status é recusado, em vez de sobrescrito — sobretudo os que o Hub grava, que a revisão apagaria
-    (`published → reviewed`).
+    Só grava a partir de `in_progress`, `blocked-RG*`, `reviewed`, `published` ou `denied`
+    (decisões 27, 39 e 40) — as duas últimas cobrem a atualização de um recurso já publicado e a
+    nova tentativa depois de uma negação da entry validation do Hub. Qualquer outro status é
+    recusado, em vez de sobrescrito — sobretudo `pending_review` e `changes_requested`, que ainda
+    esperam resposta do Hub.
     """
     todos, _ = varrer(projeto)
     alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
@@ -661,8 +669,8 @@ def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> Re
     if not _origem_valida_da_revisao(alvo.status):
         return ResultadoSet(
             False,
-            f"recusado: 'reviewed' só é gravado a partir de 'in_progress', 'blocked-RG*' ou "
-            f"'reviewed' — o recurso está em '{alvo.status or 'sem status'}'",
+            f"recusado: 'reviewed' só é gravado a partir de 'in_progress', 'blocked-RG*', "
+            f"'reviewed', 'published' ou 'denied' — o recurso está em '{alvo.status or 'sem status'}'",
         )
 
     try:
@@ -681,6 +689,35 @@ def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> Re
     return ResultadoSet(True, f"{alvo.tipo}/{alvo.nome}: {status_antigo} → reviewed ({alvo.local})")
 
 
+def registrar_negado(projeto: Path, manifesto: Path) -> ResultadoSet:
+    """Grava `denied` — publicação recusada pela entry validation do Hub (plano
+    require-secure-invite, decisões 39 e 40). Só o `publish.py --negar` chama isto, depois de uma
+    resposta de recusa do Hub.
+
+    Só grava a partir de `reviewed`; qualquer outro status é recusado, sem gravar nada. Sem
+    `amflow-status-reason` — o motivo da recusa é do Hub, não um bloqueio do Creator (§3 não se
+    aplica a `denied`). Nunca toca o `secure-invite.jws` ao lado do manifesto: só
+    `registrar_revisado` escreve esse arquivo.
+    """
+    todos, _ = varrer(projeto)
+    alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
+    if alvo is None:
+        return ResultadoSet(False, f"recusado: recurso não encontrado — {manifesto}")
+    if alvo.status != "reviewed":
+        return ResultadoSet(
+            False,
+            f"recusado: 'denied' só é gravado a partir de 'reviewed' — o recurso está em "
+            f"'{alvo.status or 'sem status'}'",
+        )
+
+    try:
+        _escrever_yaml(alvo, "denied", None)
+    except OSError as exc:
+        return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
+
+    return ResultadoSet(True, f"{alvo.tipo}/{alvo.nome}: reviewed → denied")
+
+
 def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -> ResultadoSet:
     """Grava `blocked-RG<gate>` no recurso cujo manifesto é `manifesto` (add-blocked-gate-id).
 
@@ -693,11 +730,12 @@ def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -
     de 1-99 (ou um chamador direto, fora do `--bloquear`) gravaria um valor que a própria verificação
     de frontmatter rejeitaria na revisão seguinte.
 
-    Mesmas três origens do `registrar_revisado` — `in_progress`, `blocked-RG*` ou `reviewed` (plano
-    require-secure-invite, decisão 27) —, porque a mesma decisão 2 (add-blocked-gate-id) rege os dois
-    escritores: uma nova revisão recomeça do bloqueio anterior, sobrescrevendo tanto para `reviewed`
-    quanto para um novo `blocked-RG<nn>`. O motivo vem datado por código (`YYYY-MM-DD — texto`) — D6
-    pedia a data, e data escrita por código não erra.
+    Mesmas cinco origens do `registrar_revisado` — `in_progress`, `blocked-RG*`, `reviewed`,
+    `published` ou `denied` (plano require-secure-invite, decisões 27, 39 e 40) —, porque a mesma
+    decisão 2 (add-blocked-gate-id) rege os dois escritores: uma nova revisão recomeça do bloqueio
+    anterior, sobrescrevendo tanto para `reviewed` quanto para um novo `blocked-RG<nn>`. O motivo
+    vem datado por código (`YYYY-MM-DD — texto`) — D6 pedia a data, e data escrita por código não
+    erra.
     """
     if not motivo or not motivo.strip():
         return ResultadoSet(False, "recusado: '--bloquear' exige --motivo")
@@ -713,8 +751,8 @@ def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -
     if not _origem_valida_da_revisao(alvo.status):
         return ResultadoSet(
             False,
-            f"recusado: 'blocked-RG' só é gravado a partir de 'in_progress', 'blocked-RG*' ou "
-            f"'reviewed' — o recurso está em '{alvo.status or 'sem status'}'",
+            f"recusado: 'blocked-RG' só é gravado a partir de 'in_progress', 'blocked-RG*', "
+            f"'reviewed', 'published' ou 'denied' — o recurso está em '{alvo.status or 'sem status'}'",
         )
 
     motivo_datado = f"{date.today().isoformat()} — {motivo.strip()}"

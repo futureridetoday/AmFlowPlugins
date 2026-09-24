@@ -48,9 +48,10 @@ entry validation do Hub confere.
 `--bloquear <gate> --motivo "<texto>"` grava `blocked-RG<gate>` — toda parada da revisão que não é
 `REVISADO` (add-blocked-gate-id). Exclusivo com `--registrar`: são os dois escritores da mesma
 decisão 7 (quem grava o quê), nunca a mesma chamada. Não roda os quatro portões — registra o que o
-agent e o Creator já observaram, com o mesmo escritor e as mesmas três origens do `--registrar`
-(decisão 27). Gate fora de `GATES`, motivo vazio ou origem fora de `in_progress`/`blocked-RG*`/
-`reviewed` recusam, saída 2, arquivo intacto.
+agent e o Creator já observaram, com o mesmo escritor e as mesmas origens do `--registrar`
+(decisão 27; decisões 39 e 40 do plano require-secure-invite acrescentam `published` e `denied`).
+Gate fora de `GATES`, motivo vazio ou origem fora de `in_progress`/`blocked-RG*`/`reviewed`/
+`published`/`denied` recusam, saída 2, arquivo intacto.
 
 Cross-repo: nasce aqui, em `scripts/`, e desce a `plugins/builder/scripts/review.py` do
 AmFlowPlugins por `vendor.py` — mesmo mecanismo do `check.py` e do `status.py`. A cópia é gerada,

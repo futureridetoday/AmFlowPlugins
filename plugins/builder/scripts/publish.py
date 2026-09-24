@@ -26,6 +26,7 @@ Uso:
   publish.py <projeto> <local> --conferir
   publish.py <projeto> <local> --versao-producao <versao>
   publish.py <projeto> <local> --registrar --hub-id <uuid> --versao <versao>
+  publish.py <projeto> <local> --negar
 
 `<local>` é o caminho do manifesto relativo ao projeto — o mesmo que `status.py list` imprime na
 coluna Local. A revisão cobre só `skill` e `agent` (`identificar`, reusado de `review.py`); os
@@ -40,9 +41,14 @@ bump automático — igual ou menor é barrada). O valor de produção vem do `g
 de rede que só o comando ou o agent fazem; a comparação em si não precisa de rede, e por isso
 mora aqui, testável, em vez de deixada como prosa para quem executa o comando interpretar.
 
-Sai com 0 quando o resultado é `OK` (ou, com `--registrar`, quando a gravação foi aceita; com
-`--conferir` ou `--versao-producao`, quando a conferência/a local supera); 1 quando alguma camada
-barra o envio, ou a versão local não supera a produção; 2 se a chamada não é válida.
+`--negar` grava `amflow-status: denied` a partir de `reviewed`, quando a entry validation do Hub
+recusa o envio (plano require-secure-invite, decisões 39 e 40) — outro status de origem é
+recusado, sem gravar nada.
+
+Sai com 0 quando o resultado é `OK` (ou, com `--registrar` ou `--negar`, quando a gravação foi
+aceita; com `--conferir` ou `--versao-producao`, quando a conferência/a local supera); 1 quando
+alguma camada barra o envio, ou a versão local não supera a produção; 2 se a chamada não é válida,
+ou se `--negar` foi recusado por status de origem.
 """
 
 from __future__ import annotations
@@ -277,6 +283,14 @@ def registrar(projeto: Path, local: str, hub_id: str, versao: str):
     return status.registrar_publicado(projeto, alvo.manifesto, hub_id, versao)
 
 
+def negar(projeto: Path, local: str):
+    """Grava `denied` a partir de `reviewed` — publicação recusada pela entry validation do Hub
+    (plano require-secure-invite, decisões 39 e 40). Devolve o `ResultadoSet` de
+    `status.registrar_negado`."""
+    alvo = review.identificar(projeto, local)
+    return status.registrar_negado(projeto, alvo.manifesto)
+
+
 def formatar(preparo: Preparo) -> str:
     if not preparo.ok:
         return f"RESULTADO: BARRADO\nMOTIVO: {preparo.motivo}"
@@ -313,6 +327,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         metavar="VERSAO",
         help="compara a versão local com a versão em produção — decisão 7 do plano",
+    )
+    grupo.add_argument(
+        "--negar",
+        action="store_true",
+        help="grava 'denied' a partir de 'reviewed' — publicação recusada pela entry validation do Hub",
     )
     parser.add_argument("--hub-id", default=None, help="uuid devolvido pelo Hub — exigido com --registrar")
     parser.add_argument("--versao", default=None, help="versão submetida — exigida com --registrar")
@@ -358,6 +377,18 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         print(resultado.mensagem)
         return 0 if resultado.ok else 2
+
+    if args.negar:
+        try:
+            resultado = negar(projeto, args.local)
+        except (ErroUso, review.ErroUso) as exc:
+            print(f"erro: {exc}", file=sys.stderr)
+            return 2
+        if not resultado.ok:
+            print(f"erro: {resultado.mensagem}", file=sys.stderr)
+            return 2
+        print(f"REGISTRADO: {resultado.mensagem}")
+        return 0
 
     try:
         preparo = preparar(projeto, args.local)

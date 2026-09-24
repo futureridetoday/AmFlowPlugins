@@ -1,6 +1,6 @@
 # status
 
-Versão 1.0.0
+Versão 1.1.0
 
 ## O que é
 
@@ -17,8 +17,8 @@ mão, sem verificação nenhuma de que o valor fazia sentido.
 
 ## Como funciona
 
-Um único campo, `metadata.amflow-status`, com nove valores possíveis e uma família — quatro valores
-que o Creator declara, um que só a revisão grava, quatro que a publicação grava a partir do retorno
+Um único campo, `metadata.amflow-status`, com dez valores possíveis e uma família — quatro valores
+que o Creator declara, um que só a revisão grava, cinco que a publicação grava a partir do retorno
 do Hub, e a família `blocked-RG<nn>`, que a revisão grava sozinha quando para num gate. A skill nunca
 decide sozinha: ela interpreta
 o pedido do Creator — listar tudo, filtrar por um estado, ou mudar o estado de um recurso — e chama o
@@ -77,8 +77,8 @@ pedido, sobre os arquivos reais do projeto.
   `/amflow-builder:publish-status` — pode estar desatualizado, e a skill avisa isso no rodapé
 - **Não publica nem revisa.** `reviewed` só o `/amflow-builder:review` grava, e publicar de fato é
   `/amflow-builder:publish`
-- **Não grava os quatro valores do Hub.** `pending_review`, `changes_requested`, `rejected` e
-  `published` só entram pelos comandos de publicação
+- **Não grava os cinco valores do Hub.** `pending_review`, `changes_requested`, `rejected`,
+  `published` e `denied` só entram pelos comandos de publicação
 - **Não grava a família `blocked-RG<nn>`.** Só o `/amflow-builder:review` a grava, quando a revisão
   para num gate — esta skill só a exibe
 - **Cobre só skill, agent, command, hook e módulo** — os cinco tipos que o Builder cria

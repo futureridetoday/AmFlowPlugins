@@ -10,7 +10,7 @@ tags: [review, quality, resource-reviewer, creator]
 author: Bortoli
 created: 2026-09-13
 status: draft
-version: 2.2.0
+version: 2.3.0
 updated: "2026-09-24"
 
 # system
@@ -26,8 +26,9 @@ price: 0
 
 # /amflow-builder:review
 
-Lista os recursos do Creator com status `in_progress` ou `blocked-RG*` (bloqueado numa revisão
-anterior), deixa escolher um, e o revisa em quatro portões pelo agent `resource-reviewer`. É o único
+Lista os recursos do Creator com status `in_progress`, `blocked-RG*` (bloqueado numa revisão
+anterior), `reviewed`, `published` ou `denied`, deixa escolher um, e o revisa em quatro portões pelo
+agent `resource-reviewer`. É o único
 chamador do agent: o subagente não pergunta ao usuário, então toda pergunta — aceitar ajuda, aprovar
 uma proposta — é feita aqui, e o agent só devolve o que ficou pendente. Nunca publica.
 
@@ -67,13 +68,16 @@ checagem, a revisão inteira rodaria antes de o Hub falhar ao pedir o secure-inv
 2. Chamar o script, nunca reimplementar a varredura:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> --status in_progress --status 'blocked-RG*' --status reviewed
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> --status in_progress --status 'blocked-RG*' --status reviewed --status published --status denied
    ```
 
    `reviewed` entra como origem porque um recurso já revisado antes deste plano, ou cujo
    secure-invite não bate mais com o disco, precisa passar pela revisão de novo, do zero — sem
    reemissão nem atalho que pule o agent. A tabela marca esse caso com `[sem secure-invite]`; a
-   revisão roda inteira do mesmo jeito, e o resultado grava um secure-invite novo.
+   revisão roda inteira do mesmo jeito, e o resultado grava um secure-invite novo. `published`
+   entra porque atualizar um recurso já publicado exige revisá-lo de novo antes de reenviar; e
+   `denied` porque uma publicação negada pela entry validation do Hub só volta a ser publicável
+   depois de nova revisão — as duas rodam o mesmo ramo `REVISADO` de sempre, sem atalho.
 
 3. Ler a saída, nunca reformular o julgamento do script:
 
