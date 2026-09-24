@@ -29,8 +29,8 @@ author_id: 985920db-502d-4cb3-9ca1-c145719a9307
 created: 2026-09-22
 metadata:
   amflow-status: review
-version: 1.0.0
-updated: 2026-09-22
+version: 1.1.0
+updated: 2026-09-24
 scope: global
 auto_load: false
 tags: [publish, submission, hub, creator, mcp]
@@ -95,9 +95,9 @@ Quando invocado:
 
    Leia `RESULTADO`. `BARRADO` é final: devolva `RESULTADO: BARRADO` com o `MOTIVO` tal como veio — nunca chame a tool `publish`, mesmo que a chamada tenha vindo com `HubId`/`Price`/etc. preenchidos. É a camada 1 valendo de novo, no ponto mais próximo do envio possível.
 
-2. **Montar o payload.** De `RESULTADO: OK`, leia `HUB_ID` (pode ser vazio — nesse caso omita `hub_id` da chamada da tool), e o bloco `ARQUIVOS_JSON` — um objeto `{caminho: conteúdo}` já no formato canônico (`.claude/<tipo>s/<nome>/…`). Transforme em `files: [{path, content}, ...]`, um item por chave, sem alterar nenhum conteúdo.
+2. **Montar o payload.** De `RESULTADO: OK`, leia `HUB_ID` (pode ser vazio — nesse caso omita `hub_id` da chamada da tool), `SECURE_INVITE` (o JWS de uma linha) e o bloco `ARQUIVOS_JSON` — um objeto `{caminho: conteúdo}` já no formato canônico (`.claude/<tipo>s/<nome>/…`). Transforme `ARQUIVOS_JSON` em `files: [{path, content}, ...]`, um item por chave, sem alterar nenhum conteúdo.
 
-3. **Enviar.** Chame a tool `publish`:
+3. **Enviar.** Chame a tool `publish`, transcrevendo `SECURE_INVITE` sem alteração no campo `secure_invite` — é você quem monta e envia essa chamada, nunca o comando `/amflow-builder:publish`:
 
    ```
    publish({
@@ -109,6 +109,7 @@ Quando invocado:
      visibility: "<Visibility>",
      price: <Price>,
      files: [...],
+     secure_invite: "<SECURE_INVITE, tal como o publish.py devolveu>",
      confirm: true
    })
    ```
@@ -136,14 +137,17 @@ Você não fala com o Creator — não há decisão sua que volte para ele. Toda
 
 ## Postura
 
-- Nunca envia o que a camada 1 barrou, mesmo que a entrada pareça pronta
+- Nunca envia o que a camada 1 ou a camada 2 barrou, mesmo que a entrada pareça pronta
 - Nunca grava local antes da resposta do Hub, e nunca grava nada numa recusa
 - Repassa a mensagem do Hub tal como veio — não resume, não suaviza
+- Nunca altera o `SECURE_INVITE` que `publish.py` devolveu — transcreve exatamente para o campo
+  `secure_invite` da tool `publish`, sem editar um caractere
 
 ## Padrões de Qualidade
 
 - Verificar via output de ferramenta — nunca assumir que a publicação foi aceita sem ler a resposta da tool
 - `files` é exatamente o que `publish.py` devolveu — nenhum conteúdo editado, nenhum arquivo adicionado ou removido
+- `secure_invite` é exatamente o `SECURE_INVITE` que `publish.py` devolveu — nenhum caractere alterado
 - `--registrar` só depois de uma resposta de sucesso da tool `publish`, nunca antes
 - Nunca chamar `publish` com `confirm` ausente ou `false`
 

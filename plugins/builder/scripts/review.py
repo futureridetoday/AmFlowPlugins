@@ -27,21 +27,30 @@ hoje — os portões que `--bloquear` aceita.
 `PENDENTE-*` é o ponto em que o Creator decide se aceita ajuda. O script não pergunta e só escreve
 com `--registrar`, e só o `reviewed`: aponta o que falta, e quem pergunta é o comando `review`.
 
-`--registrar` grava `reviewed` no recurso, com o escritor do `status.py`, e só se o resultado é
-`REVISADO` e o recurso está em `in_progress` ou em `blocked-RG*` (add-blocked-gate-id, decisão 2) —
-nos demais o arquivo fica intacto (plano 0019). Fora dessas origens a gravação é recusada, com saída
-2. O script refaz a revisão antes de gravar: o comando o chama depois do `REVISADO` do agent, mas o
-piso determinístico vale mesmo para quem o chamar direto. O que o script não refaz é o julgamento do
+`--file-digests` imprime, sem gravar nada, a foto do estado final do recurso — o manifesto como
+ficará com `reviewed` (calculado por `status.texto_estado_final`, sem gravar) e os demais arquivos
+do bundle como estão em disco —, num bloco `FILE_DIGESTS_JSON` depois da saída normal, só quando o
+resultado é `REVISADO` (plano require-secure-invite, index.md §1, §4).
+
+`--registrar <secure_invite>` confere o token que o Hub devolveu contra a foto do estado final
+recalculada (identidade e file digests) e, só se baterem, grava `reviewed` e o arquivo do
+secure-invite juntos, com o escritor do `status.py` — nunca um sem o outro (index.md §3, §4;
+decisão 15). Grava só se o resultado é `REVISADO` e o recurso está em `in_progress`, `blocked-RG*`
+ou `reviewed` (decisão 27) — nos demais o arquivo fica intacto (plano 0019). Fora dessas origens, ou
+se o secure-invite não confere, a gravação é recusada, com saída 2. O script refaz a revisão e a
+foto antes de gravar: o comando o chama depois de o Hub devolver o secure-invite, mas o piso
+determinístico vale mesmo para quem o chamar direto. O que o script não refaz é o julgamento do
 agent — candidatos do portão 3, coerência do portão 4 —, então quem o chama sem o comando grava
 `reviewed` num recurso que o agent poderia reprovar (L-01 do plano). Ao gravar, acrescenta à saída
-uma linha `REGISTRADO:`.
+uma linha `REGISTRADO:`. A signature do secure-invite não é conferida aqui (decisão 16) — só a
+entry validation do Hub confere.
 
 `--bloquear <gate> --motivo "<texto>"` grava `blocked-RG<gate>` — toda parada da revisão que não é
 `REVISADO` (add-blocked-gate-id). Exclusivo com `--registrar`: são os dois escritores da mesma
 decisão 7 (quem grava o quê), nunca a mesma chamada. Não roda os quatro portões — registra o que o
-agent e o Creator já observaram, com o mesmo escritor e as mesmas duas origens do `--registrar`. Gate
-fora de `GATES`, motivo vazio ou origem fora de `in_progress`/`blocked-RG*` recusam, saída 2, arquivo
-intacto.
+agent e o Creator já observaram, com o mesmo escritor e as mesmas três origens do `--registrar`
+(decisão 27). Gate fora de `GATES`, motivo vazio ou origem fora de `in_progress`/`blocked-RG*`/
+`reviewed` recusam, saída 2, arquivo intacto.
 
 Cross-repo: nasce aqui, em `scripts/`, e desce a `plugins/builder/scripts/review.py` do
 AmFlowPlugins por `vendor.py` — mesmo mecanismo do `check.py` e do `status.py`. A cópia é gerada,
@@ -50,7 +59,8 @@ pelo próprio caminho (`../templates`): a variável `CLAUDE_PLUGIN_ROOT` não ex
 Bash, nem no de um subagente — só é substituída inline no texto do agent.
 
 Uso:
-  review.py <projeto> <local> [--templates <diretório>] [--registrar]
+  review.py <projeto> <local> [--templates <diretório>] [--file-digests]
+  review.py <projeto> <local> --registrar <secure_invite>
   review.py <projeto> <local> --bloquear <gate> --motivo "<texto>"
 
 `<local>` é o caminho do manifesto relativo ao projeto, o mesmo que `status.py list` imprime na
@@ -64,6 +74,8 @@ nos demais casos, 2 se a chamada não é válida, se o resultado é `ERRO`, ou s
 from __future__ import annotations
 
 import argparse
+import base64
+import hashlib
 import importlib.util
 import json
 import re
@@ -136,6 +148,10 @@ MODELOS = {
 # instalação — o envio aceita o que o `install` depois recusa.
 LIMITE_ARQUIVO = 1024 * 1024
 LIMITE_BUNDLE = 10 * 1024 * 1024
+
+# Plano require-secure-invite (0022), index.md §3 — nome e lugar do arquivo do secure-invite, ao
+# lado do manifesto. Fora do bundle e dos file digests: `montar_bundle` o exclui por nome.
+NOME_SECURE_INVITE = "secure-invite.jws"
 
 # Forma do `name` no Hub: começa por letra. A do `check.py` aceita começar por dígito.
 _NOME_HUB_RE = re.compile(r"[a-z][a-z0-9-]*")
@@ -575,12 +591,15 @@ def portao_frontmatter(alvo: Alvo, texto: str, modelo: Modelo) -> tuple[list[str
 
 def montar_bundle(pasta: Path) -> Bundle:
     """O conjunto de arquivos que o `publish` vai enviar. **Regra provisória**: os arquivos da pasta
-    do recurso, menos `evals/`, os vazios e os que não são UTF-8 — o `content` viaja como string."""
+    do recurso, menos `evals/`, os vazios, os que não são UTF-8 e o arquivo do secure-invite — o
+    `content` viaja como string."""
     bundle = Bundle()
     for arquivo in sorted(pasta.rglob("*")):
         if not arquivo.is_file():
             continue
         relativo = arquivo.relative_to(pasta).as_posix()
+        if relativo == NOME_SECURE_INVITE:
+            continue  # fora do bundle e dos file digests — index.md §3
         if relativo.startswith("evals/"):
             bundle.omitidos[relativo] = "`evals/` não vai no bundle"
             continue
@@ -945,13 +964,81 @@ def revisar(projeto: Path, local: str, templates: Path) -> Relatorio:
     return rel.parar("REVISADO", 4)
 
 
-def registrar(projeto: Path, local: str):
-    """Grava `reviewed` no recurso de `local`, com o escritor do `status.py` (plano 0019).
+# ── secure-invite — caminho canônico, foto do estado final e decodificação (plano 0022) ────────
 
-    Devolve o `ResultadoSet` do escritor. Quem chama só o faz sobre um relatório `REVISADO`.
+
+def _caminho_canonico(alvo: Alvo, relativo: str) -> str:
+    """`.claude/<tipo>s/<nome>/<relativo>` — o caminho que os file digests usam (index.md §1) e que
+    o `publish` envia (`publish.py`, que reusa esta função em vez de manter uma segunda cópia)."""
+    return f".claude/{alvo.tipo}s/{alvo.nome}/{relativo}"
+
+
+def file_digests_estado_final(alvo: Alvo) -> dict[str, str]:
+    """SHA-256 hex de cada arquivo do bundle, pelo caminho canônico — o manifesto como ficará
+    gravado com `reviewed` (via `status.texto_estado_final`, sem gravar) e os demais arquivos do
+    bundle como estão em disco (plano require-secure-invite, index.md §1)."""
+    status_mod = _carregar_status()
+    bundle = montar_bundle(alvo.pasta)
+    manifesto_relativo = alvo.manifesto.relative_to(alvo.pasta).as_posix()
+    texto_final = status_mod.texto_estado_final(alvo.projeto, alvo.manifesto, "reviewed")
+    digests: dict[str, str] = {}
+    for relativo, conteudo in bundle.selecionados.items():
+        conteudo_final = texto_final if relativo == manifesto_relativo else conteudo
+        digests[_caminho_canonico(alvo, relativo)] = hashlib.sha256(conteudo_final.encode("utf-8")).hexdigest()
+    return digests
+
+
+def decodificar_secure_invite(token: str) -> dict:
+    """Decodifica o payload do secure-invite (JWS compacto — index.md §2) com base64url e JSON da
+    stdlib, sem conferir a signature (decisão 16: quem confere é a entry validation do Hub).
+
+    Levanta `ValueError` se o token não tiver os três segmentos ou se o payload não decodificar.
     """
-    manifesto = identificar(projeto, local).manifesto
-    return _carregar_status().registrar_revisado(projeto, manifesto)
+    partes = token.strip().split(".")
+    if len(partes) != 3:
+        raise ValueError("secure-invite malformado — esperado header.payload.signature")
+    payload_b64 = partes[1]
+    padding = "=" * (-len(payload_b64) % 4)
+    try:
+        dados = base64.urlsafe_b64decode(payload_b64 + padding)
+        return json.loads(dados)
+    except (ValueError, json.JSONDecodeError) as exc:
+        raise ValueError(f"secure-invite malformado — {exc}")
+
+
+def registrar(projeto: Path, local: str, secure_invite: str):
+    """Confere o secure-invite contra a foto do estado final recalculada e, só se identidade e file
+    digests baterem, grava `reviewed` e o arquivo do secure-invite juntos, com o escritor do
+    `status.py` (plano require-secure-invite, index.md §4, passo 5; decisão 15).
+
+    Refaz a foto aqui, mesmo que o comando já tenha chamado `--file-digests` antes: pega qualquer
+    mudança no disco entre a emissão do secure-invite e este registro. Devolve o `ResultadoSet` do
+    escritor; quem chama só o faz sobre um relatório `REVISADO`.
+    """
+    status_mod = _carregar_status()
+    alvo = identificar(projeto, local)
+    try:
+        payload = decodificar_secure_invite(secure_invite)
+    except ValueError as exc:
+        return status_mod.ResultadoSet(False, f"recusado: {exc}")
+
+    texto = alvo.manifesto.read_text(encoding="utf-8")
+    fm = check.parsear(texto)
+    versao = _versao(fm, alvo.tipo) if fm is not None else None
+    digests = file_digests_estado_final(alvo)
+    recurso_payload = payload.get("resource") or {}
+    identidade_ok = (
+        recurso_payload.get("type") == alvo.tipo
+        and recurso_payload.get("name") == alvo.nome
+        and recurso_payload.get("version") == versao
+    )
+    if not identidade_ok or payload.get("file_digests") != digests:
+        return status_mod.ResultadoSet(
+            False,
+            "O secure-invite recebido não confere com o que foi revisado. Rode "
+            "`/amflow-builder:review` novamente.",
+        )
+    return status_mod.registrar_revisado(projeto, alvo.manifesto, secure_invite)
 
 
 def formatar(rel: Relatorio) -> str:
@@ -986,8 +1073,9 @@ def main(argv: list[str] | None = None) -> int:
     grupo = parser.add_mutually_exclusive_group()
     grupo.add_argument(
         "--registrar",
-        action="store_true",
-        help="grava `reviewed` no recurso, só se o resultado é REVISADO",
+        metavar="SECURE_INVITE",
+        default=None,
+        help="confere o secure-invite e grava, junto com `reviewed`, só se o resultado é REVISADO",
     )
     grupo.add_argument(
         "--bloquear",
@@ -997,6 +1085,11 @@ def main(argv: list[str] | None = None) -> int:
         help="grava `blocked-RG<gate>` no recurso, sem refazer a revisão — exige --motivo",
     )
     parser.add_argument("--motivo", default=None, help="motivo do bloqueio — exigido com --bloquear")
+    parser.add_argument(
+        "--file-digests",
+        action="store_true",
+        help="imprime a foto do estado final (file digests), sem gravar nada",
+    )
     args = parser.parse_args(argv)
 
     projeto = args.projeto.expanduser().resolve()
@@ -1031,8 +1124,20 @@ def main(argv: list[str] | None = None) -> int:
     print(formatar(relatorio))
     if relatorio.resultado == "ERRO":
         return 2
+
+    if args.file_digests and relatorio.resultado == "REVISADO":
+        alvo = identificar(projeto, args.local)
+        payload = {
+            "type": alvo.tipo,
+            "name": alvo.nome,
+            "version": relatorio.versao,
+            "file_digests": file_digests_estado_final(alvo),
+        }
+        print("FILE_DIGESTS_JSON:")
+        print(json.dumps(payload, ensure_ascii=False))
+
     if args.registrar and relatorio.resultado == "REVISADO":
-        gravado = registrar(projeto, args.local)
+        gravado = registrar(projeto, args.local, args.registrar)
         if not gravado.ok:
             print(f"erro: {gravado.mensagem}", file=sys.stderr)
             return 2

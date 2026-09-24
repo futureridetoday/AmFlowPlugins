@@ -1,23 +1,29 @@
 #!/usr/bin/env python3
 """`publish.py` — a parte determinística do envio de um recurso revisado ao Hub.
 
-Camada 1 do scanner de segurança em camadas (plano publish-reviewed-only): só um recurso com
-`amflow-status: reviewed` chega ao bundle. Monta o pacote com `montar_bundle` (`review.py:576`) —
-a mesma seleção que a revisão mede — mapeado para o caminho canônico que o Hub aceita
-(`.claude/<tipo>s/<nome>/…`, medido em `teste-publish-hub-producao.md`), e grava o resultado da
-submissão só depois do aceite, pelo escritor de `status.py`.
+Scanner de segurança em camadas (plano publish-reviewed-only, decisão 6): camada 1, só um recurso
+com `amflow-status: reviewed` chega ao bundle; camada 2 (plano require-secure-invite), o
+secure-invite check — presente, identidade e file digests batendo com o disco, sem rede (index.md
+§6). Monta o pacote com `montar_bundle` (`review.py`) — a mesma seleção que a revisão mede —
+mapeado para o caminho canônico que o Hub aceita (`.claude/<tipo>s/<nome>/…`, medido em
+`teste-publish-hub-producao.md`), e grava o resultado da submissão só depois do aceite, pelo
+escritor de `status.py`.
 
-O agent `resource-publisher` chama este script duas vezes: uma antes de enviar (camada 1 e
-bundle), e outra depois da resposta do Hub, só quando ela foi aceita, para registrar. As
-condições que dependem de rede — submissão pendente, versão e dependências em produção — são do
-agent, que já tem as tools MCP; este script nunca chama rede, mesmo padrão do `review.py` (cuja
-única chamada de rede, a `me`, também fica no agent).
+Este script é chamado mais de uma vez, por donos diferentes (index.md §6): o comando `publish.md`
+roda `--conferir` logo depois da escolha do recurso (decisão 28), antes de preço, changelog e
+confirmação M10 — barra cedo o que não vai publicar; o agent `resource-publisher` roda sem flag,
+para reconferir as camadas 1 e 2 e montar o bundle no envio, e de novo depois da resposta do Hub,
+só quando ela foi aceita, com `--registrar`, para registrar. As condições que dependem de rede —
+submissão pendente, versão e dependências em produção — são do agent, que já tem as tools MCP; este
+script nunca chama rede, mesmo padrão do `review.py` (cuja única chamada de rede, a `me`, também
+fica no agent).
 
 Cross-repo: nasce aqui e desce a `plugins/builder/scripts/publish.py` do AmFlowPlugins pelo
 `vendor.py` — mesmo mecanismo do `check.py`, do `status.py` e do `review.py`.
 
 Uso:
   publish.py <projeto> <local>
+  publish.py <projeto> <local> --conferir
   publish.py <projeto> <local> --versao-producao <versao>
   publish.py <projeto> <local> --registrar --hub-id <uuid> --versao <versao>
 
@@ -25,19 +31,24 @@ Uso:
 coluna Local. A revisão cobre só `skill` e `agent` (`identificar`, reusado de `review.py`); os
 outros tipos nunca chegam a `reviewed`, então nunca passam da camada 1.
 
+`--conferir` roda as camadas 1 e 2 sobre o recurso, sem montar o pacote — decisão 28: o
+`publish.md` chama logo depois da escolha (Fase 2), antes de preço, changelog e confirmação M10,
+para barrar cedo o que não vai publicar.
+
 `--versao-producao` compara a versão local com a versão em produção (decisão 7 do plano: sem
 bump automático — igual ou menor é barrada). O valor de produção vem do `get_resource`, chamada
 de rede que só o comando ou o agent fazem; a comparação em si não precisa de rede, e por isso
 mora aqui, testável, em vez de deixada como prosa para quem executa o comando interpretar.
 
 Sai com 0 quando o resultado é `OK` (ou, com `--registrar`, quando a gravação foi aceita; com
-`--versao-producao`, quando a local supera); 1 quando a camada 1 barra o envio, ou a versão local
-não supera a produção; 2 se a chamada não é válida.
+`--conferir` ou `--versao-producao`, quando a conferência/a local supera); 1 quando alguma camada
+barra o envio, ou a versão local não supera a produção; 2 se a chamada não é válida.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import re
@@ -88,6 +99,7 @@ class Preparo:
     hub_id: str | None = None
     arquivos: dict[str, str] = field(default_factory=dict)  # caminho canônico → conteúdo
     omitidos: dict[str, str] = field(default_factory=dict)  # caminho relativo → motivo
+    secure_invite: str | None = None  # JWS de uma linha, lido de disco sem transformação
     motivo: str | None = None
 
 
@@ -98,18 +110,57 @@ def _hub_id(fm, tipo: str) -> str | None:
     return campo.texto if campo and campo.texto else None
 
 
-def _caminho_canonico(alvo, relativo: str) -> str:
-    """`.claude/<tipo>s/<nome>/<relativo>` — o layout que o Hub aceitou no teste
-    (`teste-publish-hub-producao.md`, interpretação 3: "caminhos `.claude/skills/<nome>/…` com a
-    fonte fora de `.claude/`")."""
-    return f".claude/{alvo.tipo}s/{alvo.nome}/{relativo}"
+# Mensagens do secure-invite check (camada 2, index.md §6) — texto congelado, citado literalmente.
+_MSG_SECURE_INVITE_AUSENTE = (
+    "Este recurso não tem secure-invite. Rode `/amflow-builder:review` para revisar e obter um "
+    "secure-invite antes de publicar."
+)
+_MSG_IDENTIDADE_DIFERENTE = (
+    "O tipo, o nome ou a versão do recurso mudaram desde a revisão. Rode `/amflow-builder:review` "
+    "novamente antes de publicar."
+)
 
 
-def preparar(projeto: Path, local: str) -> Preparo:
-    """Camada 1 e seleção do bundle. Refeito sempre que chamado, mesmo fora da listagem do
-    comando: quem chama este script direto sobre um recurso fora de `reviewed` não passa daqui —
-    é a barreira que vale independente de quem chamou (mesmo desenho do `--registrar` do
-    `review.py` para o `reviewed`)."""
+def _verificar_secure_invite(alvo, tipo: str, nome: str, versao: str | None) -> tuple[str | None, str | None]:
+    """Secure-invite check — camada 2 do scanner (index.md §6), sem rede. `(None, texto)` quando
+    bate: secure-invite presente, identidade do payload igual à do manifesto em disco, e os file
+    digests do payload iguais aos recalculados agora. `(motivo, None)` na primeira recusa."""
+    arquivo = alvo.pasta / review.NOME_SECURE_INVITE
+    if not arquivo.is_file():
+        return _MSG_SECURE_INVITE_AUSENTE, None
+    texto = arquivo.read_text(encoding="utf-8")
+    try:
+        payload = review.decodificar_secure_invite(texto)
+    except ValueError:
+        return _MSG_SECURE_INVITE_AUSENTE, None
+
+    recurso_payload = payload.get("resource") or {}
+    if (
+        recurso_payload.get("type") != tipo
+        or recurso_payload.get("name") != nome
+        or recurso_payload.get("version") != versao
+    ):
+        return _MSG_IDENTIDADE_DIFERENTE, None
+
+    bundle = review.montar_bundle(alvo.pasta)
+    digests_atuais = {
+        review._caminho_canonico(alvo, rel): hashlib.sha256(conteudo.encode("utf-8")).hexdigest()
+        for rel, conteudo in bundle.selecionados.items()
+    }
+    digests_payload = payload.get("file_digests") or {}
+    for caminho in sorted(set(digests_atuais) | set(digests_payload)):
+        if digests_atuais.get(caminho) != digests_payload.get(caminho):
+            return (
+                f"O arquivo `{caminho}` foi editado depois da revisão. Rode `/amflow-builder:review` "
+                "novamente antes de publicar."
+            ), None
+    return None, texto
+
+
+def _checar_camadas(projeto: Path, local: str):
+    """Camadas 1 e 2 (index.md §6). Devolve `(alvo, fm, versao, secure_invite, motivo)` — `motivo`
+    é `None` só quando as duas camadas passam; os demais campos ficam `None` quando a recusa
+    acontece antes de o frontmatter ser lido."""
     try:
         alvo = review.identificar(projeto, local)
     except review.ErroUso as exc:
@@ -118,31 +169,52 @@ def preparar(projeto: Path, local: str) -> Preparo:
     todos, _ = status.varrer(projeto)
     recurso = next((r for r in todos if r.caminho.resolve() == alvo.manifesto.resolve()), None)
     if recurso is None:
-        return Preparo(False, motivo=f"recurso não encontrado — {alvo.manifesto}")
+        return alvo, None, None, None, f"recurso não encontrado — {alvo.manifesto}"
     if recurso.status != "reviewed":
-        return Preparo(
-            False,
-            motivo=(
-                f"camada 1: só publica recurso 'reviewed' — {alvo.tipo}/{alvo.nome} está em "
-                f"'{recurso.status or 'sem status'}'"
-            ),
+        return alvo, None, None, None, (
+            f"camada 1: só publica recurso 'reviewed' — {alvo.tipo}/{alvo.nome} está em "
+            f"'{recurso.status or 'sem status'}'"
         )
 
     texto = alvo.manifesto.read_text(encoding="utf-8")
     fm = check.parsear(texto)
     if fm is None:
-        return Preparo(False, motivo=f"frontmatter ausente ou malformado — {alvo.manifesto}")
+        return alvo, None, None, None, f"frontmatter ausente ou malformado — {alvo.manifesto}"
+
+    versao = review._versao(fm, alvo.tipo)
+    motivo, secure_invite = _verificar_secure_invite(alvo, alvo.tipo, alvo.nome, versao)
+    if motivo:
+        return alvo, fm, versao, None, motivo
+    return alvo, fm, versao, secure_invite, None
+
+
+def conferir(projeto: Path, local: str) -> tuple[bool, str | None]:
+    """Camadas 1 e 2, sem montar o pacote (decisão 28) — `publish.md` chama logo depois da escolha
+    do recurso, antes de preço, changelog e confirmação M10."""
+    _, _, _, _, motivo = _checar_camadas(projeto, local)
+    return motivo is None, motivo
+
+
+def preparar(projeto: Path, local: str) -> Preparo:
+    """Camadas 1 e 2 e seleção do bundle. Refeito sempre que chamado, mesmo fora da listagem do
+    comando: quem chama este script direto sobre um recurso fora de `reviewed`, ou sem
+    secure-invite válido, não passa daqui — é a barreira que vale independente de quem chamou
+    (mesmo desenho do `--registrar` do `review.py` para o `reviewed`)."""
+    alvo, fm, versao, secure_invite, motivo = _checar_camadas(projeto, local)
+    if motivo:
+        return Preparo(False, motivo=motivo)
 
     bundle = review.montar_bundle(alvo.pasta)
-    arquivos = {_caminho_canonico(alvo, rel): conteudo for rel, conteudo in bundle.selecionados.items()}
+    arquivos = {review._caminho_canonico(alvo, rel): conteudo for rel, conteudo in bundle.selecionados.items()}
     return Preparo(
         True,
         tipo=alvo.tipo,
         nome=alvo.nome,
-        versao=review._versao(fm, alvo.tipo),
+        versao=versao,
         hub_id=_hub_id(fm, alvo.tipo),
         arquivos=arquivos,
         omitidos=bundle.omitidos,
+        secure_invite=secure_invite,
     )
 
 
@@ -212,6 +284,7 @@ def formatar(preparo: Preparo) -> str:
         "RESULTADO: OK",
         f"RECURSO: {preparo.tipo}/{preparo.nome}" + (f" v{preparo.versao}" if preparo.versao else ""),
         f"HUB_ID: {preparo.hub_id or ''}",
+        f"SECURE_INVITE: {preparo.secure_invite or ''}",
     ]
     if preparo.omitidos:
         saida.append("OMITIDOS:")
@@ -231,6 +304,11 @@ def main(argv: list[str] | None = None) -> int:
     grupo = parser.add_mutually_exclusive_group()
     grupo.add_argument("--registrar", action="store_true", help="grava depois do aceite do Hub — exige --hub-id e --versao")
     grupo.add_argument(
+        "--conferir",
+        action="store_true",
+        help="confere as camadas 1 e 2, sem montar o pacote — decisão 28",
+    )
+    grupo.add_argument(
         "--versao-producao",
         default=None,
         metavar="VERSAO",
@@ -244,6 +322,17 @@ def main(argv: list[str] | None = None) -> int:
     if not projeto.is_dir():
         print(f"erro: projeto não encontrado — {projeto}", file=sys.stderr)
         return 2
+
+    if args.conferir:
+        try:
+            ok, motivo = conferir(projeto, args.local)
+        except ErroUso as exc:
+            print(f"erro: {exc}", file=sys.stderr)
+            return 2
+        print(f"RESULTADO: {'OK' if ok else 'BARRADO'}")
+        if motivo:
+            print(f"MOTIVO: {motivo}")
+        return 0 if ok else 1
 
     if args.versao_producao is not None:
         try:

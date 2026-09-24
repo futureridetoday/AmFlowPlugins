@@ -10,8 +10,8 @@ tags: [review, quality, resource-reviewer, creator]
 author: Bortoli
 created: 2026-09-13
 status: draft
-version: 2.1.0
-updated: "2026-09-21"
+version: 2.2.0
+updated: "2026-09-24"
 
 # system
 scope: global
@@ -46,6 +46,19 @@ uma proposta — é feita aqui, e o agent só devolve o que ficou pendente. Nunc
 
 ## Processo
 
+### Fase 0 — Autenticação (obrigatória)
+
+Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builder`.
+
+- Sucesso → sessão válida; prossiga. Com sessão já ativa, o `me` responde direto sem novo login.
+- Sem sessão / erro → o conector `amflow-builder` não está autorizado nesta sessão. **Encerre
+  aqui** — não rode `review.py` nem invoque o agent. Oriente o usuário a autorizar o conector via
+  `/mcp` (ou no install do plugin) e reexecutar.
+
+Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo. Sem essa
+checagem, a revisão inteira rodaria antes de o Hub falhar ao pedir o secure-invite (índice
+`require-secure-invite`, `index.md` §4).
+
 ### Fase 1 — Listar recursos em andamento
 
 1. Resolver o projeto — `$CLAUDE_PROJECT_DIR` quando definido; senão, o diretório de trabalho atual.
@@ -54,8 +67,13 @@ uma proposta — é feita aqui, e o agent só devolve o que ficou pendente. Nunc
 2. Chamar o script, nunca reimplementar a varredura:
 
    ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> --status in_progress --status 'blocked-RG*'
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/status.py" list <projeto> --status in_progress --status 'blocked-RG*' --status reviewed
    ```
+
+   `reviewed` entra como origem porque um recurso já revisado antes deste plano, ou cujo
+   secure-invite não bate mais com o disco, precisa passar pela revisão de novo, do zero — sem
+   reemissão nem atalho que pule o agent. A tabela marca esse caso com `[sem secure-invite]`; a
+   revisão roda inteira do mesmo jeito, e o resultado grava um secure-invite novo.
 
 3. Ler a saída, nunca reformular o julgamento do script:
 
@@ -124,22 +142,45 @@ uma proposta — é feita aqui, e o agent só devolve o que ficou pendente. Nunc
 
    Dois `REPROVADO` do mesmo relatório não são o mesmo caso: o portão está na linha `PORTAO:`.
 
-   **Registrar a revisão.** No `REVISADO` do agent, e só nele, rodar o script. Ele refaz a revisão
-   determinística e só grava `reviewed` se o resultado ainda for `REVISADO` e o recurso estiver em
-   `in_progress` ou `blocked-RG*`, as duas origens da lista da Fase 1:
+   **Registrar a revisão.** No `REVISADO` do agent, e só nele, obter o secure-invite e gravar
+   `reviewed` junto com ele — nunca um sem o outro. Falhar em qualquer passo não grava nada:
 
-   ```bash
-   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --registrar
-   ```
+   1. Rodar o script com `--file-digests`, para tirar a foto do estado final sem gravar:
 
-   `<local>` é o caminho do manifesto do passo 7. O script imprime o relatório de novo: não repeti-lo,
-   só ler o código de saída e a linha `REGISTRADO:`.
+      ```bash
+      python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --file-digests
+      ```
 
-   | Saída | O que fazer |
-   |---|---|
-   | Código 0, com `REGISTRADO:` | Reproduzir essa linha e dizer que o recurso ficou `reviewed` |
-   | Código 1 | O script não confirmou o `REVISADO` do agent, e é ele que decide o piso. Reproduzir o `RESULTADO` do script, dizer que nada foi gravado e que é preciso corrigir e refazer a revisão |
-   | Código 2 | Exibir a linha `erro:`, dizer que o recurso passou na revisão mas o status não foi gravado, e nunca editar o arquivo à mão. Se o `erro:` disser que o recurso não está numa das duas origens, o status mudou depois da listagem: para revisar, o Creator o retoma com `/amflow-builder:status` |
+      `<local>` é o caminho do manifesto do passo 7. Ler o `RESULTADO:` da saída: fora de `REVISADO`,
+      o script mudou de veredito desde o passo 8 — tratar como o `RESULTADO` deste script (mesma
+      tabela do passo 9) e não seguir. Em `REVISADO`, ler o bloco `FILE_DIGESTS_JSON:` — o objeto JSON
+      na linha seguinte.
+
+   2. Chamar a tool `issue_secure_invite` do servidor MCP `amflow-builder`, passando o objeto de
+      `FILE_DIGESTS_JSON` **sem transformação** — `type`, `name`, `version` e `file_digests` tais como
+      o script imprimiu. Nenhum conteúdo de arquivo viaja, só os digests.
+
+      | Resposta | O que fazer |
+      |---|---|
+      | `{ secure_invite: "<jws>" }` | Seguir para o passo 3 |
+      | Erro, timeout, ou sessão ausente | **Encerrar aqui — nada foi gravado.** Dizer: "Não foi possível obter o secure-invite do Hub: `<motivo>`. Nada foi gravado — a revisão não foi registrada. Tente novamente; se persistir, confirme que o Hub está no ar antes de rodar `/amflow-builder:review` de novo." |
+
+   3. Rodar o script com `--registrar`, passando o secure-invite recebido:
+
+      ```bash
+      python3 "${CLAUDE_PLUGIN_ROOT}/scripts/review.py" <projeto> <local> --registrar "<secure_invite>"
+      ```
+
+      O script recalcula a foto do estado final, confere contra o secure-invite recebido e só grava
+      `reviewed` e o arquivo do secure-invite juntos se baterem. Não repetir o relatório: só ler o
+      código de saída e a linha `REGISTRADO:`.
+
+      | Saída | O que fazer |
+      |---|---|
+      | Código 0, com `REGISTRADO:` | Reproduzir essa linha e dizer que o recurso ficou `reviewed`, com o secure-invite gravado |
+      | Código 1 | O script não confirmou o `REVISADO` do agent, e é ele que decide o piso. Reproduzir o `RESULTADO` do script, dizer que nada foi gravado e que é preciso corrigir e refazer a revisão |
+      | Código 2, com a mensagem do secure-invite | Exibir `erro:` seguido da mensagem tal como veio: "O secure-invite recebido não confere com o que foi revisado. Rode `/amflow-builder:review` novamente." |
+      | Código 2, outra mensagem | Exibir a linha `erro:`, dizer que o recurso passou na revisão mas o status não foi gravado, e nunca editar o arquivo à mão. Se o `erro:` disser que o recurso não está numa das origens aceitas, o status mudou depois da listagem: para revisar, o Creator o retoma com `/amflow-builder:status` |
 
    **Registrar o bloqueio.** Em todo ramo que não é `REVISADO` — os três `REPROVADO`, o `ERRO`, e a
    recusa da ajuda nos Ramos A e B (passos 11 e 15) —, gravar onde a revisão parou. Não refaz a
@@ -219,8 +260,10 @@ uma proposta — é feita aqui, e o agent só devolve o que ficou pendente. Nunc
   agent. O `status.py set` recusa o valor: `reviewed` registra que a revisão passou, e o Creator não o
   declara. Vale o mesmo para `blocked-RG<nn>`: só o `review.py --bloquear` grava, nunca `status.py set`.
 - Nunca publicar, e nunca chamar `publish`, `get_resource` ou `submission_status`. A revisão não consulta
-  o estado do recurso no Hub; a única chamada de rede é a tool `me` do servidor MCP `amflow-builder`, que
-  o agent faz em `completar-frontmatter` para ler o id do autor.
+  o estado do recurso no Hub; as únicas chamadas de rede são a tool `me` do servidor MCP
+  `amflow-builder` — que este comando chama na Fase 0 e que o agent faz em `completar-frontmatter`
+  para ler o id do autor — e a tool `issue_secure_invite`, que este comando chama no `REVISADO` para
+  obter o secure-invite, passando só os file digests, nunca conteúdo.
 - Nunca gravar `blocked-RG<nn>` sem `--motivo`, e nunca por um gate que não seja o `PORTAO:` do
   relatório desta revisão — o comando não grava o `blocked` simples, que é do Creator.
 - Um recurso por execução — para revisar outro, executar de novo.

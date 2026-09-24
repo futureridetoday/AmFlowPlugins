@@ -10,8 +10,8 @@ tags: [publish, submission, hub, creator, mcp, review]
 author: Bortoli
 created: 2026-06-14
 status: stable
-version: 3.0.0
-updated: 2026-09-22
+version: 3.1.0
+updated: 2026-09-24
 
 # system
 scope: global
@@ -69,7 +69,8 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    ```
 
    `reviewed` só é gravado pelo `/amflow-builder:review`, e só sobre `skill` e `agent` — a listagem
-   nunca traz outro tipo.
+   nunca traz outro tipo. Um item marcado `[sem secure-invite]` na tabela não tem o arquivo do
+   secure-invite ao lado do manifesto — a conferência da Fase 2 barra esse item ao ser escolhido.
 
 3. Ler a saída:
 
@@ -94,9 +95,24 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 7. **O caminho do manifesto** é a coluna `Local` da linha escolhida, relativo ao `<projeto>` — é
    ele que vai para `publish.py` e para o agent.
 
+8. **Conferência cedo (camadas 1 e 2), logo depois da escolha.** Antes de seguir para a Fase 3,
+   rodar:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/publish.py" <projeto> <local> --conferir
+   ```
+
+   | Saída | O que fazer |
+   |---|---|
+   | `RESULTADO: OK` | Seguir para a Fase 3 |
+   | `RESULTADO: BARRADO` | **Encerrar aqui** — exibir o `MOTIVO` tal como veio, sem reescrever, e orientar a rodar `/amflow-builder:review` para revisar (ou revisar de novo) o recurso. Nada foi enviado |
+
+   Barrar aqui evita rodar as Fases 3 a 6 (versão, preço, changelog, prévia e confirmação M10) sobre
+   um recurso que não vai publicar.
+
 ## Fase 3 — Ler o recurso
 
-8. Ler o manifesto com `Read`. O campo muda de lugar por tipo:
+9. Ler o manifesto com `Read`. O campo muda de lugar por tipo:
 
    | Dado | `skill` | `agent` |
    |---|---|---|
@@ -114,12 +130,12 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 **Cenário B** (atualização): identificador presente e não vazio.
 
-9. (Cenário B) Chame `submission_status({ hub_id: "<hub_id>" })`:
+10. (Cenário B) Chame `submission_status({ hub_id: "<hub_id>" })`:
 
    `status: pending_review` → encerrar: **"`<tipo>/<nome>` já tem uma submissão aguardando
    revisão. Aguarde a resolução antes de submeter uma atualização."**
 
-10. (Cenário B) Chame `get_resource({ type: "<tipo>", name: "<nome>" })`:
+11. (Cenário B) Chame `get_resource({ type: "<tipo>", name: "<nome>" })`:
 
     Sem `current_version` (recurso ainda sem versão aprovada) → exibir aviso **"`<nome>` ainda não
     tem versão aprovada em prod — enviando como submissão completa."** e pular a checagem de
@@ -138,14 +154,14 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     `get_resource` sem resposta (erro, timeout) → exibir aviso e seguir: a checagem local só
     antecipa a recusa, quem decide é o Hub.
 
-11. (Cenário B, com dependências na Fase 3) Para cada `tipo/nome@versão`, chamar
+12. (Cenário B, com dependências na Fase 3) Para cada `tipo/nome@versão`, chamar
     `get_resource({ type: "<tipo>", name: "<nome>" })`. Sem `current_version` → aviso **"a
     dependência `<tipo>/<nome>` ainda não está publicada."** Nunca bloqueia: é aviso, não condição
     de envio — o Hub decide na hora de instalar.
 
 ## Fase 5 — Preço e changelog
 
-12. Preço, sempre mostrado e confirmado — nunca assumido:
+13. Preço, sempre mostrado e confirmado — nunca assumido:
 
     | Situação | Preço exibido como padrão |
     |---|---|
@@ -157,13 +173,13 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     Perguntar **"Confirmar"** ou **"Editar"**. Em Cenário B, o default nunca é gratuito por
     omissão: assumir `0` zeraria um recurso pago sem aviso.
 
-13. (Cenário B) Solicitar `changelog`: **"Descreva brevemente o que mudou em relação à versão em
+14. (Cenário B) Solicitar `changelog`: **"Descreva brevemente o que mudou em relação à versão em
     produção."** Campo obrigatório; vazio encerra com: **"Changelog é obrigatório para
     atualizações."**
 
 ## Fase 6 — Prévia e confirmação
 
-14. Exibir o resumo:
+15. Exibir o resumo:
 
     ```
     Publicar <tipo>/<nome> v<versão> (<Cenário A: novo recurso | Cenário B: atualização>)
@@ -174,13 +190,13 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     Sem diff e sem escolha de seções: o que foi revisado é o que vai, por inteiro (decisão 5 e 7
     do plano `publish-reviewed-only`).
 
-15. **Confirmação humana (M10) — obrigatória, antes de invocar o agent.** Perguntar
+16. **Confirmação humana (M10) — obrigatória, antes de invocar o agent.** Perguntar
     **"Confirmar"** / **"Cancelar"**. Cancelar encerra sem publicar. É a única confirmação deste
     fluxo.
 
 ## Fase 7 — Envio
 
-16. Depois da confirmação, invoque o agent com o identificador **registrado**, que carrega o nome
+17. Depois da confirmação, invoque o agent com o identificador **registrado**, que carrega o nome
     da pasta do agent:
 
     ```
@@ -197,12 +213,12 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     **esperar**: no máximo uma linha dizendo que o envio está em andamento, sem adivinhar o
     resultado. Quando ele chegar, tratá-lo como o retorno da chamada.
 
-17. Ler a linha `RESULTADO:` do relatório:
+18. Ler a linha `RESULTADO:` do relatório:
 
     | `RESULTADO` | O que fazer |
     |---|---|
     | `PUBLICADO` | O agent já gravou `amflow-hub-id` (na 1ª submissão) e `amflow-status: pending_review` local, pelo `publish.py --registrar`. Exibir o `SUBMISSION_ID` e a mensagem de recurso aguardando revisão do Manager. Sugerir `/amflow-builder:publish-status` para acompanhar |
-    | `BARRADO` | O recurso deixou de estar `reviewed` entre a listagem e o envio (edição concorrente, por exemplo). Exibir o `MOTIVO` e orientar a rodar `/amflow-builder:review` de novo — nada foi enviado |
+    | `BARRADO` | A camada 1 ou a camada 2 deixou de bater entre a listagem e o envio (edição concorrente, por exemplo) — a mesma checagem da conferência cedo (Fase 2). Exibir o `MOTIVO` tal como veio, sem reescrever, e orientar a rodar `/amflow-builder:review` de novo — nada foi enviado |
     | `ERRO` | O Hub recusou. Exibir a mensagem tal como veio — nada foi gravado local |
     | `PUBLICADO-SEM-REGISTRO` | O Hub aceitou, mas a gravação local falhou. Exibir a mensagem de erro e avisar: **"O Hub já tem a submissão, mas o arquivo local não foi atualizado. Rode `/amflow-builder:publish-status` antes de tentar publicar de novo — não repita o envio sem conferir."** |
 

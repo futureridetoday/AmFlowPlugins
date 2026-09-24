@@ -95,6 +95,10 @@ VALORES_CREATOR = STATUS_VALIDOS - VALORES_HUB - VALORES_REVISAO
 CHAVE_HUB_ID_SKILL = "amflow-hub-id"
 CHAVE_HUB_ID_TOPO = "hub_id"
 
+# plano require-secure-invite (0022), index.md §3 — nome e lugar do arquivo do secure-invite, ao
+# lado do manifesto. `registrar_revisado` o grava junto com `reviewed`; `listar` marca a ausência.
+NOME_SECURE_INVITE = "secure-invite.jws"
+
 # index.md §1, coluna Rótulo.
 ROTULOS = {
     "in_progress": "Em andamento",
@@ -353,6 +357,10 @@ def _formatar_linha(recurso: Recurso) -> str:
         anotacoes.append("Hub")
     if recurso.lugar_legado:
         anotacoes.append("legado")
+    if recurso.status == "reviewed" and not (recurso.caminho.parent / NOME_SECURE_INVITE).is_file():
+        # Marca de foto ausente (index.md §5) — só existência de arquivo, sem recalcular digests:
+        # o `list` não carrega `review.py` (inverteria a dependência de hoje, `review.py:101`).
+        anotacoes.append("sem secure-invite")
     if recurso.status is not None and recurso.status not in DOMINIO:
         anotacoes.append("fora do domínio")
     status_txt = recurso.status or "(sem status)"
@@ -478,7 +486,13 @@ def _ponto_insercao_metadata(fm, campo_metadata, linhas: list[str]) -> int:
     return _fim_do_campo(linhas, ultimo)
 
 
-def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
+def _texto_transformado_yaml(recurso: Recurso, valor: str, motivo: str | None) -> str:
+    """O texto final do frontmatter YAML com `valor`/`motivo` aplicados — sem gravar em disco.
+
+    Separado de `_escrever_yaml` pela unidade 0022-04 (plano require-secure-invite, index.md §1):
+    os file digests do secure-invite precisam do texto exato que o escritor vai gravar, calculado
+    antes de o Hub assinar sobre ele — sem que o disco seja tocado nesse cálculo.
+    """
     texto = recurso.caminho.read_text(encoding="utf-8")
     fm = check.parsear(texto)
     if fm is None:
@@ -516,7 +530,28 @@ def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
         linhas[ponto:ponto] = novas
 
     linhas = [l for l in linhas if l != _SENTINELA_REMOCAO]
-    recurso.caminho.write_text("".join(linhas), encoding="utf-8")
+    return "".join(linhas)
+
+
+def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
+    recurso.caminho.write_text(_texto_transformado_yaml(recurso, valor, motivo), encoding="utf-8")
+
+
+def texto_estado_final(projeto: Path, manifesto: Path, valor: str) -> str:
+    """O texto do manifesto de `manifesto` como ficará gravado com `valor` — sem gravar.
+
+    Usado pelos file digests do secure-invite (plano require-secure-invite, index.md §1): a foto do
+    estado final usa exatamente este texto para o manifesto, e o disco para os demais arquivos do
+    bundle. Levanta `OSError` se o recurso não existir ou não for um manifesto YAML (skill/agent —
+    os dois únicos tipos que a revisão cobre).
+    """
+    todos, _ = varrer(projeto)
+    alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
+    if alvo is None:
+        raise OSError(f"recurso não encontrado — {manifesto}")
+    if alvo.formato != "yaml":
+        raise OSError(f"estado final só é calculado para manifesto YAML (skill ou agent) — {manifesto}")
+    return _texto_transformado_yaml(alvo, valor, None)
 
 
 def _escrever_json(recurso: Recurso, valor: str, motivo: str | None) -> None:
@@ -540,7 +575,11 @@ def _escrever_json(recurso: Recurso, valor: str, motivo: str | None) -> None:
 
 
 def _gravar(alvo: Recurso, valor: str, motivo: str | None) -> ResultadoSet:
-    """Escreve `valor` no recurso — o passo que `atualizar` e `registrar_revisado` compartilham."""
+    """Escreve `valor` no recurso — o passo que `atualizar` e `registrar_bloqueio` compartilham.
+
+    `registrar_revisado` não usa este helper: grava o manifesto e o secure-invite juntos, na mesma
+    operação (plano require-secure-invite, decisão 15), e por isso escreve os dois arquivos por
+    conta própria."""
     status_antigo = alvo.status or "(sem status)"
 
     try:
@@ -590,22 +629,30 @@ def atualizar(projeto: Path, recurso_id: str, valor: str, motivo: str | None = N
 
 
 def _origem_valida_da_revisao(status: str | None) -> bool:
-    """`in_progress` (o que o `build` deixa) ou qualquer `blocked-RG*` (uma nova revisão recomeça
-    do bloqueio anterior — add-blocked-gate-id, decisão 2)."""
-    return status == "in_progress" or bool(status and BLOQUEIO_REVISAO_RE.match(status))
+    """`in_progress` (o que o `build` deixa), qualquer `blocked-RG*` (uma nova revisão recomeça do
+    bloqueio anterior — add-blocked-gate-id, decisão 2) ou `reviewed` (plano require-secure-invite,
+    decisão 27: todo `reviewed` é origem — a transição sem reemissão da decisão 25 passa pela
+    revisão completa de novo, com o agent, e não por um atalho que pule o julgamento)."""
+    return (
+        status in ("in_progress", "reviewed")
+        or bool(status and BLOQUEIO_REVISAO_RE.match(status))
+    )
 
 
-def registrar_revisado(projeto: Path, manifesto: Path) -> ResultadoSet:
-    """Grava `reviewed` no recurso cujo manifesto é `manifesto` (plano 0019).
+def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> ResultadoSet:
+    """Grava `reviewed` e o arquivo do secure-invite juntos, na mesma operação — nunca um sem o
+    outro (plano require-secure-invite, index.md §3, §4; decisão 15).
 
-    Só o `review.py --registrar` chama isto, depois de um `REVISADO`; `atualizar` recusa o valor. O
-    recurso é achado pelo caminho do manifesto, e não por `tipo/nome` como em `atualizar`: quando
-    existem a cópia em desenvolvimento e a promovida em `.claude/`, gravar na que a revisão não leu
-    marcaria como revisado um arquivo que ninguém revisou.
+    Só o `review.py --registrar` chama isto, depois de conferir o secure-invite contra a foto do
+    estado final recalculada; `atualizar` recusa o valor `reviewed`, e o conteúdo do token não é
+    validado aqui — identidade e file digests já foram conferidos por quem chamou. O recurso é
+    achado pelo caminho do manifesto, e não por `tipo/nome` como em `atualizar`: quando existem a
+    cópia em desenvolvimento e a promovida em `.claude/`, gravar na que a revisão não leu marcaria
+    como revisado um arquivo que ninguém revisou.
 
-    Só grava a partir de `in_progress` ou de `blocked-RG*` (add-blocked-gate-id, decisão 2). Qualquer
-    outro status é recusado, em vez de sobrescrito — sobretudo os que o Hub grava, que a revisão
-    apagaria (`published → reviewed`).
+    Só grava a partir de `in_progress`, `blocked-RG*` ou `reviewed` (decisão 27). Qualquer outro
+    status é recusado, em vez de sobrescrito — sobretudo os que o Hub grava, que a revisão apagaria
+    (`published → reviewed`).
     """
     todos, _ = varrer(projeto)
     alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
@@ -614,10 +661,24 @@ def registrar_revisado(projeto: Path, manifesto: Path) -> ResultadoSet:
     if not _origem_valida_da_revisao(alvo.status):
         return ResultadoSet(
             False,
-            f"recusado: 'reviewed' só é gravado a partir de 'in_progress' ou de 'blocked-RG*' — "
-            f"o recurso está em '{alvo.status or 'sem status'}'",
+            f"recusado: 'reviewed' só é gravado a partir de 'in_progress', 'blocked-RG*' ou "
+            f"'reviewed' — o recurso está em '{alvo.status or 'sem status'}'",
         )
-    return _gravar(alvo, "reviewed", None)
+
+    try:
+        texto_final = _texto_transformado_yaml(alvo, "reviewed", None)
+    except OSError as exc:
+        return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
+
+    status_antigo = alvo.status or "(sem status)"
+    arquivo_secure_invite = alvo.caminho.parent / NOME_SECURE_INVITE
+    try:
+        alvo.caminho.write_text(texto_final, encoding="utf-8")
+        arquivo_secure_invite.write_text(secure_invite, encoding="utf-8")
+    except OSError as exc:
+        return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
+
+    return ResultadoSet(True, f"{alvo.tipo}/{alvo.nome}: {status_antigo} → reviewed ({alvo.local})")
 
 
 def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -> ResultadoSet:
@@ -632,10 +693,11 @@ def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -
     de 1-99 (ou um chamador direto, fora do `--bloquear`) gravaria um valor que a própria verificação
     de frontmatter rejeitaria na revisão seguinte.
 
-    Mesmas duas origens do `registrar_revisado` — `in_progress` ou `blocked-RG*` —, porque a mesma
-    decisão 2 rege os dois escritores: uma nova revisão recomeça do bloqueio anterior, sobrescrevendo
-    tanto para `reviewed` quanto para um novo `blocked-RG<nn>`. O motivo vem datado por código
-    (`YYYY-MM-DD — texto`) — D6 pedia a data, e data escrita por código não erra.
+    Mesmas três origens do `registrar_revisado` — `in_progress`, `blocked-RG*` ou `reviewed` (plano
+    require-secure-invite, decisão 27) —, porque a mesma decisão 2 (add-blocked-gate-id) rege os dois
+    escritores: uma nova revisão recomeça do bloqueio anterior, sobrescrevendo tanto para `reviewed`
+    quanto para um novo `blocked-RG<nn>`. O motivo vem datado por código (`YYYY-MM-DD — texto`) — D6
+    pedia a data, e data escrita por código não erra.
     """
     if not motivo or not motivo.strip():
         return ResultadoSet(False, "recusado: '--bloquear' exige --motivo")
@@ -651,8 +713,8 @@ def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -
     if not _origem_valida_da_revisao(alvo.status):
         return ResultadoSet(
             False,
-            f"recusado: 'blocked-RG' só é gravado a partir de 'in_progress' ou de 'blocked-RG*' — "
-            f"o recurso está em '{alvo.status or 'sem status'}'",
+            f"recusado: 'blocked-RG' só é gravado a partir de 'in_progress', 'blocked-RG*' ou "
+            f"'reviewed' — o recurso está em '{alvo.status or 'sem status'}'",
         )
 
     motivo_datado = f"{date.today().isoformat()} — {motivo.strip()}"
