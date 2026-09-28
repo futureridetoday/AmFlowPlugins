@@ -2,9 +2,9 @@
 
 ## Instrução para o comprador — ligar `important.md` ao `CLAUDE.local.md`, e o `.gitignore`
 
-O Worker tem `hooks/` (`path-safety`, `hard-memory-guard`) e os comandos `install`/`get`, mas nenhum
-dos quatro grava arquivo neste caminho: `path-safety` só nega escritas em alvos sensíveis,
-`hard-memory-guard` só bloqueia o `Stop` como lembrete, e `install`/`get` se restringem, por
+O Worker tem o hook `path-safety` e os comandos `install`/`get`, mas nenhum
+dos três grava arquivo neste caminho: `path-safety` só nega escritas em alvos sensíveis,
+e `install`/`get` se restringem, por
 contrato do próprio comando, a `<projeto>/.claude/` ou `~/.claude/` — `CLAUDE.local.md` e
 `.gitignore` ficam fora disso. Não existe mecanismo de instalação que escreva por você. Depois de
 usar `/amflow-worker:memory --important <texto>` pelo menos uma vez, aplique os dois passos abaixo

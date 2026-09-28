@@ -152,13 +152,6 @@ Aceitar "Outro (digitar)". Validar pela **Regra de nome do recurso** (Fase 1.5).
 Idêntico a Skill. Diferenças:
 - d3: perguntas mencionam "agent" (ex: "Qual tarefa concreta esse agent executa?")
 - intencao: formato obrigatório `"<o que faz>. Use when <situação específica>."` — necessário para matching do Claude Code.
-- intencao_revisao: "Confirmar" → `hard_memory` (não `nome`).
-- **hard_memory** (step extra após confirmar intencao):
-  - "Não usar" — agent sem memória persistente
-  - "Escopo project" — `.claude/hard-memory/<nome>.md`
-  - "Escopo global" — `~/.claude/hard-memory/<nome>.md`
-
-  Se escopo selecionado: adicionar campo `hard_memory:` ao frontmatter, injetar passos de leitura no início e escrita no fim do `## Processo`, adicionar `hard-memory` a `dependencies:`, criar arquivo de memória vazio no path configurado.
 
 ### Hook
 

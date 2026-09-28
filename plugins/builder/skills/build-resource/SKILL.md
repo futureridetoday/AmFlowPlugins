@@ -115,8 +115,6 @@ Faça uma pergunta por vez. Adapte cada pergunta com base nas respostas anterior
 
 **Agent:** idêntico a Skill. Diferenças:
 - `intencao`: formato obrigatório `"<o que faz>. Use when <situação específica>."` — necessário para matching do Claude Code.
-- `intencao_revisao`: rota "Confirmar" → `hard_memory` (não `nome`).
-- `hard_memory` (step extra): "Não usar" / "Escopo project (`.claude/hard-memory/<nome>.md`)" / "Escopo global (`~/.claude/hard-memory/<nome>.md`)". Se escopo escolhido: adicionar campo `hard_memory:` ao frontmatter, injetar passos de leitura/escrita no `## Processo` e adicionar `hard-memory` a `dependencies:`.
 
 **Hook:**
 1. `hook_event` — PreToolUse / PostToolUse / Stop / SubagentStop / SessionStart

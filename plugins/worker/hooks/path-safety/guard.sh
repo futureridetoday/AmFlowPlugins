@@ -15,8 +15,7 @@
 # durante install/update — decisão deliberada (M5 cobre prompt-injection, não
 # só travessia dentro de um path de bundle).
 #
-# Diferente do hard-memory-guard (fail-open — "nunca pode impedir o
-# encerramento", é lembrete): este hook é fail-closed — qualquer ambiguidade
+# Fail-closed: qualquer ambiguidade
 # ao interpretar o input bloqueia a escrita, nunca libera. Zero dependências
 # além de bash + POSIX (grep/sed) — sem jq, Python ou Node. Não é mais a
 # restrição "native-only" do Worker (revogada — language-policy.md): é que
