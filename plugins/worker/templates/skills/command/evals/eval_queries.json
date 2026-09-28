@@ -1,0 +1,18 @@
+{
+  "skill_name": "skill-name",
+  "description_under_test": "",
+  "queries": [
+    {
+      "query": "Prompt que descreve exatamente a tarefa do comando, sem digitar /plugin-name:skill-name — com disable-model-invocation: true, não deve ativar.",
+      "should_trigger": false
+    },
+    {
+      "query": "Prompt que descreve a tarefa do comando sem mencionar o domínio — também não deve ativar.",
+      "should_trigger": false
+    },
+    {
+      "query": "Prompt parecido mas com intenção diferente — near-miss que não deve ativar.",
+      "should_trigger": false
+    }
+  ]
+}

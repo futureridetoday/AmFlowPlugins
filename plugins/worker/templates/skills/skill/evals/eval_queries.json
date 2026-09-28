@@ -1,0 +1,22 @@
+{
+  "skill_name": "skill-name",
+  "description_under_test": "",
+  "queries": [
+    {
+      "query": "Prompt que deve ativar a skill — menciona o domínio diretamente.",
+      "should_trigger": true
+    },
+    {
+      "query": "Prompt que deve ativar a skill — não menciona o domínio explicitamente.",
+      "should_trigger": true
+    },
+    {
+      "query": "Prompt parecido mas com intenção diferente — near-miss que não deve ativar.",
+      "should_trigger": false
+    },
+    {
+      "query": "Prompt do mesmo domínio mas para uma tarefa fora do escopo desta skill.",
+      "should_trigger": false
+    }
+  ]
+}
