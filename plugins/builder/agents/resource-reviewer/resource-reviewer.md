@@ -44,7 +44,7 @@ d2: QA / Tester
 d4: report
 
 # ── amflow — hub ───────────────────────────────────────────────────────────────
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 ---
@@ -117,8 +117,8 @@ O script só vale se o resultado for `PENDENTE-FRONTMATTER`. Qualquer outro: dev
 
 | Grupo | Campos | O que fazer |
 |---|---|---|
-| Derivado, em **skill** | `name` (igual ao diretório) e, em `metadata`, `amflow-version` (`1.0.0` quando ausente), `amflow-updated` (hoje, de `date +%Y-%m-%d`) e `amflow-dependencies` (a chave, com valor vazio) | Escreva, sem perguntar. **Skill não tem** `type`, `project`, `source`, `scope`, `auto_load`, `hub_id` nem `price`: nenhum deles entra, nem com o prefixo `amflow-`. O que o verificador cobra em `metadata` é só o que está nesta linha e nas duas seguintes |
-| Derivado, em **agent** | `name` (igual ao diretório), `type`, `project`, `source` (`local`), `version` (`1.0.0` quando ausente), `updated` (hoje), `dependencies` vazio e os defaults do template de agent — `scope`, `auto_load`, `hub_id`, `price` | Escreva, sem perguntar. `project` é a linha "Nome do projeto" da tabela `## Identidade` do `.claude/CLAUDE.md` do projeto — sem ela, o título do arquivo sem o sufixo `— Instruções do Projeto`, e sem ele o nome da pasta |
+| Derivado, em **skill** | `name` (igual ao diretório) e, em `metadata`, `amflow-version` (`1.0.0` quando ausente), `amflow-updated` (hoje, de `date +%Y-%m-%d`) e `amflow-dependencies` (a chave, com valor vazio) | Escreva, sem perguntar. **Skill não tem** `type`, `project`, `source`, `scope`, `auto_load` nem `price`: nenhum deles entra, nem com o prefixo `amflow-`. O `metadata.amflow-uid` é a exceção: existe desde a primeira revisão e é gravado pela revisão (`review.py --registrar`) — o agent nunca o escreve nem o remove, e um `amflow-uid` que o manifesto já tem fica como está. O que o verificador cobra em `metadata` é só o que está nesta linha e nas duas seguintes |
+| Derivado, em **agent** | `name` (igual ao diretório), `type`, `project`, `source` (`local`), `version` (`1.0.0` quando ausente), `updated` (hoje), `dependencies` vazio e os defaults do template de agent — `scope`, `auto_load`, `uid`, `price` | Escreva, sem perguntar. `project` é a linha "Nome do projeto" da tabela `## Identidade` do `.claude/CLAUDE.md` do projeto — sem ela, o título do arquivo sem o sufixo `— Instruções do Projeto`, e sem ele o nome da pasta |
 | Identidade do autor | `author` (`git config user.name`, local e depois global) e o id do autor (`me`) | Escreva. `git config` vazio nos dois escopos: não invente, e devolva em `PENDENTE` |
 | Estado | `metadata.amflow-status` | **Nunca escreva.** Ausente, devolva `STATUS: ausente` e o comando grava `in_progress` pelo `status.py` |
 | Conteúdo de survey | Em skill: `description`, `license` e `metadata.amflow-tags`. Em agent: `description`, `tags`, `d1`, `d2` e `d4` | **Nunca grave nesta chamada.** Redija uma proposta a partir do corpo do recurso e devolva em `PROPOSTAS`. `license: Proprietary` também é só proposta: o arquivo fica sem a chave até o Creator aprovar. `amflow-tags` em skill é kebab-case separado por espaço, nunca lista nem vírgula. `d1` e `d4` têm vocabulário fechado no comentário do template |

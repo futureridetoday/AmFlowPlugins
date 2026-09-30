@@ -15,9 +15,9 @@ submetido ao Hub.
 
 O verificador assume o contexto "Fonte" (repo do Creator) da tabela de
 obrigatoriedade da §3 — é o único contexto que as tarefas que o consomem
-(migração das dezesseis skills, engate no CI) precisam checar. `amflow-hub-id`
-e `amflow-source`, que só se aplicam a bundle publicado ou cópia instalada,
-não entram na lista de obrigatórias aqui.
+(migração das dezesseis skills, engate no CI) precisam checar. `amflow-uid`,
+que na fonte só existe a partir da 1ª revisão, e `amflow-source`, que não se
+aplica à fonte, não entram na lista de obrigatórias aqui.
 
 R-13 foi removida em 2026-08-28, com a flag --portavel que a acionava. Ela
 impunha o template portável, que deixou de existir: a medição da §4 mostrou que
@@ -90,7 +90,7 @@ VALOR_DEFAULT = {
 # ── §3 — metadata ─────────────────────────────────────────────────────────
 
 # Obrigatórias a partir do momento em que existem, na fonte (repo do
-# Creator). amflow-hub-id (após a 1ª publicação) e amflow-source (não
+# Creator). amflow-uid (desde a 1ª revisão) e amflow-source (não
 # aplicável na fonte) ficam fora — ver docstring do módulo.
 METADATA_OBRIGATORIA_FONTE = (
     "amflow-version",
@@ -476,7 +476,7 @@ def r11_dependencias_formato(fm: Frontmatter) -> list[Violacao]:
 
 def r12_uuid(fm: Frontmatter) -> list[Violacao]:
     violacoes: list[Violacao] = []
-    for chave in ("amflow-author-id", "amflow-hub-id"):
+    for chave in ("amflow-author-id", "amflow-uid"):
         campo = fm.metadata.get(chave)
         if campo is None:
             continue

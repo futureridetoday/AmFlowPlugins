@@ -94,8 +94,8 @@ VALORES_CREATOR = STATUS_VALIDOS - VALORES_HUB - VALORES_REVISAO
 # plano publish-reviewed-only — onde o identificador do Hub mora, por tipo: em `metadata` para
 # skill (só existe depois da 1ª publicação — check.py, comentário de topo), no topo para os
 # demais. Só `registrar_publicado` grava este campo; `set` não o toca (não é `amflow-status`).
-CHAVE_HUB_ID_SKILL = "amflow-hub-id"
-CHAVE_HUB_ID_TOPO = "hub_id"
+CHAVE_UID_SKILL = "amflow-uid"
+CHAVE_UID_TOPO = "uid"
 
 # plano require-secure-invite (0022), index.md §3 — nome e lugar do arquivo do secure-invite, ao
 # lado do manifesto. `registrar_revisado` o grava junto com `reviewed`; `listar` marca a ausência.
@@ -450,6 +450,22 @@ def _substituir_valor(linha: str, novo_valor: str) -> str:
     return f"{prefixo}{novo_valor}{quebra}"
 
 
+def _fill_empty_value(line: str, new_value: str) -> str:
+    """Preenche o valor vazio da linha, preservando indentação, chave e o comentário de fim de linha
+    com o espaçamento que ele tinha. Diferente de `_substituir_valor`, que descarta o comentário: os
+    templates do Builder trazem `uid: ""  # uuid atribuído na primeira revisão` (L-21). O corte do
+    comentário é o do parser (`check._remover_comentario`), para as duas leituras não divergirem."""
+    line_break = "\n" if line.endswith("\n") else ""
+    body = line[: -len(line_break)] if line_break else line
+    without_comment = check._remover_comentario(body)
+    comment = body[len(without_comment) :]
+    spaces = without_comment[len(without_comment.rstrip()) :] if comment else ""
+    prefix = _CHAVE_LINHA_RE.match(body).group(1)
+    if not prefix.endswith((" ", "\t")):
+        prefix += " "  # `uid:` sem valor — YAML pede o espaço depois dos dois pontos
+    return f"{prefix}{new_value}{spaces}{comment}{line_break}"
+
+
 def _linha_fechamento_frontmatter(linhas: list[str]) -> int:
     for i in range(1, len(linhas)):
         if linhas[i].strip() == "---":
@@ -482,7 +498,7 @@ def _fim_do_campo(linhas: list[str], campo) -> int:
 def _ponto_insercao_metadata(fm, campo_metadata, linhas: list[str]) -> int:
     """Onde inserir uma linha nova dentro do bloco `metadata:` — depois do corpo inteiro do
     último campo existente, ou logo após a própria chave `metadata:` quando ela ainda não tem
-    nenhum filho. Única fonte deste cálculo: `_escrever_yaml` e `_gravar_hub_id` o compartilham,
+    nenhum filho. Única fonte deste cálculo: `_escrever_yaml` e `_gravar_uid` o compartilham,
     em vez de cada um recalcular por conta própria."""
     if not fm.metadata:
         return campo_metadata.linha
@@ -490,12 +506,20 @@ def _ponto_insercao_metadata(fm, campo_metadata, linhas: list[str]) -> int:
     return _fim_do_campo(linhas, ultimo)
 
 
-def _texto_transformado_yaml(recurso: Recurso, valor: str, motivo: str | None) -> str:
+def _texto_transformado_yaml(recurso: Recurso, valor: str, motivo: str | None, uid: str | None = None) -> str:
     """O texto final do frontmatter YAML com `valor`/`motivo` aplicados — sem gravar em disco.
 
     Separado de `_escrever_yaml` pela unidade 0022-04 (plano require-secure-invite, index.md §1):
     os file digests do secure-invite precisam do texto exato que o escritor vai gravar, calculado
     antes de o Hub assinar sobre ele — sem que o disco seja tocado nesse cálculo.
+
+    `uid` (unidade 0023-06, plano unique-id, index.md §5) é o uid a inserir na foto quando o
+    manifesto ainda não tem um — mesma regra de `_gravar_uid`: `metadata.amflow-uid` em skill, `uid`
+    no topo nos demais tipos. Campo ausente ganha uma linha nova; campo presente e vazio (o que os
+    templates trazem, L-21) tem o valor preenchido na própria linha, com o comentário de fim de linha
+    preservado; campo com valor fica intocado. `None` (default) não mexe no campo, preservando o
+    comportamento anterior a esta unidade byte a byte — quem já chama sem `uid` continua recebendo
+    exatamente o mesmo texto de antes.
     """
     texto = recurso.caminho.read_text(encoding="utf-8")
     fm = check.parsear(texto)
@@ -526,12 +550,33 @@ def _texto_transformado_yaml(recurso: Recurso, valor: str, motivo: str | None) -
         if not check.BLOCO_RE.match(campo_motivo.valor_bruto.strip()):
             linhas[campo_motivo.linha - 1] = _SENTINELA_REMOCAO
 
+    top_uid_line: str | None = None
+    if uid is not None:
+        in_metadata = recurso.tipo == "skill"
+        uid_field = fm.metadata.get(CHAVE_UID_SKILL) if in_metadata else fm.topo.get(CHAVE_UID_TOPO)
+        if uid_field is None:
+            if in_metadata:
+                novas.append(f"  {CHAVE_UID_SKILL}: {_valor_yaml(uid)}\n")
+            else:
+                top_uid_line = f"{CHAVE_UID_TOPO}: {_valor_yaml(uid)}\n"
+        elif not uid_field.texto:
+            # L-21: os templates trazem o campo presente e vazio — preenche a própria linha, em vez
+            # de inserir uma segunda, e mantém o comentário de fim de linha.
+            linhas[uid_field.linha - 1] = _fill_empty_value(linhas[uid_field.linha - 1], _valor_yaml(uid))
+
     if campo_metadata is None:
         ponto = _linha_fechamento_frontmatter(linhas)
-        linhas[ponto:ponto] = ["metadata:\n"] + novas
-    elif novas:
-        ponto = _ponto_insercao_metadata(fm, campo_metadata, linhas)
-        linhas[ponto:ponto] = novas
+        block = ["metadata:\n"] + novas
+        if top_uid_line:
+            block = [top_uid_line] + block
+        linhas[ponto:ponto] = block
+    else:
+        if novas:
+            ponto = _ponto_insercao_metadata(fm, campo_metadata, linhas)
+            linhas[ponto:ponto] = novas
+        if top_uid_line:
+            ponto = _linha_fechamento_frontmatter(linhas)
+            linhas[ponto:ponto] = [top_uid_line]
 
     linhas = [l for l in linhas if l != _SENTINELA_REMOCAO]
     return "".join(linhas)
@@ -541,13 +586,16 @@ def _escrever_yaml(recurso: Recurso, valor: str, motivo: str | None) -> None:
     recurso.caminho.write_text(_texto_transformado_yaml(recurso, valor, motivo), encoding="utf-8")
 
 
-def texto_estado_final(projeto: Path, manifesto: Path, valor: str) -> str:
+def texto_estado_final(projeto: Path, manifesto: Path, valor: str, uid: str | None = None) -> str:
     """O texto do manifesto de `manifesto` como ficará gravado com `valor` — sem gravar.
 
     Usado pelos file digests do secure-invite (plano require-secure-invite, index.md §1): a foto do
     estado final usa exatamente este texto para o manifesto, e o disco para os demais arquivos do
     bundle. Levanta `OSError` se o recurso não existir ou não for um manifesto YAML (skill/agent —
     os dois únicos tipos que a revisão cobre).
+
+    `uid` (unidade 0023-06) repassa para `_texto_transformado_yaml` — a foto já inclui o uid que
+    `registrar_revisado` vai gravar junto com `reviewed`, quando o manifesto ainda não tem um.
     """
     todos, _ = varrer(projeto)
     alvo = next((r for r in todos if r.caminho.resolve() == manifesto.resolve()), None)
@@ -555,7 +603,7 @@ def texto_estado_final(projeto: Path, manifesto: Path, valor: str) -> str:
         raise OSError(f"recurso não encontrado — {manifesto}")
     if alvo.formato != "yaml":
         raise OSError(f"estado final só é calculado para manifesto YAML (skill ou agent) — {manifesto}")
-    return _texto_transformado_yaml(alvo, valor, None)
+    return _texto_transformado_yaml(alvo, valor, None, uid)
 
 
 def _escrever_json(recurso: Recurso, valor: str, motivo: str | None) -> None:
@@ -645,9 +693,12 @@ def _origem_valida_da_revisao(status: str | None) -> bool:
     )
 
 
-def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> ResultadoSet:
-    """Grava `reviewed` e o arquivo do secure-invite juntos, na mesma operação — nunca um sem o
-    outro (plano require-secure-invite, index.md §3, §4; decisão 15).
+def registrar_revisado(
+    projeto: Path, manifesto: Path, secure_invite: str, uid: str | None = None
+) -> ResultadoSet:
+    """Grava `reviewed`, o uid e o arquivo do secure-invite juntos, na mesma operação — nunca um
+    sem os outros (plano require-secure-invite, index.md §3, §4; decisão 15; uid acrescentado pela
+    unidade 0023-06, plano unique-id, index.md §5).
 
     Só o `review.py --registrar` chama isto, depois de conferir o secure-invite contra a foto do
     estado final recalculada; `atualizar` recusa o valor `reviewed`, e o conteúdo do token não é
@@ -655,6 +706,10 @@ def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> Re
     achado pelo caminho do manifesto, e não por `tipo/nome` como em `atualizar`: quando existem a
     cópia em desenvolvimento e a promovida em `.claude/`, gravar na que a revisão não leu marcaria
     como revisado um arquivo que ninguém revisou.
+
+    `uid` é o uid do payload do secure-invite — gravado só quando o manifesto ainda não tem um
+    (mesma regra de `_gravar_uid`). `None` (default) não grava nenhum uid, preservando o
+    comportamento anterior a esta unidade para quem chama sem esse argumento.
 
     Só grava a partir de `in_progress`, `blocked-RG*`, `reviewed`, `published` ou `denied`
     (decisões 27, 39 e 40) — as duas últimas cobrem a atualização de um recurso já publicado e a
@@ -674,7 +729,7 @@ def registrar_revisado(projeto: Path, manifesto: Path, secure_invite: str) -> Re
         )
 
     try:
-        texto_final = _texto_transformado_yaml(alvo, "reviewed", None)
+        texto_final = _texto_transformado_yaml(alvo, "reviewed", None, uid)
     except OSError as exc:
         return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")
 
@@ -759,10 +814,10 @@ def registrar_bloqueio(projeto: Path, manifesto: Path, gate: int, motivo: str) -
     return _gravar(alvo, valor, motivo_datado)
 
 
-def _gravar_hub_id(alvo: Recurso, hub_id: str) -> None:
-    """Grava `hub_id`, só quando o recurso ainda não tinha um — a atualização reenvia o mesmo
+def _gravar_uid(alvo: Recurso, uid: str) -> None:
+    """Grava `uid`, só quando o recurso ainda não tinha um — a atualização reenvia o mesmo
     valor, e não há nada a trocar. Escritor à parte de `_gravar`: o campo mora em
-    `metadata.amflow-hub-id` em skill e no topo (`hub_id`) nos demais tipos (plano
+    `metadata.amflow-uid` em skill e no topo (`uid`) nos demais tipos (plano
     publish-reviewed-only), lugar diferente de `amflow-status`/`amflow-status-reason`, os dois
     campos que `_gravar` conhece."""
     texto = alvo.caminho.read_text(encoding="utf-8")
@@ -772,16 +827,16 @@ def _gravar_hub_id(alvo: Recurso, hub_id: str) -> None:
     linhas = texto.splitlines(keepends=True)
 
     em_metadata = alvo.tipo == "skill"
-    campo = fm.metadata.get(CHAVE_HUB_ID_SKILL) if em_metadata else fm.topo.get(CHAVE_HUB_ID_TOPO)
+    campo = fm.metadata.get(CHAVE_UID_SKILL) if em_metadata else fm.topo.get(CHAVE_UID_TOPO)
     if campo is not None and campo.texto:
         return  # já tem valor — atualização, nada a gravar
 
-    valor = _valor_yaml(hub_id)
+    valor = _valor_yaml(uid)
     if campo is not None:
         linhas[campo.linha - 1] = _substituir_valor(linhas[campo.linha - 1], valor)
     elif em_metadata:
         campo_metadata = fm.topo.get("metadata")
-        linha_nova = f"  {CHAVE_HUB_ID_SKILL}: {valor}\n"
+        linha_nova = f"  {CHAVE_UID_SKILL}: {valor}\n"
         if campo_metadata is None:
             ponto = _linha_fechamento_frontmatter(linhas)
             linhas[ponto:ponto] = ["metadata:\n", linha_nova]
@@ -790,14 +845,14 @@ def _gravar_hub_id(alvo: Recurso, hub_id: str) -> None:
             linhas[ponto:ponto] = [linha_nova]
     else:
         ponto = _linha_fechamento_frontmatter(linhas)
-        linhas[ponto:ponto] = [f"{CHAVE_HUB_ID_TOPO}: {valor}\n"]
+        linhas[ponto:ponto] = [f"{CHAVE_UID_TOPO}: {valor}\n"]
 
     alvo.caminho.write_text("".join(linhas), encoding="utf-8")
 
 
 def _gravar_source(alvo: Recurso, versao: str) -> None:
     """Grava `source: hub/<tipo>/<nome>@<versão>` no topo — todo publish, não só a 1ª submissão,
-    porque a versão muda a cada atualização (diferente de `_gravar_hub_id`, que só grava uma
+    porque a versão muda a cada atualização (diferente de `_gravar_uid`, que só grava uma
     vez). Skill nunca grava: a norma reserva `amflow-source` só à cópia instalada, nunca à fonte.
     Comportamento restaurado do `publish.md` anterior (Fase 6), que este plano preservou sem
     listar entre as mudanças."""
@@ -820,7 +875,7 @@ def _gravar_source(alvo: Recurso, versao: str) -> None:
     alvo.caminho.write_text("".join(linhas), encoding="utf-8")
 
 
-def registrar_publicado(projeto: Path, manifesto: Path, hub_id: str, versao: str) -> ResultadoSet:
+def registrar_publicado(projeto: Path, manifesto: Path, uid: str, versao: str) -> ResultadoSet:
     """Grava depois do aceite do Hub (`publish.py --registrar`, plano publish-reviewed-only):
     `amflow-status: pending_review` sempre, `source` nos tipos que o levam (todo publish, com a
     versão atual), e o identificador do Hub só quando ainda não havia um.
@@ -838,7 +893,7 @@ def registrar_publicado(projeto: Path, manifesto: Path, hub_id: str, versao: str
         return ResultadoSet(False, f"recusado: '{alvo.tipo}' está fora do escopo da publicação")
 
     try:
-        _gravar_hub_id(alvo, hub_id)
+        _gravar_uid(alvo, uid)
         _gravar_source(alvo, versao)
     except OSError as exc:
         return ResultadoSet(False, f"recusado: não foi possível gravar {alvo.local} — {exc}")

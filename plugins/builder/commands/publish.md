@@ -19,7 +19,7 @@ auto_load: false
 dependencies: []
 
 # hub
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 
@@ -117,7 +117,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | Dado | `skill` | `agent` |
    |---|---|---|
    | versão | `metadata.amflow-version` | `version` |
-   | identificador no Hub | `metadata.amflow-hub-id` | `hub_id` |
+   | uid | `metadata.amflow-uid` | `uid` |
    | dependências | `metadata.amflow-dependencies` | `dependencies` |
 
    Dependências são uma string separada por espaço, cada entrada `tipo/nome@versão`
@@ -125,15 +125,18 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 ## Fase 4 — Cenário e condições do envio
 
-**Cenário A** (novo recurso): identificador do Hub ausente ou vazio → avançar direto para a Fase
-5.
+O `uid` existe desde a primeira revisão: está no manifesto nos dois cenários, então a presença dele
+não diz qual é. **O cenário vem do Hub**, que o decide na publicação pela existência do recurso com
+esse `uid` — este comando pergunta a ele antes, para saber o que perguntar ao Creator.
 
-**Cenário B** (atualização): identificador presente e não vazio.
+10. Chame `submission_status({ uid: "<uid>" })`:
 
-10. (Cenário B) Chame `submission_status({ hub_id: "<hub_id>" })`:
-
-   `status: pending_review` → encerrar: **"`<tipo>/<nome>` já tem uma submissão aguardando
-   revisão. Aguarde a resolução antes de submeter uma atualização."**
+    | Resposta | Cenário e o que fazer |
+    |---|---|
+    | Erro "Recurso não encontrado" | **Cenário A** (novo recurso): o Hub ainda não conhece o `uid` → avançar direto para a Fase 5 |
+    | `status: pending_review` | Encerrar: **"`<tipo>/<nome>` já tem uma submissão aguardando revisão. Aguarde a resolução antes de submeter uma atualização."** |
+    | Outro `status`, ou o erro "Recurso ainda não foi publicado — nenhuma submissão encontrada" | **Cenário B** (atualização): o Hub já conhece o `uid` → seguir para os passos 11 e 12 |
+    | Qualquer outro erro | Encerrar, exibindo a mensagem tal como veio: sem o cenário, preço e changelog não têm o que decidir. Nada foi enviado |
 
 11. (Cenário B) Chame `get_resource({ type: "<tipo>", name: "<nome>" })`:
 
@@ -203,9 +206,12 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
     Agent(
       subagent_type: "amflow-builder:resource-publisher:resource-publisher",
       run_in_background: false,
-      prompt: "Modo: publicar\nProjeto: <projeto>\nLocal: <caminho do manifesto>\nHubId: <hub_id ou vazio>\nType: <tipo>\nName: <nome>\nVersion: <versão>\nChangelog: <texto, só Cenário B>\nVisibility: public\nPrice: <centavos>"
+      prompt: "Modo: publicar\nProjeto: <projeto>\nLocal: <caminho do manifesto>\nUid: <uid>\nType: <tipo>\nName: <nome>\nVersion: <versão>\nChangelog: <texto, só Cenário B>\nVisibility: public\nPrice: <centavos>"
     )
     ```
+
+    O `Uid` vai sempre, nos dois cenários. O cenário não vai no prompt: o Hub o decide de novo na
+    publicação, pela mesma existência do recurso com esse `uid`.
 
     O `run_in_background: false` pede o relatório na própria chamada, mas nem sempre vale: o
     `Agent` pode lançar o agent em segundo plano mesmo assim. Se a resposta da chamada disser que
@@ -217,7 +223,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
     | `RESULTADO` | O que fazer |
     |---|---|
-    | `PUBLICADO` | O agent já gravou `amflow-hub-id` (na 1ª submissão) e `amflow-status: pending_review` local, pelo `publish.py --registrar`. Exibir o `SUBMISSION_ID` e a mensagem de recurso aguardando revisão do Manager. Sugerir `/amflow-builder:publish-status` para acompanhar |
+    | `PUBLICADO` | O agent já gravou `amflow-status: pending_review` local, pelo `publish.py --registrar` — o `uid` já estava no manifesto desde a revisão. Exibir o `SUBMISSION_ID` e a mensagem de recurso aguardando revisão do Manager. Sugerir `/amflow-builder:publish-status` para acompanhar |
     | `BARRADO` | A camada 1 ou a camada 2 deixou de bater entre a listagem e o envio (edição concorrente, por exemplo) — a mesma checagem da conferência cedo (Fase 2). Exibir o `MOTIVO` tal como veio, sem reescrever, e orientar a rodar `/amflow-builder:review` de novo — nada foi enviado |
     | `ERRO` | O Hub recusou. Exibir a mensagem tal como veio — nada foi gravado local |
     | `PUBLICADO-SEM-REGISTRO` | O Hub aceitou, mas a gravação local falhou. Exibir a mensagem de erro e avisar: **"O Hub já tem a submissão, mas o arquivo local não foi atualizado. Rode `/amflow-builder:publish-status` antes de tentar publicar de novo — não repita o envio sem conferir."** |

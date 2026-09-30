@@ -48,8 +48,8 @@ d1: "dev"
 d2: "Dev Tooling"
 d4: "file"
 
-# ── amflow — hub (preenchido automaticamente pelo amflow-publish) ──────────────
-hub_id: ""
+# ── amflow — hub (preenchido automaticamente pela revisão e pelo amflow-publish) ──
+uid: ""
 source: "local"
 price: 0
 ---

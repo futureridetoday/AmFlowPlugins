@@ -19,7 +19,7 @@ auto_load: false
 dependencies: []
 
 # hub
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 ---
@@ -320,8 +320,8 @@ A única chave com ponto é `amflow.module.<nome>`, registro de módulo instalad
 
 Agent, command e hook usam frontmatter YAML comum, com identidade (`name`, `type`, `description`,
 `tags`), histórico (`author`, `version`, `status`, datas) e sistema (`scope`, `dependencies`). A
-seção `hub` — `hub_id`, `source`, `price` — é preenchida por `/amflow-builder:publish` e
-`/amflow-builder:publish-status`, nunca à mão.
+seção `hub` — `uid`, `source`, `price` — é preenchida por `/amflow-builder:review`,
+`/amflow-builder:publish` e `/amflow-builder:publish-status`, nunca à mão.
 
 ## O que não é frontmatter
 

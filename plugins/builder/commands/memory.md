@@ -24,7 +24,7 @@ auto_load: false
 dependencies: []
 
 # hub — não publicável; tooling interno do plugin Builder
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 ---

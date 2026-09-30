@@ -23,7 +23,7 @@ auto_load: false
 dependencies: []
 
 # hub
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 ---
