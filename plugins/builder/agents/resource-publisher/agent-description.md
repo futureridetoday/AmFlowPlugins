@@ -12,7 +12,7 @@ Antes deste agent, o `publish` enviava o que quisesse: um recurso que a revisão
 
 ## Como funciona
 
-Recebe um recurso já escolhido e confirmado pelo comando, roda o script `publish.py` sobre ele — que barra qualquer coisa fora de `reviewed` e monta o pacote a enviar —, e só então chama a tool `publish`. Só grava o `amflow-hub-id` e o `amflow-status: pending_review` localmente depois que o Hub aceita; numa recusa, nada muda no disco.
+Recebe um recurso já escolhido e confirmado pelo comando, roda o script `publish.py` sobre ele — que barra qualquer coisa fora de `reviewed` e monta o pacote a enviar —, e só então chama a tool `publish`. Só grava o `amflow-status: pending_review` localmente depois que o Hub aceita — o `uid` já está no manifesto desde a revisão e vai em toda chamada, inclusive na primeira publicação; numa recusa, nada muda no disco.
 
 Ele não conversa com o Creator. Preço, changelog e a confirmação de publicar são perguntas do comando `/amflow-builder:publish`, feitas antes de invocá-lo — este agent é chamado uma única vez, já com tudo decidido.
 
@@ -22,7 +22,7 @@ Pelo comando `/amflow-builder:publish`, que lista os recursos `reviewed`, conduz
 
 ## Exemplos de uso
 
-**Publicação nova.** O Creator confirma preço e prévia de uma skill `reviewed` sem `hub_id`. O agent roda `publish.py`, confirma a camada 1, envia e devolve `hub_id` e `submission_id` — o comando grava e mostra o resumo.
+**Publicação nova.** O Creator confirma preço e prévia de uma skill `reviewed` que o Hub ainda não conhece. O agent roda `publish.py`, confirma a camada 1, envia com o `uid` e devolve `uid` e `submission_id` — o comando grava e mostra o resumo.
 
 **Recurso deixou de estar `reviewed`.** Entre a listagem e a confirmação, o recurso foi editado e perdeu o status. O agent roda `publish.py` de novo, recebe `BARRADO` e devolve isso ao comando — a tool `publish` nunca é chamada.
 
@@ -35,6 +35,6 @@ Camada 1 de um scanner de segurança em camadas: o status é o que separa o que 
 ## Limites
 
 - Não revisa o recurso — a camada 1 só confere o status que a revisão já gravou.
-- Não decide preço, changelog nem cenário — chegam prontos na chamada.
+- Não decide preço nem changelog — chegam prontos na chamada — e o cenário é do Hub, que o decide pelo `uid`.
 - Não consulta o Hub além do envio: submissão pendente e versão em produção são checagens do comando, antes de chamar este agent.
 - Não publica hook, command nem módulo — a revisão, de onde vem o `reviewed`, cobre só skill e agent.

@@ -19,7 +19,7 @@ auto_load: false
 dependencies: []
 
 # hub
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 ---
@@ -158,16 +158,22 @@ checagem, a revisão inteira rodaria antes de o Hub falhar ao pedir o secure-inv
       `<local>` é o caminho do manifesto do passo 7. Ler o `RESULTADO:` da saída: fora de `REVISADO`,
       o script mudou de veredito desde o passo 8 — tratar como o `RESULTADO` deste script (mesma
       tabela do passo 9) e não seguir. Em `REVISADO`, ler o bloco `FILE_DIGESTS_JSON:` — o objeto JSON
-      na linha seguinte.
+      na linha seguinte. Ele traz o `uid` do recurso: o que o manifesto já tem, ou um novo que o
+      script propõe quando o manifesto ainda não tem nenhum — nada é gravado nesta chamada.
 
    2. Chamar a tool `issue_secure_invite` do servidor MCP `amflow-builder`, passando o objeto de
-      `FILE_DIGESTS_JSON` **sem transformação** — `type`, `name`, `version` e `file_digests` tais como
-      o script imprimiu. Nenhum conteúdo de arquivo viaja, só os digests.
+      `FILE_DIGESTS_JSON` **sem transformação** — `type`, `name`, `version`, `uid` e `file_digests`
+      tais como o script imprimiu, sem tirar o `uid`, sem gerar outro e sem trocar o que veio. Na
+      primeira revisão o Hub registra o `uid` como a identidade do recurso; nas seguintes, confere que
+      ele é do Creator, do mesmo tipo e com o mesmo nome. Nenhum conteúdo de arquivo viaja, só o `uid`
+      e os digests.
 
       | Resposta | O que fazer |
       |---|---|
       | `{ secure_invite: "<jws>" }` | Seguir para o passo 3 |
-      | Erro, timeout, ou sessão ausente | **Encerrar aqui — nada foi gravado.** Dizer: "Não foi possível obter o secure-invite do Hub: `<motivo>`. Nada foi gravado — a revisão não foi registrada. Tente novamente; se persistir, confirme que o Hub está no ar antes de rodar `/amflow-builder:review` de novo." |
+      | Erro com a mensagem "Este recurso já tem um uid registrado: `<uid>`" — a recusa de restaurar: o Hub já tem uma identidade com esse tipo e nome, com outro `uid` | **Encerrar aqui — nada foi gravado.** Exibir a mensagem do Hub tal como veio, sem reescrever: ela traz o `<uid>` a restaurar e o lugar onde gravá-lo — `metadata.amflow-uid` em skill, o campo `uid` no topo do manifesto nos demais tipos. Dizer que quem restaura é o Creator — este comando nunca edita o recurso — e que depois é preciso rodar `/amflow-builder:review` de novo: a revisão recomeça pelo agent, no portão 1, e nunca se pula o agent nem se repete só a emissão com o `uid` restaurado |
+      | Erro com a mensagem de outra recusa da emissão — "Este uid pertence a outro Creator", "Este uid já é de outro tipo", "Este recurso já foi publicado" (o nome não muda depois de publicado) ou "Você já tem outro recurso com esse nome e tipo" | **Encerrar aqui — nada foi gravado.** Exibir a mensagem do Hub tal como veio, sem reescrever e sem sugerir problema de disponibilidade: é uma regra do Hub, não uma falha técnica |
+      | Qualquer outro erro — falha técnica, timeout, ou sessão ausente | **Encerrar aqui — nada foi gravado.** Dizer: "Não foi possível obter o secure-invite do Hub: `<motivo>`. Nada foi gravado — a revisão não foi registrada. Tente novamente; se persistir, confirme que o Hub está no ar antes de rodar `/amflow-builder:review` de novo." |
 
    3. Rodar o script com `--registrar`, passando o secure-invite recebido:
 
@@ -176,12 +182,12 @@ checagem, a revisão inteira rodaria antes de o Hub falhar ao pedir o secure-inv
       ```
 
       O script recalcula a foto do estado final, confere contra o secure-invite recebido e só grava
-      `reviewed` e o arquivo do secure-invite juntos se baterem. Não repetir o relatório: só ler o
-      código de saída e a linha `REGISTRADO:`.
+      `reviewed`, o `uid` e o arquivo do secure-invite juntos se baterem. Não repetir o relatório: só
+      ler o código de saída e a linha `REGISTRADO:`.
 
       | Saída | O que fazer |
       |---|---|
-      | Código 0, com `REGISTRADO:` | Reproduzir essa linha e dizer que o recurso ficou `reviewed`, com o secure-invite gravado |
+      | Código 0, com `REGISTRADO:` | Reproduzir essa linha e dizer que o recurso ficou `reviewed`, com o `uid` e o secure-invite gravados |
       | Código 1 | O script não confirmou o `REVISADO` do agent, e é ele que decide o piso. Reproduzir o `RESULTADO` do script, dizer que nada foi gravado e que é preciso corrigir e refazer a revisão |
       | Código 2, com a mensagem do secure-invite | Exibir `erro:` seguido da mensagem tal como veio: "O secure-invite recebido não confere com o que foi revisado. Rode `/amflow-builder:review` novamente." |
       | Código 2, outra mensagem | Exibir a linha `erro:`, dizer que o recurso passou na revisão mas o status não foi gravado, e nunca editar o arquivo à mão. Se o `erro:` disser que o recurso não está numa das origens aceitas, o status mudou depois da listagem: para revisar, o Creator o retoma com `/amflow-builder:status` |
@@ -267,7 +273,7 @@ checagem, a revisão inteira rodaria antes de o Hub falhar ao pedir o secure-inv
   o estado do recurso no Hub; as únicas chamadas de rede são a tool `me` do servidor MCP
   `amflow-builder` — que este comando chama na Fase 0 e que o agent faz em `completar-frontmatter`
   para ler o id do autor — e a tool `issue_secure_invite`, que este comando chama no `REVISADO` para
-  obter o secure-invite, passando só os file digests, nunca conteúdo.
+  obter o secure-invite, passando só o `uid` e os file digests, nunca conteúdo.
 - Nunca gravar `blocked-RG<nn>` sem `--motivo`, e nunca por um gate que não seja o `PORTAO:` do
   relatório desta revisão — o comando não grava o `blocked` simples, que é do Creator.
 - Um recurso por execução — para revisar outro, executar de novo.

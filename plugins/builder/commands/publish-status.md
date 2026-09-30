@@ -19,7 +19,7 @@ auto_load: false
 dependencies: []
 
 # hub
-hub_id: ""
+uid: ""
 source: ""
 price: 0
 
@@ -44,11 +44,11 @@ Antes de qualquer outra ação, chame a tool `me` do servidor MCP `amflow-builde
 
 Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo.
 
-### Fase 1 — Coletar recursos publicados
+### Fase 1 — Coletar recursos com uid
 
 1. Verificar `.claude/CLAUDE.md` no diretório atual — encerrar com erro se ausente.
 
-2. Escanear o projeto em busca de recursos **com identificador do Hub preenchido**. Enquanto a
+2. Escanear o projeto em busca de recursos **com `uid` preenchido**. Enquanto a
    promoção para `.claude/` existir (`.claude/CLAUDE.md`, *Placement de Recursos*), a varredura cobre
    as duas raízes — a pasta de desenvolvimento (`<tipo>/`) e `.claude/<tipo>/`:
    - `skill` → `SKILL.md` em `skills/*/` e em `.claude/skills/*/`. **Pular a cópia com
@@ -72,7 +72,7 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    | Dado | `skill` | `agent`, `hook`, `command` |
    |---|---|---|
    | versão | `metadata.amflow-version` | `version` |
-   | identificador no Hub | `metadata.amflow-hub-id` | `hub_id` |
+   | uid | `metadata.amflow-uid` | `uid` |
 
    `estado` mora em `metadata.amflow-status` nos quatro tipos — não diverge mais por tipo; domínio em
    `docs/plan/builder/0014-unify-status-field/index.md`, no repositório AmFlow.
@@ -80,23 +80,32 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
    `name` está no topo nos quatro tipos; `type` vem da pasta em que o arquivo foi encontrado, não do
    frontmatter.
 
-   **O critério de descoberta é o identificador do Hub, não a origem.** A norma reserva
-   `amflow-source` à cópia instalada — a fonte no repositório do Creator nunca a tem, e procurar por
-   `source: hub/...` não encontraria skill nenhuma. Nos outros três tipos, `source` continua presente
-   e serve de sinal de apoio, mas quem decide é o identificador.
+   **O `uid` não diz se o recurso foi publicado, nem a origem.** Ele existe desde a primeira
+   revisão — um recurso `reviewed` que nunca foi ao Hub já o tem —, então a varredura só reúne os
+   candidatos: os recursos com `uid` preenchido. Publicado é o recurso que o Hub conhece por esse
+   `uid`, e quem responde é a tool `submission_status`, na Fase 2. A origem também não decide: a
+   norma reserva `amflow-source` à cópia instalada — a fonte no repositório do Creator nunca a tem, e
+   procurar por `source: hub/...` não encontraria skill nenhuma. Nos outros três tipos, `source`
+   continua presente e serve de sinal de apoio, mas quem decide é o Hub.
 
-   Se `--resource <nome>` informado → filtrar apenas esse recurso. Sem identificador do Hub →
-   encerrar: **"<nome> ainda não foi publicado. Use /amflow-builder:publish para publicar."**
+   Se `--resource <nome>` informado → filtrar apenas esse recurso. Sem `uid` (ou, na Fase 2, sem o
+   recurso no Hub) → encerrar: **"<nome> ainda não foi publicado. Use /amflow-builder:publish para publicar."**
 
-   Se nenhum recurso encontrado → encerrar: **"Nenhum recurso publicado encontrado no projeto. Use /amflow-builder:publish para publicar um recurso."**
+   Se nenhum recurso com `uid` encontrado → encerrar: **"Nenhum recurso publicado encontrado no projeto. Use /amflow-builder:publish para publicar um recurso."**
 
 ### Fase 2 — Consultar Hub
 
-3. Para cada recurso, chame a tool `submission_status({ hub_id: "<hub_id>" })`:
+3. Para cada candidato, chame a tool `submission_status({ uid: "<uid>" })`:
 
-   Resposta: `{ hub_id, name, type, version, submission_id, status, feedback, updated_at }`.
+   Resposta: `{ uid, name, type, version, submission_id, status, feedback, updated_at }`.
 
-   Erro da tool (recurso não encontrado, sem submissão) → registrar aviso por recurso e continuar os demais.
+   | Resposta | O que fazer |
+   |---|---|
+   | `status` presente | O Hub conhece o `uid` — recurso publicado. Segue para as Fases 3 e 4 |
+   | Erro "Recurso não encontrado" | O Hub não conhece o `uid`: o recurso ainda não foi publicado. Sai da lista, sem aviso — é o estado normal de um recurso revisado que nunca foi enviado. Com `--resource <nome>`, encerrar com a mensagem de "ainda não foi publicado" da Fase 1 |
+   | Outro erro (sem submissão, falha da tool) | Registrar aviso por recurso e continuar os demais |
+
+   Nenhum candidato publicado → encerrar com a mensagem de "nenhum recurso publicado" da Fase 1.
 
 ### Fase 3 — Exibir tabela
 

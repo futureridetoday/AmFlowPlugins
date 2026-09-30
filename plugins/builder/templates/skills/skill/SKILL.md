@@ -41,8 +41,8 @@ license: ""                # ex: MIT | Apache-2.0 | Proprietary — obrigatório
 # de string para string, e valor que não seja string é descartado.
 # As sete chaves descomentadas são obrigatórias desde a criação — presentes sempre, e
 # com valor exceto amflow-dependencies, que pode ficar vazia.
-# amflow-hub-id só existe após a 1ª publicação. amflow-source nunca aparece aqui: só na
-# cópia instalada, nunca no repositório do Creator.
+# amflow-uid só existe a partir da 1ª revisão — o /amflow-builder:review o grava. amflow-source
+# nunca aparece aqui: só na cópia instalada, nunca no repositório do Creator.
 metadata:
   amflow-version: "1.0.0"
   amflow-status: in_progress
@@ -51,7 +51,7 @@ metadata:
   amflow-updated: ""         # YYYY-MM-DD
   amflow-tags: ""            # separadas por espaço, kebab-case — nunca lista
   amflow-dependencies: ""    # type/name@version separadas por espaço — vazio quando não há dependência
-  # amflow-hub-id: ""        # uuid atribuído pelo Hub — só existe após a 1ª publicação, escrito pelo amflow-publish
+  # amflow-uid: ""           # uuid do recurso — só existe a partir da 1ª revisão, escrito pelo /amflow-builder:review
   # amflow.module.<nome>: "" # registro de módulo instalado — escrito pelo /amflow-builder:install-module, não editar à mão
 
 # ── referências de criação ────────────────────────────────────────────────────

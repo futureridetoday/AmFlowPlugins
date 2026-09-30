@@ -66,9 +66,9 @@ As tabelas de cada arquétipo, mais abaixo, cobrem só o que varia por tipo. Ist
 
 Dentro de `metadata`, sete chaves são obrigatórias desde a criação: `amflow-version`,
 `amflow-status`, `amflow-author`, `amflow-author-id`, `amflow-updated`, `amflow-tags`,
-`amflow-dependencies`. `amflow-hub-id` só existe depois da 1ª publicação; `amflow-source` só na cópia
-instalada — nenhuma das duas no repositório do Creator. `/amflow-builder:build` preenche o que dá pra
-preencher sozinho na Fase 0/3 (autor, uuid, data); `description`, tags e o que o arquétipo pedir de
+`amflow-dependencies`. `amflow-uid` só existe a partir da 1ª revisão, e é o `/amflow-builder:review`
+que o grava; `amflow-source` só na cópia instalada, nunca no repositório do Creator.
+`/amflow-builder:build` preenche o que dá pra preencher sozinho na Fase 0/3 (autor, uuid, data); `description`, tags e o que o arquétipo pedir de
 comportamento real é survey, não copy-paste do template.
 
 **Nunca declarar campo no valor default.** `disable-model-invocation: false`, `user-invocable: true`,

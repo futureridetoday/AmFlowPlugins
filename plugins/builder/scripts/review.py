@@ -28,14 +28,17 @@ hoje — os portões que `--bloquear` aceita.
 com `--registrar`, e só o `reviewed`: aponta o que falta, e quem pergunta é o comando `review`.
 
 `--file-digests` imprime, sem gravar nada, a foto do estado final do recurso — o manifesto como
-ficará com `reviewed` (calculado por `status.texto_estado_final`, sem gravar) e os demais arquivos
-do bundle como estão em disco —, num bloco `FILE_DIGESTS_JSON` depois da saída normal, só quando o
-resultado é `REVISADO` (plano require-secure-invite, index.md §1, §4).
+ficará com `reviewed` e um uid (o do manifesto, ou um `uuid.uuid4()` novo quando ele ainda não tem
+nenhum — D-8, plano unique-id) (calculado por `status.texto_estado_final`, sem gravar) e os demais
+arquivos do bundle como estão em disco —, num bloco `FILE_DIGESTS_JSON` (com a chave `uid`, ao lado
+de `type`/`name`/`version`/`file_digests`) depois da saída normal, só quando o resultado é
+`REVISADO` (plano require-secure-invite, index.md §1, §4; plano unique-id, index.md §1 linha 17).
 
 `--registrar <secure_invite>` confere o token que o Hub devolveu contra a foto do estado final
-recalculada (identidade e file digests) e, só se baterem, grava `reviewed` e o arquivo do
-secure-invite juntos, com o escritor do `status.py` — nunca um sem o outro (index.md §3, §4;
-decisão 15). Grava só se o resultado é `REVISADO` e o recurso está em `in_progress`, `blocked-RG*`
+recalculada com o uid do próprio payload (identidade e file digests) e, só se baterem, grava
+`reviewed`, esse uid e o arquivo do secure-invite juntos, com o escritor do `status.py` — nunca um
+sem os outros (index.md §3, §4; decisão 15; uid acrescentado pela unidade 0023-06, plano unique-id,
+index.md §5). Grava só se o resultado é `REVISADO` e o recurso está em `in_progress`, `blocked-RG*`
 ou `reviewed` (decisão 27) — nos demais o arquivo fica intacto (plano 0019). Fora dessas origens, ou
 se o secure-invite não confere, a gravação é recusada, com saída 2. O script refaz a revisão e a
 foto antes de gravar: o comando o chama depois de o Hub devolver o secure-invite, mas o piso
@@ -83,6 +86,7 @@ import re
 import shutil
 import subprocess
 import sys
+import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -974,19 +978,49 @@ def _caminho_canonico(alvo: Alvo, relativo: str) -> str:
     return f".claude/{alvo.tipo}s/{alvo.nome}/{relativo}"
 
 
-def file_digests_estado_final(alvo: Alvo) -> dict[str, str]:
+def file_digests_estado_final(alvo: Alvo, uid: str | None = None) -> dict[str, str]:
     """SHA-256 hex de cada arquivo do bundle, pelo caminho canônico — o manifesto como ficará
     gravado com `reviewed` (via `status.texto_estado_final`, sem gravar) e os demais arquivos do
-    bundle como estão em disco (plano require-secure-invite, index.md §1)."""
+    bundle como estão em disco (plano require-secure-invite, index.md §1).
+
+    `uid` (unidade 0023-06, plano unique-id, index.md §1 linha 17, §5) entra na foto do manifesto
+    do mesmo jeito que `reviewed` entra — via `status.texto_estado_final`, sem gravar. `None`
+    (default) não mexe no campo, o mesmo comportamento de antes desta unidade: quem quer a foto com
+    um uid proposto chama `proposed_uid` e passa o resultado aqui; `registrar` passa o uid lido do
+    payload do secure-invite.
+    """
     status_mod = _carregar_status()
     bundle = montar_bundle(alvo.pasta)
     manifesto_relativo = alvo.manifesto.relative_to(alvo.pasta).as_posix()
-    texto_final = status_mod.texto_estado_final(alvo.projeto, alvo.manifesto, "reviewed")
+    texto_final = status_mod.texto_estado_final(alvo.projeto, alvo.manifesto, "reviewed", uid)
     digests: dict[str, str] = {}
     for relativo, conteudo in bundle.selecionados.items():
         conteudo_final = texto_final if relativo == manifesto_relativo else conteudo
         digests[_caminho_canonico(alvo, relativo)] = hashlib.sha256(conteudo_final.encode("utf-8")).hexdigest()
     return digests
+
+
+def _manifest_uid(alvo: Alvo, status_mod) -> str | None:
+    """O uid já presente no manifesto, lido do disco — `metadata.amflow-uid` em skill, `uid` no
+    topo nos demais tipos (mesmo lugar que `status._gravar_uid` grava). `None` quando ausente ou
+    vazio (unidade 0023-06, plano unique-id)."""
+    text = alvo.manifesto.read_text(encoding="utf-8")
+    fm = check.parsear(text)
+    if fm is None:
+        return None
+    field = (
+        fm.metadata.get(status_mod.CHAVE_UID_SKILL)
+        if alvo.tipo == "skill"
+        else fm.topo.get(status_mod.CHAVE_UID_TOPO)
+    )
+    return field.texto if field and field.texto else None
+
+
+def proposed_uid(alvo: Alvo) -> str:
+    """O uid que `--file-digests` propõe: o valor já presente no manifesto, ou um `uuid.uuid4()`
+    novo quando ele ainda não tem nenhum (D-8; plano unique-id, index.md §1 linha 17, §5)."""
+    status_mod = _carregar_status()
+    return _manifest_uid(alvo, status_mod) or str(uuid.uuid4())
 
 
 def decodificar_secure_invite(token: str) -> dict:
@@ -1009,12 +1043,22 @@ def decodificar_secure_invite(token: str) -> dict:
 
 def registrar(projeto: Path, local: str, secure_invite: str):
     """Confere o secure-invite contra a foto do estado final recalculada e, só se identidade e file
-    digests baterem, grava `reviewed` e o arquivo do secure-invite juntos, com o escritor do
-    `status.py` (plano require-secure-invite, index.md §4, passo 5; decisão 15).
+    digests baterem, grava `reviewed`, o uid do payload e o arquivo do secure-invite juntos, com o
+    escritor do `status.py` (plano require-secure-invite, index.md §4, passo 5; decisão 15; uid
+    acrescentado pela unidade 0023-06, plano unique-id, index.md §5).
 
     Refaz a foto aqui, mesmo que o comando já tenha chamado `--file-digests` antes: pega qualquer
-    mudança no disco entre a emissão do secure-invite e este registro. Devolve o `ResultadoSet` do
-    escritor; quem chama só o faz sobre um relatório `REVISADO`.
+    mudança no disco entre a emissão do secure-invite e este registro — a foto usa o uid do próprio
+    payload (`payload.get("uid")`), então um uid diferente do que a foto local usaria já faz o
+    digest do manifesto divergir, sem precisar de uma comparação de uid isolada nos dois casos:
+    manifesto ainda sem uid, ou manifesto com o mesmo uid do payload.
+
+    **Exceção (L-18):** quando o manifesto já tem um uid, a transformação o preserva — a foto não
+    muda, então o digest não diverge sozinha se o payload alegar um uid diferente. Por isso, com
+    manifesto já tendo uid, o uid do payload é comparado com o do manifesto por conta própria, e a
+    divergência recusa com a mesma mensagem de "não confere" — sem mensagem nova (index.md §5).
+
+    Devolve o `ResultadoSet` do escritor; quem chama só o faz sobre um relatório `REVISADO`.
     """
     status_mod = _carregar_status()
     alvo = identificar(projeto, local)
@@ -1026,20 +1070,23 @@ def registrar(projeto: Path, local: str, secure_invite: str):
     texto = alvo.manifesto.read_text(encoding="utf-8")
     fm = check.parsear(texto)
     versao = _versao(fm, alvo.tipo) if fm is not None else None
-    digests = file_digests_estado_final(alvo)
+    payload_uid = payload.get("uid")
+    existing_uid = _manifest_uid(alvo, status_mod)
+    uid_changed = existing_uid is not None and payload_uid != existing_uid
+    digests = file_digests_estado_final(alvo, payload_uid)
     recurso_payload = payload.get("resource") or {}
     identidade_ok = (
         recurso_payload.get("type") == alvo.tipo
         and recurso_payload.get("name") == alvo.nome
         and recurso_payload.get("version") == versao
     )
-    if not identidade_ok or payload.get("file_digests") != digests:
+    if uid_changed or not identidade_ok or payload.get("file_digests") != digests:
         return status_mod.ResultadoSet(
             False,
             "O secure-invite recebido não confere com o que foi revisado. Rode "
             "`/amflow-builder:review` novamente.",
         )
-    return status_mod.registrar_revisado(projeto, alvo.manifesto, secure_invite)
+    return status_mod.registrar_revisado(projeto, alvo.manifesto, secure_invite, payload_uid)
 
 
 def formatar(rel: Relatorio) -> str:
@@ -1128,11 +1175,13 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.file_digests and relatorio.resultado == "REVISADO":
         alvo = identificar(projeto, args.local)
+        uid = proposed_uid(alvo)
         payload = {
             "type": alvo.tipo,
             "name": alvo.nome,
             "version": relatorio.versao,
-            "file_digests": file_digests_estado_final(alvo),
+            "uid": uid,
+            "file_digests": file_digests_estado_final(alvo, uid),
         }
         print("FILE_DIGESTS_JSON:")
         print(json.dumps(payload, ensure_ascii=False))

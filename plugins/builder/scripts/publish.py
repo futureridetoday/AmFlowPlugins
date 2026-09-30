@@ -3,8 +3,9 @@
 
 Scanner de segurança em camadas (plano publish-reviewed-only, decisão 6): camada 1, só um recurso
 com `amflow-status: reviewed` chega ao bundle; camada 2 (plano require-secure-invite), o
-secure-invite check — presente, identidade e file digests batendo com o disco, sem rede (index.md
-§6). Monta o pacote com `montar_bundle` (`review.py`) — a mesma seleção que a revisão mede —
+secure-invite check — presente, identidade, uid e file digests batendo com o disco, sem rede
+(index.md §6; uid acrescentado pela unidade 0023-06, plano unique-id, index.md §5, D-1). Monta o
+pacote com `montar_bundle` (`review.py`) — a mesma seleção que a revisão mede —
 mapeado para o caminho canônico que o Hub aceita (`.claude/<tipo>s/<nome>/…`, medido em
 `teste-publish-hub-producao.md`), e grava o resultado da submissão só depois do aceite, pelo
 escritor de `status.py`.
@@ -25,7 +26,7 @@ Uso:
   publish.py <projeto> <local>
   publish.py <projeto> <local> --conferir
   publish.py <projeto> <local> --versao-producao <versao>
-  publish.py <projeto> <local> --registrar --hub-id <uuid> --versao <versao>
+  publish.py <projeto> <local> --registrar --uid <uuid> --versao <versao>
   publish.py <projeto> <local> --negar
 
 `<local>` é o caminho do manifesto relativo ao projeto — o mesmo que `status.py list` imprime na
@@ -102,17 +103,17 @@ class Preparo:
     tipo: str = ""
     nome: str = ""
     versao: str | None = None
-    hub_id: str | None = None
+    uid: str | None = None
     arquivos: dict[str, str] = field(default_factory=dict)  # caminho canônico → conteúdo
     omitidos: dict[str, str] = field(default_factory=dict)  # caminho relativo → motivo
     secure_invite: str | None = None  # JWS de uma linha, lido de disco sem transformação
     motivo: str | None = None
 
 
-def _hub_id(fm, tipo: str) -> str | None:
-    """Onde o identificador do Hub mora hoje, por tipo — mesmas constantes que `status._gravar_hub_id`
+def _uid(fm, tipo: str) -> str | None:
+    """Onde o identificador do Hub mora hoje, por tipo — mesmas constantes que `status._gravar_uid`
     usa para gravar, nunca uma segunda cópia dos literais."""
-    campo = fm.metadata.get(status.CHAVE_HUB_ID_SKILL) if tipo == "skill" else fm.topo.get(status.CHAVE_HUB_ID_TOPO)
+    campo = fm.metadata.get(status.CHAVE_UID_SKILL) if tipo == "skill" else fm.topo.get(status.CHAVE_UID_TOPO)
     return campo.texto if campo and campo.texto else None
 
 
@@ -125,12 +126,28 @@ _MSG_IDENTIDADE_DIFERENTE = (
     "O tipo, o nome ou a versão do recurso mudaram desde a revisão. Rode `/amflow-builder:review` "
     "novamente antes de publicar."
 )
+# As duas de baixo são da unidade 0023-06 (plano unique-id, index.md §5, D-1) — checagens novas da
+# camada 2, além das duas acima.
+_MSG_SECURE_INVITE_MISSING_UID = (
+    "Este secure-invite não tem uid. Rode `/amflow-builder:review` novamente antes de publicar."
+)
+_MSG_UID_CHANGED = (
+    "O uid do recurso mudou desde a revisão. Rode `/amflow-builder:review` novamente antes de "
+    "publicar."
+)
+_MSG_UID_MISMATCH = (
+    "O uid devolvido pelo Hub é diferente do uid local. Publicação não registrada — tente "
+    "novamente; se persistir, contate o suporte."
+)
 
 
-def _verificar_secure_invite(alvo, tipo: str, nome: str, versao: str | None) -> tuple[str | None, str | None]:
+def _verificar_secure_invite(
+    alvo, tipo: str, nome: str, versao: str | None, disk_uid: str | None
+) -> tuple[str | None, str | None]:
     """Secure-invite check — camada 2 do scanner (index.md §6), sem rede. `(None, texto)` quando
-    bate: secure-invite presente, identidade do payload igual à do manifesto em disco, e os file
-    digests do payload iguais aos recalculados agora. `(motivo, None)` na primeira recusa."""
+    bate: secure-invite presente, identidade do payload igual à do manifesto em disco, uid do
+    payload presente e igual ao uid em disco (unidade 0023-06, plano unique-id, index.md §5, D-1), e
+    os file digests do payload iguais aos recalculados agora. `(motivo, None)` na primeira recusa."""
     arquivo = alvo.pasta / review.NOME_SECURE_INVITE
     if not arquivo.is_file():
         return _MSG_SECURE_INVITE_AUSENTE, None
@@ -147,6 +164,12 @@ def _verificar_secure_invite(alvo, tipo: str, nome: str, versao: str | None) -> 
         or recurso_payload.get("version") != versao
     ):
         return _MSG_IDENTIDADE_DIFERENTE, None
+
+    payload_uid = payload.get("uid")
+    if not payload_uid:
+        return _MSG_SECURE_INVITE_MISSING_UID, None
+    if disk_uid != payload_uid:
+        return _MSG_UID_CHANGED, None
 
     bundle = review.montar_bundle(alvo.pasta)
     digests_atuais = {
@@ -188,7 +211,8 @@ def _checar_camadas(projeto: Path, local: str):
         return alvo, None, None, None, f"frontmatter ausente ou malformado — {alvo.manifesto}"
 
     versao = review._versao(fm, alvo.tipo)
-    motivo, secure_invite = _verificar_secure_invite(alvo, alvo.tipo, alvo.nome, versao)
+    disk_uid = _uid(fm, alvo.tipo)
+    motivo, secure_invite = _verificar_secure_invite(alvo, alvo.tipo, alvo.nome, versao, disk_uid)
     if motivo:
         return alvo, fm, versao, None, motivo
     return alvo, fm, versao, secure_invite, None
@@ -217,7 +241,7 @@ def preparar(projeto: Path, local: str) -> Preparo:
         tipo=alvo.tipo,
         nome=alvo.nome,
         versao=versao,
-        hub_id=_hub_id(fm, alvo.tipo),
+        uid=_uid(fm, alvo.tipo),
         arquivos=arquivos,
         omitidos=bundle.omitidos,
         secure_invite=secure_invite,
@@ -277,10 +301,18 @@ def checar_versao(projeto: Path, local: str, producao: str) -> tuple[bool, str]:
     return True, f"Versão local ({versao_local}) supera a produção ({producao})."
 
 
-def registrar(projeto: Path, local: str, hub_id: str, versao: str):
-    """Grava depois do aceite do Hub, com o escritor do `status.py`. Devolve o `ResultadoSet` dele."""
+def registrar(projeto: Path, local: str, uid: str, versao: str):
+    """Grava depois do aceite do Hub, com o escritor do `status.py` — mas só quando o uid que o Hub
+    devolveu é igual ao uid local; recusa, sem gravar, quando diferem (unidade 0023-06, plano
+    unique-id, index.md §5). Devolve o `ResultadoSet` do escritor, ou o da recusa, no mesmo
+    formato."""
     alvo = review.identificar(projeto, local)
-    return status.registrar_publicado(projeto, alvo.manifesto, hub_id, versao)
+    text = alvo.manifesto.read_text(encoding="utf-8")
+    fm = check.parsear(text)
+    local_uid = _uid(fm, alvo.tipo) if fm is not None else None
+    if local_uid != uid:
+        return status.ResultadoSet(False, _MSG_UID_MISMATCH)
+    return status.registrar_publicado(projeto, alvo.manifesto, uid, versao)
 
 
 def negar(projeto: Path, local: str):
@@ -297,7 +329,7 @@ def formatar(preparo: Preparo) -> str:
     saida = [
         "RESULTADO: OK",
         f"RECURSO: {preparo.tipo}/{preparo.nome}" + (f" v{preparo.versao}" if preparo.versao else ""),
-        f"HUB_ID: {preparo.hub_id or ''}",
+        f"UID: {preparo.uid or ''}",
         f"SECURE_INVITE: {preparo.secure_invite or ''}",
     ]
     if preparo.omitidos:
@@ -316,7 +348,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("projeto", type=Path)
     parser.add_argument("local", help="caminho do manifesto relativo ao projeto — ex.: skills/deep-research/SKILL.md")
     grupo = parser.add_mutually_exclusive_group()
-    grupo.add_argument("--registrar", action="store_true", help="grava depois do aceite do Hub — exige --hub-id e --versao")
+    grupo.add_argument("--registrar", action="store_true", help="grava depois do aceite do Hub — exige --uid e --versao")
     grupo.add_argument(
         "--conferir",
         action="store_true",
@@ -333,7 +365,7 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="grava 'denied' a partir de 'reviewed' — publicação recusada pela entry validation do Hub",
     )
-    parser.add_argument("--hub-id", default=None, help="uuid devolvido pelo Hub — exigido com --registrar")
+    parser.add_argument("--uid", default=None, help="uuid devolvido pelo Hub — exigido com --registrar")
     parser.add_argument("--versao", default=None, help="versão submetida — exigida com --registrar")
     args = parser.parse_args(argv)
 
@@ -364,14 +396,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0 if ok else 1
 
     if args.registrar:
-        if not args.hub_id:
-            print("erro: --registrar exige --hub-id", file=sys.stderr)
+        if not args.uid:
+            print("erro: --registrar exige --uid", file=sys.stderr)
             return 2
         if not args.versao:
             print("erro: --registrar exige --versao", file=sys.stderr)
             return 2
         try:
-            resultado = registrar(projeto, args.local, args.hub_id, args.versao)
+            resultado = registrar(projeto, args.local, args.uid, args.versao)
         except (ErroUso, review.ErroUso) as exc:
             print(f"erro: {exc}", file=sys.stderr)
             return 2

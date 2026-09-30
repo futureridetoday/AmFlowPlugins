@@ -40,8 +40,8 @@ auto_load: false
 tags: [workflow]
 dependencies: [workflow-runner, backlog-worker]
 
-# ── amflow — hub (preenchido automaticamente pelo amflow-publish) ──────────────
-hub_id: ""
+# ── amflow — hub (preenchido automaticamente pela revisão e pelo amflow-publish) ──
+uid: ""
 source: ""
 price: 0
 ---

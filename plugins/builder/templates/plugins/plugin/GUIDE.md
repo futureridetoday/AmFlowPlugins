@@ -76,7 +76,7 @@ adicione só quando o plugin precisar:
 | Campo | Para quê |
 |---|---|
 | `homepage`, `repository`, `license`, `keywords` | Metadados de descoberta — só valem quando o plugin tem essas informações de verdade |
-| `metadata` | Objeto livre — **o Claude Code nunca lê**, nunca afeta comportamento. É onde entraria rastreio específico do AmFlow (`hub_id`, status de publicação) *se* `plugin` vier a ser tipo distribuído pelo Hub — decisão em aberto, não implementada aqui. Mesmo padrão que `module.json` já usa em `metadata.amflow-status` |
+| `metadata` | Objeto livre — **o Claude Code nunca lê**, nunca afeta comportamento. É onde entraria rastreio específico do AmFlow (`uid`, status de publicação) *se* `plugin` vier a ser tipo distribuído pelo Hub — decisão em aberto, não implementada aqui. Mesmo padrão que `module.json` já usa em `metadata.amflow-status` |
 | `defaultEnabled` | `false` se o plugin deve nascer desabilitado. Padrão é `true` |
 | `dependencies` | Outros plugins que este exige, com restrição de versão opcional |
 | `userConfig` | Valores que o Claude Code pergunta ao usuário quando o plugin é habilitado — a forma oficial de coletar config (tipo, título, descrição, `sensitive` para segredo) |
@@ -189,7 +189,7 @@ auditados contra o padrão oficial em 2026-07 (`auditoria-plugins-distribuicao.m
 
 ## Em aberto
 
-Este template não assume integração com o pipeline de publicação do AmFlow — `hub_id`, status de
+Este template não assume integração com o pipeline de publicação do AmFlow — `uid`, status de
 revisão, preço. Ainda não está decidido se `plugin` será um tipo de recurso distribuído pelo Hub.
 Se isso for decidido, o rastreio entra em `metadata` (ver tabela acima), sem mexer nos campos
 reais do manifesto.

@@ -108,8 +108,8 @@ d1: ""                     # vertical: dev | product | design | data | marketing
 d2: ""                     # função dentro da vertical (ex: Dev Frontend · Data Analyst · Copywriter)
 d4: ""                     # output: report | code | content | file | action | feedback
 
-# ── amflow — hub (preenchido automaticamente pelo amflow-publish) ──────────────
-hub_id: ""
+# ── amflow — hub (preenchido automaticamente pela revisão e pelo amflow-publish) ──
+uid: ""                    # uuid atribuído na primeira revisão
 source: ""                 # hub/<tipo>/<nome>@<versão> | local
 price: 0                   # centavos — usado na publicação; 0 = gratuito (definido pelo Creator, não preenchido automaticamente)
 ---
