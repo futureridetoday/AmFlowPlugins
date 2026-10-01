@@ -27,7 +27,8 @@ arquivo entrar duas vezes no contexto é aceito de propósito.
 
 <!-- auth-check:start — cópia de auth/auth-check.md; editar lá, nunca aqui -->
 Antes de qualquer outra ação do comando, chame a tool `iam` do servidor MCP `amflow-worker`, sem
-argumentos.
+argumentos. Chame-a sozinha e espere a resposta: nenhuma outra chamada de tool antes do resultado,
+nem em paralelo com ela.
 
 | Resultado | O que fazer |
 |---|---|
@@ -45,9 +46,10 @@ Nunca exiba tokens — a sessão OAuth é gerida pelo cliente, fora do contexto 
 
 Tudo é leitura — nada aqui altera estado, nada pede confirmação.
 
-1. Ler `.claude/CLAUDE.md` com a ferramenta Read.
-2. Se houver `CLAUDE.md` na raiz do projeto além do de `.claude/`, ler os dois — ambos carregam, e o
-   conflito entre eles é a primeira coisa a reportar.
+1. Ler `.claude/CLAUDE.md` inteiro com a ferramenta Read, sem `limit` nem `offset` — a leitura
+   parcial não recoloca as instruções no contexto, que é o motivo de reler.
+2. Se houver `CLAUDE.md` na raiz do projeto além do de `.claude/`, ler os dois, inteiros — ambos
+   carregam, e o conflito entre eles é a primeira coisa a reportar.
 3. Sem `.claude/CLAUDE.md`, dizer que o projeto não está configurado e encerrar. Não sugerir
    comando.
 

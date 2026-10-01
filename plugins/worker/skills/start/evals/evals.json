@@ -7,7 +7,8 @@
       "expected_output": "Com o conector amflow-worker autorizado e um projeto com .claude/CLAUDE.md, devolve duas linhas com o nome e o propósito do projeto, sem mencionar a verificação de login.",
       "files": [],
       "assertions": [
-        "A tool iam do servidor amflow-worker foi chamada antes de qualquer leitura",
+        "A tool iam do servidor amflow-worker foi chamada sozinha, antes de qualquer outra chamada de tool e sem chamada em paralelo",
+        "O .claude/CLAUDE.md foi lido inteiro, sem limit nem offset",
         "O output tem duas linhas e não reproduz o conteúdo do CLAUDE.md",
         "O output não menciona login, sessão nem autenticação"
       ]

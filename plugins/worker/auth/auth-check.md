@@ -1,5 +1,6 @@
 Antes de qualquer outra ação do comando, chame a tool `iam` do servidor MCP `amflow-worker`, sem
-argumentos.
+argumentos. Chame-a sozinha e espere a resposta: nenhuma outra chamada de tool antes do resultado,
+nem em paralelo com ela.
 
 | Resultado | O que fazer |
 |---|---|
