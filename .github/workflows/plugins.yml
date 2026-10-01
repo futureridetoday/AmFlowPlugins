@@ -36,3 +36,6 @@ jobs:
 
       - name: Verificar superfície dos plugins
         run: python3 scripts/check-surface.py
+
+      - name: Verificar cópias da autenticação do Worker
+        run: python3 scripts/check-auth-block.py

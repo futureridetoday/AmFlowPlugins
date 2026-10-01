@@ -44,14 +44,14 @@ from urllib.parse import urlsplit
 RAIZ = Path(__file__).resolve().parent.parent
 
 HOST_ESPERADO = "amflow.work"
-DIRS_PROSA = ("commands", "skills", "agents")
+DIRS_PROSA = ("commands", "skills", "agents", "auth")
 
 SUPERFICIES = {
     "worker": {
         "dir": "plugins/worker",
         "chave_servidor": "amflow-worker",
         "caminho_mcp": "/mcp",
-        "tools": {"search_catalog", "list_active_licenses", "check_updates", "install", "update"},
+        "tools": {"iam", "search_catalog", "list_active_licenses", "check_updates", "install", "update"},
     },
     "builder": {
         "dir": "plugins/builder",

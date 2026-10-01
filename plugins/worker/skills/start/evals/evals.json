@@ -1,0 +1,36 @@
+{
+  "skill_name": "start",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "/amflow-worker:start",
+      "expected_output": "Com o conector amflow-worker autorizado e um projeto com .claude/CLAUDE.md, devolve duas linhas com o nome e o propósito do projeto, sem mencionar a verificação de login.",
+      "files": [],
+      "assertions": [
+        "A tool iam do servidor amflow-worker foi chamada antes de qualquer leitura",
+        "O output tem duas linhas e não reproduz o conteúdo do CLAUDE.md",
+        "O output não menciona login, sessão nem autenticação"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "/amflow-worker:start",
+      "expected_output": "Sem o conector amflow-worker autorizado, encerra orientando autorizar o conector pelo /mcp e repetir o comando, sem ler o CLAUDE.md.",
+      "files": [],
+      "assertions": [
+        "O output orienta autorizar o conector amflow-worker pelo /mcp",
+        "O CLAUDE.md do projeto não foi lido"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "/amflow-worker:start",
+      "expected_output": "Logado, numa pasta sem .claude/CLAUDE.md, diz que o projeto não está configurado e encerra, sem sugerir comando.",
+      "files": [],
+      "assertions": [
+        "O output diz que o projeto não está configurado",
+        "O output não sugere nenhum comando"
+      ]
+    }
+  ]
+}

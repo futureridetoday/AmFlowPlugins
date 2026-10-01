@@ -1,0 +1,18 @@
+{
+  "skill_name": "start",
+  "description_under_test": "Abre a sessão no projeto atual — confere o login no AmFlow, relê o CLAUDE.md do projeto e devolve a identidade dele em duas linhas.",
+  "queries": [
+    {
+      "query": "relê o CLAUDE.md e me diz em duas linhas do que se trata este projeto",
+      "should_trigger": false
+    },
+    {
+      "query": "vamos começar a sessão, me dá um resumo do projeto",
+      "should_trigger": false
+    },
+    {
+      "query": "estou logado no AmFlow? confere a minha sessão",
+      "should_trigger": false
+    }
+  ]
+}
