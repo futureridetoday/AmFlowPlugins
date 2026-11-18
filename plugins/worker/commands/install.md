@@ -3,7 +3,7 @@
 name: install
 type: command
 project: AmFlow
-description: Instala um recurso adquirido no Hub em um projeto específico — resolve licença e dependências via MCP e escreve os arquivos em <projeto>/.claude/
+description: Instala um recurso adquirido no Hub em um projeto específico — resolve licença e dependências via MCP e baixa o pacote, confere e instala os arquivos em <projeto>/.claude/
 tags: [install, licenses, worker, project, mcp]
 
 # history
@@ -25,11 +25,12 @@ price: 0
 
 # claude-code
 argument-hint: <type>/<name>
+allowed-tools: Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" *)
 ---
 
 # /amflow-worker:install
 
-Instala um recurso adquirido no Hub em um projeto específico — diferente do [`get`](get.md), que instala em escopo global (`~/.claude/`). Usa a tool `install` do servidor MCP `amflow-worker` (declarado em `.mcp.json`) — sem `curl`/Bash, sem token no contexto do modelo. Autenticação via OAuth do `/mcp` (M3), cuidada pelo próprio Claude Code na primeira chamada.
+Instala um recurso adquirido no Hub em um projeto específico — diferente do [`get`](get.md), que instala em escopo global (`~/.claude/`). Usa a tool `install` do servidor MCP `amflow-worker` (declarado em `.mcp.json`) — sem token no contexto do modelo: o pacote chega por link assinado e quem baixa, confere e grava é o script `fetch_package.py`, não o modelo. Autenticação via OAuth do `/mcp` (M3), cuidada pelo próprio Claude Code na primeira chamada.
 
 Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type` ∈ `skill | agent | command | hook`. Se ausente ou fora do formato, pergunte ao usuário qual recurso instalar.
 
@@ -67,29 +68,43 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
 
    - Erro de licença ("Recurso não encontrado."/"Licença ativa necessária...") → encerre exibindo a mensagem retornada pela tool.
    - Erro de dependência bloqueada ("Dependências bloqueadas — ...") → encerre exibindo a mensagem — já lista quais dependências e por quê (sem licença ou não encontradas no Hub).
-   - Sucesso → prossiga com `{name, type, version, files, dependencies}`.
+   - Sucesso → prossiga com `{name, type, version, expires_at, packages}`. `packages` traz o recurso e as dependências, cada um com `download_url`, `sha256`, `size_bytes` e `file_count`.
 
-4. **Confirmação humana (M10) — obrigatória, não pule.** Exiba ao usuário a lista de arquivos que serão escritos (de `files`) e as dependências incluídas, se houver (`dependencies`). Use `AskUserQuestion`: **"Confirmar instalação"** ou **"Cancelar"**. Só prossiga para o passo 5 após confirmação explícita — cancelar encerra sem escrever nada.
-
-5. Para cada entrada em `files`, escreva o conteúdo com a ferramenta Write em `<projeto>/<path>` (o path já vem prefixado com `.claude/`). O hook de path-safety do Worker valida cada path automaticamente antes da escrita — rejeição aqui não deveria acontecer (o servidor já valida), mas se ocorrer, é a barreira determinística funcionando, não um bug do command. Sobrescreva se já existir.
-
-6. **`skill`: recomponha `amflow-source` e `amflow-status` — o bundle nunca os carrega.** O Hub remove
-   os dois da fonte na publicação (`scripts/frontmatter/skill-frontmatter.md` §3, no repositório
-   AmFlow); quem instala é quem sabe de onde o recurso veio. Com a ferramenta Edit, no bloco `metadata`
-   do `SKILL.md` recém-escrito, defina `amflow-source: hub/<type>/<name>@<version>` e
-   `amflow-status: published` — sobrescrevendo o que vier no bundle. `<type>`, `<name>` e `<version>`
-   são os do passo 3; não leia de volta o que acabou de escrever.
-
-   `agent`, `hook` e `command` têm a mesma lacuna do lado de `source`/`status` — fora do escopo desta
-   norma (B-06, `docs/plan/_inbox/_backlog.md`, no repositório AmFlow), não corrigida aqui.
-
-7. Para todo arquivo escrito cujo nome termine em `hook.sh`, ajuste a permissão de execução (a ferramenta Write não seta o bit):
+4. **Fase 1 — baixar.** Passe o array `packages` ao script, exatamente como a tool o devolveu, sem alterar um caractere dos links:
 
    ```bash
-   chmod 755 "<projeto>/<path-do-hook.sh>"
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" baixar --raiz "<projeto>" <<'AMFLOW_PACKAGES_EOF'
+   <o array `packages`, em JSON>
+   AMFLOW_PACKAGES_EOF
    ```
 
-8. Confirme: **"Recurso '`<name>`' instalado em `<projeto>`."** — inclua as dependências instaladas junto, se houver.
+   O script baixa, confere tamanho e SHA-256, inspeciona os nomes das entradas e **não instala nada**. Guarde a linha `AREA:` da saída. Leia o código de saída:
+
+   | Código | O que fazer |
+   |---|---|
+   | 0 | Segue |
+   | 2 | Erro de uso do script — reporte o `MOTIVO` |
+   | 10 | Rede, HTTP diferente de 2xx ou link vencido — chame `install` de novo (link novo) e repita |
+   | 11 | Tamanho ou SHA-256 divergente — idem; na **segunda** falha seguida, pare e reporte |
+   | 12 | Pacote inválido — pare; é inconsistência do Hub, não do usuário |
+   | 13 | Destino — pare e mostre o caminho do `MOTIVO` |
+   | 20 | Sem conexão com o domínio do link — diga que esta superfície não suporta o download e não tente de novo |
+
+   Nos códigos 10 a 13 e 20 nenhum recurso instalado foi alterado.
+
+5. **Confirmação humana (M10) — obrigatória, não pule.** Exiba ao usuário as linhas `PACOTE:` (o recurso e as dependências) e `ARQUIVO:` (cada arquivo que será escrito, com o tamanho). Use `AskUserQuestion`: **"Confirmar instalação"** ou **"Cancelar"**. Só prossiga para o passo 6 após confirmação explícita. Cancelar encerra sem instalar nada: descarte a área com `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" descartar --raiz "<projeto>" --area "<AREA>"` — o script recusa caminho que não seja uma área dele e nenhum outro comando apaga arquivo.
+
+6. **Fase 2 — aplicar.** Nenhum recurso é escrito antes deste passo:
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" aplicar --raiz "<projeto>" --area "<AREA>"
+   ```
+
+   O script confere o SHA-256 de novo, extrai, troca cada recurso por inteiro (a versão anterior só sai depois da nova no lugar), grava `amflow-source` e `amflow-status` na skill, dá permissão de execução a `hook.sh` e apaga a área. Leia o código de saída pela mesma tabela do passo 4; as linhas `INSTALADO:` dizem o que foi instalado.
+
+   `agent`, `hook` e `command` não ganham `amflow-source`/`amflow-status` — fora do escopo desta norma (B-06, `docs/plan/_inbox/_backlog.md`, no repositório AmFlow).
+
+7. Confirme: **"Recurso '`<name>`' instalado em `<projeto>`."** — inclua as dependências instaladas junto, se houver.
 
 ## Tratamento de erros
 
@@ -98,8 +113,9 @@ Argumento recebido: `$ARGUMENTS` — formato esperado `<type>/<name>` com `type`
 ## Restrições
 
 - Nunca exiba tokens ao usuário — a sessão OAuth é gerida pelo cliente, fora do contexto do modelo.
-- Nunca escreva arquivos fora de `<projeto>/.claude/` — reforçado pelo hook de path-safety.
-- Nunca chame `Write` antes de completar o passo 4 (confirmação).
+- Nunca escreva arquivos de recurso com `Write` ou `Edit`: quem escreve é o `fetch_package.py`, que só grava dentro de `<projeto>/.claude/`.
+- Nunca rode a fase `aplicar` antes de completar o passo 5 (confirmação).
+- Nunca exiba os links de download: carregam um token de curta duração.
 
 ## Fora de escopo
 

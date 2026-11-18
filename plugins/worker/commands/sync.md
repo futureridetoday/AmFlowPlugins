@@ -22,11 +22,14 @@ dependencies: []
 uid: ""
 source: ""
 price: 0
+
+# claude-code
+allowed-tools: Bash(python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" *)
 ---
 
 # /amflow-worker:sync
 
-Sincroniza todos os recursos com licença ativa — públicos adquiridos e exclusivos atribuídos. Instala em escopo global (`~/.claude/`), disponível em todos os projetos. Recursos instalados por outras fontes (git, cópia manual) não são tocados. Usa as tools `list_active_licenses` e `install` do servidor MCP `amflow-worker`.
+Sincroniza todos os recursos com licença ativa — públicos adquiridos e exclusivos atribuídos. Instala em escopo global (`~/.claude/`), disponível em todos os projetos. Recursos instalados por outras fontes (git, cópia manual) não são tocados. Usa as tools `list_active_licenses` e `install` do servidor MCP `amflow-worker`; o pacote chega por link assinado e quem baixa, confere e grava é o script `fetch_package.py`, não o modelo.
 
 ## Processo
 
@@ -34,22 +37,49 @@ Sincroniza todos os recursos com licença ativa — públicos adquiridos e exclu
 
    Array vazio → informe **"Nenhum recurso licenciado para sincronizar."** e vá ao passo 6.
 
-2. **Confirmação humana (M10) — obrigatória, não pule.** Exiba a lista de recursos retornados (`<type>/<name>`) e use `AskUserQuestion`: **"Sincronizar N recursos"** ou **"Cancelar"**. Só prossiga para o passo 3 após confirmação explícita — uma confirmação cobre o lote inteiro (não pergunte recurso por recurso).
-
-3. Para cada recurso da lista, chame a tool `install`:
+2. Para cada recurso da lista, chame a tool `install`:
 
    ```
    install({ type: "<type>", name: "<name>", scope: "global" })
    ```
 
-   Resposta: `{name, type, version, files, dependencies}`.
+   Resposta: `{name, type, version, expires_at, packages}`. Erro da tool (licença, dependência bloqueada, limite de chamadas) → registre a falha do recurso e continue os demais. Status da telemetria nesse caso: `partial`.
 
-4. Aplique cada resultado:
-   - Para cada entrada em `files`, escreva o conteúdo com a ferramenta Write em `~/.claude/<path sem o prefixo .claude/>` (o hook de path-safety valida cada path automaticamente). Sobrescreva se já existir.
-   - Arquivos cujo nome termine em `hook.sh` → `chmod 755`.
-   - Falha em um recurso (erro da tool) → registre a falha, continue os demais. Status da telemetria nesse caso: `partial`.
+3. **Fase 1 — baixar, um recurso por vez.** A raiz é o diretório home — a pasta que **contém** `.claude/`. Passe o array `packages` do recurso ao script, exatamente como a tool o devolveu, sem alterar um caractere dos links:
 
-5. Exiba o resumo: **"X recursos sincronizados."** (acrescente os que falharam, se houver).
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" baixar --raiz "$HOME" <<'AMFLOW_PACKAGES_EOF'
+   <o array `packages`, em JSON>
+   AMFLOW_PACKAGES_EOF
+   ```
+
+   O script **não instala nada**. Guarde a linha `AREA:` de cada recurso baixado. Leia o código de saída:
+
+   | Código | O que fazer |
+   |---|---|
+   | 0 | Segue |
+   | 2 | Erro de uso do script — reporte o `MOTIVO` |
+   | 10 | Rede, HTTP diferente de 2xx ou link vencido — chame `install` de novo (link novo) e repita |
+   | 11 | Tamanho ou SHA-256 divergente — idem; na **segunda** falha seguida, pare e reporte |
+   | 12 | Pacote inválido — pare; é inconsistência do Hub, não do usuário |
+   | 13 | Destino — pare e mostre o caminho do `MOTIVO` |
+   | 20 | Sem conexão com o domínio do link — diga que esta superfície não suporta o download e não tente de novo |
+
+   Nos códigos 10 a 13 e 20 nenhum recurso instalado foi alterado.
+
+   Falha num recurso → registre e continue os demais (status `partial`); código 20 encerra o lote.
+
+4. **Confirmação humana (M10) — obrigatória, não pule.** Com todos os recursos baixados, exiba o lote: as linhas `PACOTE:` e `ARQUIVO:` de cada um. Use `AskUserQuestion`: **"Sincronizar N recursos"** ou **"Cancelar"**. Só prossiga para o passo 5 após confirmação explícita — uma confirmação cobre o lote inteiro (não pergunte recurso por recurso). Cancelar encerra sem instalar nada: descarte cada área com `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" descartar --raiz "$HOME" --area "<AREA>"` — o script recusa caminho que não seja uma área dele e nenhum outro comando apaga arquivo.
+
+5. **Fase 2 — aplicar, uma área por vez:**
+
+   ```bash
+   python3 "${CLAUDE_PLUGIN_ROOT}/scripts/fetch_package.py" aplicar --raiz "$HOME" --area "<AREA>"
+   ```
+
+   Falha num recurso → registre e continue os demais (status `partial`).
+
+6. Exiba o resumo: **"X recursos sincronizados."** (acrescente os que falharam, se houver).
 
 ## Tratamento de erros
 
@@ -58,5 +88,6 @@ Sincroniza todos os recursos com licença ativa — públicos adquiridos e exclu
 ## Restrições
 
 - Nunca exiba tokens ao usuário.
-- Nunca escreva arquivos fora de `~/.claude/` — reforçado pelo hook de path-safety.
-- Nunca chame `Write` pra nenhum recurso antes de completar o passo 2 (confirmação do lote).
+- Nunca escreva arquivos de recurso com `Write` ou `Edit`: quem escreve é o `fetch_package.py`, que só grava dentro de `~/.claude/`.
+- Nunca rode a fase `aplicar` antes de completar o passo 4 (confirmação do lote).
+- Nunca exiba os links de download: carregam um token de curta duração.
