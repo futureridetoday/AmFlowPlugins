@@ -31,9 +31,10 @@ argument-hint: "[--price <centavos>]"
 
 Envia ao Hub um recurso `skill` ou `agent` que já saiu `reviewed` do `/amflow-builder:review`. Não
 revisa, não escaneia, não gera diff: o `review` já mediu o recurso, e este comando envia exatamente
-o que ele aprovou. Usa a tool `publish` do servidor MCP `amflow-builder` (declarada em `.mcp.json`)
-pelo agent `resource-publisher`, invocado uma vez, depois da confirmação do Creator — sem
-`curl`/Bash de rede, sem token no contexto do modelo.
+o que ele aprovou. Usa as tools `request_upload` e `publish` do servidor MCP `amflow-builder`
+(declarado em `.mcp.json`) pelo agent `resource-publisher`, invocado uma vez, depois da confirmação
+do Creator: o agent monta o pacote zip, pede o envio, envia o zip ao link e submete por referência.
+Nenhum conteúdo de arquivo vai em argumento de tool, e não há token no contexto do modelo.
 
 ## Quando usar
 
@@ -225,7 +226,7 @@ esse `uid` — este comando pergunta a ele antes, para saber o que perguntar ao 
     |---|---|
     | `PUBLICADO` | O agent já gravou `amflow-status: pending_review` local, pelo `publish.py --registrar` — o `uid` já estava no manifesto desde a revisão. Exibir o `SUBMISSION_ID` e a mensagem de recurso aguardando revisão do Manager. Sugerir `/amflow-builder:publish-status` para acompanhar |
     | `BARRADO` | A camada 1 ou a camada 2 deixou de bater entre a listagem e o envio (edição concorrente, por exemplo) — a mesma checagem da conferência cedo (Fase 2). Exibir o `MOTIVO` tal como veio, sem reescrever, e orientar a rodar `/amflow-builder:review` de novo — nada foi enviado |
-    | `ERRO` | O Hub recusou. Exibir a mensagem tal como veio — nada foi gravado local |
+    | `ERRO` | O envio ou o Hub recusou — transporte, pacote inválido, superfície sem envio ou erro comum. Exibir a mensagem tal como veio — nada foi gravado local. Se a mensagem disser que a superfície não suporta o envio do pacote, dizer ao Creator que a publicação precisa de uma superfície com acesso de rede ao domínio do storage; não repetir |
     | `PUBLICADO-SEM-REGISTRO` | O Hub aceitou, mas a gravação local falhou. Exibir a mensagem de erro e avisar: **"O Hub já tem a submissão, mas o arquivo local não foi atualizado. Rode `/amflow-builder:publish-status` antes de tentar publicar de novo — não repita o envio sem conferir."** |
     | `NEGADO` | O Hub negou a publicação — a entry validation recusou o envio. Exibir a mensagem tal como veio e dizer que o recurso ficou `denied`; é preciso corrigir o que a mensagem aponta e rodar `/amflow-builder:review` de novo antes de tentar publicar |
 
@@ -234,8 +235,8 @@ esse `uid` — este comando pergunta a ele antes, para saber o que perguntar ao 
 - Nunca exibir tokens ao usuário.
 - Nunca editar o arquivo local por conta própria — quem grava é o agent, pelo `publish.py
   --registrar`, e só depois do aceite do Hub.
-- Nunca chamar a tool `publish` diretamente deste comando: é o agent quem chama, com
-  `confirm: true` só depois do M10.
+- Nunca chamar as tools `request_upload` e `publish` diretamente deste comando: é o agent quem
+  chama, com `confirm: true` só depois do M10.
 - Nunca publicar um recurso fora de `reviewed` — a Fase 1 já filtra, e o script reconfere na Fase
   7 mesmo assim.
 - Um recurso por execução.

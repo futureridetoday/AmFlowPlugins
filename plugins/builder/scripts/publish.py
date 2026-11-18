@@ -19,6 +19,10 @@ submissão pendente, versão e dependências em produção — são do agent, qu
 script nunca chama rede, mesmo padrão do `review.py` (cuja única chamada de rede, a `me`, também
 fica no agent).
 
+Sem flag, a saída não leva conteúdo de arquivo: o recurso vira um zip numa pasta temporária
+(`package_upload_domain.py` e `package_upload_infra.py`, plano 0028) e saem `PACKAGE`,
+`PACKAGE_SHA256`, `PACKAGE_SIZE` e `FILE_COUNT`. O envio ao link é do `package_upload.py`.
+
 Cross-repo: nasce aqui e desce a `plugins/builder/scripts/publish.py` do AmFlowPlugins pelo
 `vendor.py` — mesmo mecanismo do `check.py`, do `status.py` e do `review.py`.
 
@@ -87,6 +91,15 @@ def _carregar_status():
     spec.loader.exec_module(modulo)
     return modulo
 
+
+# O zip é montado pelo caso `package_upload` (irmão deste arquivo, também na cópia do plugin). Com o
+# arquivo carregado por `spec_from_file_location` (testes), a pasta do script não está em sys.path.
+_PASTA = str(Path(__file__).resolve().parent)
+if _PASTA not in sys.path:
+    sys.path.insert(0, _PASTA)
+
+import package_upload_domain as pacote_dominio  # noqa: E402
+import package_upload_infra as pacote_infra  # noqa: E402
 
 review = _carregar_review()
 status = _carregar_status()
@@ -323,20 +336,42 @@ def negar(projeto: Path, local: str):
     return status.registrar_negado(projeto, alvo.manifesto)
 
 
-def formatar(preparo: Preparo) -> str:
+def empacotar(preparo: Preparo):
+    """Monta o zip do recurso numa pasta temporária. `(pacote, None)` quando montou; `(None, motivo)`
+    quando o recurso passa de algum limite (seção 12 do index.md do plano 0028) — mesma forma do
+    `BARRADO` de preparo."""
+    motivo = pacote_dominio.verificar_conteudo(preparo.arquivos, preparo.secure_invite or "")
+    if motivo:
+        return None, motivo
+    entradas = pacote_dominio.montar_entradas(preparo.arquivos, preparo.secure_invite or "")
+    pacote = pacote_infra.gravar_pacote(entradas)
+    motivo = pacote_dominio.verificar_tamanho_pacote(pacote.tamanho)
+    if motivo:
+        pacote_infra.descartar_pacote(pacote)
+        return None, motivo
+    return pacote, None
+
+
+def formatar(preparo: Preparo, pacote=None) -> str:
+    """Saída do `publish.py`: nenhuma linha leva conteúdo de arquivo — só caminho, tamanho e SHA-256
+    do zip (index.md §9.2 do plano 0028)."""
     if not preparo.ok:
         return f"RESULTADO: BARRADO\nMOTIVO: {preparo.motivo}"
     saida = [
         "RESULTADO: OK",
         f"RECURSO: {preparo.tipo}/{preparo.nome}" + (f" v{preparo.versao}" if preparo.versao else ""),
         f"UID: {preparo.uid or ''}",
-        f"SECURE_INVITE: {preparo.secure_invite or ''}",
     ]
     if preparo.omitidos:
         saida.append("OMITIDOS:")
         saida += [f"  {caminho}: {motivo}" for caminho, motivo in preparo.omitidos.items()]
-    saida.append("ARQUIVOS_JSON:")
-    saida.append(json.dumps(preparo.arquivos, ensure_ascii=False))
+    if pacote is not None:
+        saida += [
+            f"PACKAGE: {pacote.caminho}",
+            f"PACKAGE_SHA256: {pacote.sha256}",
+            f"PACKAGE_SIZE: {pacote.tamanho}",
+            f"FILE_COUNT: {len(preparo.arquivos)}",
+        ]
     return "\n".join(saida)
 
 
@@ -428,8 +463,15 @@ def main(argv: list[str] | None = None) -> int:
         print(f"erro: {exc}", file=sys.stderr)
         return 2
 
-    print(formatar(preparo))
-    return 0 if preparo.ok else 1
+    if not preparo.ok:
+        print(formatar(preparo))
+        return 1
+    pacote, motivo = empacotar(preparo)
+    if motivo:
+        print(formatar(Preparo(False, motivo=motivo)))
+        return 1
+    print(formatar(preparo, pacote))
+    return 0
 
 
 if __name__ == "__main__":
