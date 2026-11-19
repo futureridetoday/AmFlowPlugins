@@ -12,7 +12,7 @@ Antes deste agent, o `publish` enviava o que quisesse: um recurso que a revisão
 
 ## Como funciona
 
-Recebe um recurso já escolhido e confirmado pelo comando, roda o script `publish.py` sobre ele — que barra qualquer coisa fora de `reviewed` e monta o pacote a enviar —, e só então chama a tool `publish`. Só grava o `amflow-status: pending_review` localmente depois que o Hub aceita — o `uid` já está no manifesto desde a revisão e vai em toda chamada, inclusive na primeira publicação; numa recusa, nada muda no disco.
+Recebe um recurso já escolhido e confirmado pelo comando, roda o script `publish.py` sobre ele — que barra qualquer coisa fora de `reviewed` e monta o pacote zip a enviar —, pede o envio com a tool `request_upload`, sobe o zip ao link recebido com o script `package_upload.py` e só então chama a tool `publish`, por referência ao envio. Nenhum conteúdo de arquivo passa por argumento de tool: o pacote viaja só pelo script. Só grava o `amflow-status: pending_review` localmente depois que o Hub aceita — o `uid` já está no manifesto desde a revisão e vai em toda chamada, inclusive na primeira publicação; numa recusa, nada muda no disco.
 
 Ele não conversa com o Creator. Preço, changelog e a confirmação de publicar são perguntas do comando `/amflow-builder:publish`, feitas antes de invocá-lo — este agent é chamado uma única vez, já com tudo decidido.
 
@@ -26,7 +26,7 @@ Pelo comando `/amflow-builder:publish`, que lista os recursos `reviewed`, conduz
 
 **Recurso deixou de estar `reviewed`.** Entre a listagem e a confirmação, o recurso foi editado e perdeu o status. O agent roda `publish.py` de novo, recebe `BARRADO` e devolve isso ao comando — a tool `publish` nunca é chamada.
 
-**O Hub recusa.** A versão local não supera a de produção, ou o bundle falha na validação. O agent devolve o erro do Hub tal como veio, e nada é gravado localmente.
+**O Hub recusa.** A versão local não supera a de produção, ou o pacote falha na validação. O agent devolve o erro do Hub tal como veio, e nada é gravado localmente — salvo a recusa do conteúdo pela entry validation, que grava `denied`. Falha de transporte (o envio não chegou como declarado) ganha uma nova tentativa com envio novo; pacote inválido é reportado sem nova tentativa.
 
 ## Fundamentação
 
